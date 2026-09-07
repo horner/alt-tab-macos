@@ -167,9 +167,11 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** Projects and their names survive a relaunch. A user can always name the current Desktop; when Projects are enabled they can also create a custom Project from the focused window, add the focused window to one, rename and delete — all from the menu bar. Desktops pick up a sticky name from the first app opened on them.
 **Commit:** per task
-**Status:** not started
+**Status:** in progress (1 of 8 tasks complete)
 
-- [ ] 2.1 — Generalise the JSON branch in `Preferences.set()` so it is not hardcoded to `key == "exceptions"`. Files: `src/preferences/Preferences.swift`
+- [x] 2.1 — Generalise the JSON branch in `Preferences.set()` so it is not hardcoded to `key == "exceptions"`. Files: `src/preferences/Preferences.swift`
+
+> Note: Debug build passed. An isolated-defaults smoke check of the actual set method passed structured/empty arrays, exceptions, strings and booleans. The existing test target is unchanged.
 - [ ] 2.2 — Define `ProjectEntry: Codable` (id, kind, space uuid, home Space uuid, name, auto name, icon file name) with a permissive `init(from:)` in the style of `ExceptionEntry`, a `projects` preference read through `CachedUserDefaults.json`, and its empty-array default, *depends on 2.1*. Member patterns come in Milestone 8. Files: `src/projects/ProjectsPreferences.swift`
 - [ ] 2.3 — Load the registry from the preference at launch and save on every name, icon or lifecycle change, *depends on 2.2*. Desktop entries whose uuid no longer exists are kept (the Desktop may come back) but not shown. Files: `src/projects/Projects.swift`
 - [ ] 2.4 — Add `ProjectNameResolver` as a pure kernel with its triad: precedence user-set → sticky auto → "Desktop N" for a Desktop Project → "Project N". `claim` sets the auto name only when both are empty and **never re-derives while a name stands**; `forget` drops an auto name, never a user name, when the Project has no live windows; whitespace-only input clears to automatic. Files: `src/projects/ProjectNameResolver.swift`, `src/projects/ProjectNameResolverSpecs.md`, `src/projects/ProjectNameResolverTests.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`

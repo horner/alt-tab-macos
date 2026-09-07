@@ -215,7 +215,8 @@ class Preferences {
     }
 
     static func set<T>(_ key: String, _ value: T, _ notify: Bool = true) where T: Encodable {
-        UserDefaults.standard.set(key == "exceptions" ? jsonEncode(value) : value, forKey: key)
+        let isScalar = value is String || value is NSNumber || value is Data || value is Date
+        UserDefaults.standard.set(isScalar ? value : jsonEncode(value), forKey: key)
         CachedUserDefaults.removeFromCache(key)
         invalidateAllCache()
         if notify {
