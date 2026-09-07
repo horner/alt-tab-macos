@@ -1,0 +1,182 @@
+import Cocoa
+import Carbon.HIToolbox.Events
+
+/// One tile in the Spaces switcher: a desktop glyph over a label. No thumbnail — a Space preview would
+/// mean a main-thread `CGSHWCaptureWindowList` per Space and a Screen Recording permission, for a picture
+/// that is mostly wallpaper.
+class SpaceTileView: NSView {
+    private let iconView = NSImageView()
+    private let labelView = NSTextField(labelWithString: "")
+    private var isHighlighted = false
+
+    /// Width follows the widest label, not the icon: "Desktop 10" is wider than the desktop glyph, and a
+    /// tile that only fits the glyph truncates every label to "Deskto…", which is the one thing that
+    /// distinguishes the tiles from each other.
+    /// Measured through a real `NSTextField`'s cell because `String.size(withAttributes:)` returns the
+    /// typographic width and misses the cell's own inset. It has to be `cellSize`, which recomputes from the
+    /// current `stringValue`; `fittingSize` caches and reports the first measured label's width for every
+    /// subsequent one. The label is then given `pad` of margin on each side on top of the `pad` the tile
+    /// already insets it by: sized to the measured width exactly, the widest label still truncates.
+    private static let sizingLabel = NSTextField(labelWithString: "")
+
+    static func tileSize(for items: [SpaceItem]) -> NSSize {
+        let icon = Appearance.iconSize * 2
+        let pad = Appearance.intraCellPadding
+        sizingLabel.font = Appearance.font
+        let widestLabel = items.map { item -> CGFloat in
+            sizingLabel.stringValue = item.label
+            return sizingLabel.cell?.cellSize.width ?? 0
+        }.max() ?? 0
+        return NSSize(width: max((icon * 1.6).rounded(), (widestLabel + pad * 4).rounded(.up)),
+            height: (icon + Appearance.fontHeight + pad * 3).rounded())
+    }
+
+    init() {
+        super.init(frame: .zero)
+        wantsLayer = true
+        layer!.cornerRadius = Appearance.cellCornerRadius
+        layer!.borderWidth = Appearance.highlightBorderWidth
+        layer!.borderColor = NSColor.clear.cgColor
+        iconView.imageScaling = .scaleProportionallyUpOrDown
+        labelView.alignment = .center
+        labelView.lineBreakMode = .byTruncatingTail
+        labelView.font = Appearance.font
+        labelView.textColor = Appearance.fontColor
+        labelView.backgroundColor = .clear
+        addSubview(iconView)
+        addSubview(labelView)
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    func update(_ item: SpaceItem, _ highlighted: Bool) {
+        iconView.image = Self.icon(item)
+        labelView.stringValue = item.label
+        labelView.textColor = Appearance.fontColor
+        labelView.font = Appearance.font
+        setAccessibilityLabel(item.label)
+        guard highlighted != isHighlighted else { return }
+        isHighlighted = highlighted
+        layer!.backgroundColor = (highlighted ? Appearance.highlightFocusedBackgroundColor : .clear).cgColor
+        layer!.borderColor = (highlighted ? Appearance.highlightFocusedBorderColor : .clear).cgColor
+    }
+
+    override func layout() {
+        super.layout()
+        let pad = Appearance.intraCellPadding
+        let labelHeight = Appearance.fontHeight + pad
+        labelView.frame = NSRect(x: pad, y: pad, width: bounds.width - pad * 2, height: labelHeight)
+        iconView.frame = NSRect(x: pad, y: labelHeight + pad, width: bounds.width - pad * 2,
+            height: bounds.height - labelHeight - pad * 2)
+    }
+
+    /// `NSImage.Name` constants, not SF Symbols: these ship on every supported macOS, whereas the
+    /// `display`/`macwindow` symbols would need a 11.0 availability fork.
+    private static func icon(_ item: SpaceItem) -> NSImage? {
+        NSImage(named: item.isFullscreen ? NSImage.enterFullScreenTemplateName : NSImage.computerName)
+    }
+}
+
+/// The Spaces switcher's panel. Mirrors `TilesPanel`'s window configuration — a non-activating floating
+/// panel at `.popUpMenu` level that joins all Spaces — but stays a separate window: it must be able to
+/// show while the window switcher is not, and its lifecycle is not tied to `SwitcherSession`.
+class SpacesPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    static var shared: SpacesPanel!
+
+    private let backgroundView = NSVisualEffectView()
+    private var tiles = [SpaceTileView]()
+
+    convenience init() {
+        self.init(contentRect: .zero, styleMask: .nonactivatingPanel, backing: .buffered, defer: false)
+        isFloatingPanel = true
+        animationBehavior = .none
+        hidesOnDeactivate = false
+        titleVisibility = .hidden
+        backgroundColor = .clear
+        // triggering AltTab before or during a Space transition animation brings the window on the Space post-transition
+        collectionBehavior = .canJoinAllSpaces
+        // 2nd highest level possible; this allows the panel to go on top of context menus
+        level = .popUpMenu
+        // helps filter out this window from the window switcher's list
+        setAccessibilitySubrole(.unknown)
+        setAccessibilityLabel(App.name)
+        backgroundView.state = .active
+        backgroundView.blendingMode = .behindWindow
+        backgroundView.wantsLayer = true
+        backgroundView.layer!.cornerRadius = Appearance.windowCornerRadius
+        contentView = backgroundView
+        Self.shared = self
+    }
+
+    func show(_ items: [SpaceItem], _ selectedIndex: Int) {
+        hasShadow = Appearance.enablePanelShadow
+        appearance = NSAppearance(named: Appearance.currentTheme == .dark ? .vibrantDark : .vibrantLight)
+        backgroundView.material = .sidebar
+        backgroundView.layer!.cornerRadius = Appearance.windowCornerRadius
+        caTransaction {
+            layoutTiles(items, selectedIndex)
+            NSScreen.preferred.repositionPanel(self)
+        }
+        alphaValue = 1
+        makeKeyAndOrderFront(nil)
+        MainMenu.toggle(false)
+    }
+
+    func refreshHighlight(_ items: [SpaceItem], _ selectedIndex: Int) {
+        caTransaction {
+            for (i, tile) in tiles.enumerated() where i < items.count {
+                tile.update(items[i], i == selectedIndex)
+            }
+        }
+    }
+
+    override func orderOut(_ sender: Any?) {
+        alphaValue = 0
+        super.orderOut(sender)
+        MainMenu.toggle(true)
+    }
+
+    /// Escape cancels. The window switcher's `cancelShortcut` is `.local`-scoped and gated on a live
+    /// `SwitcherSession`, which a Spaces summon never creates, so it cannot serve this panel.
+    override func keyDown(with event: NSEvent) {
+        guard event.keyCode == UInt16(kVK_Escape) else { return super.keyDown(with: event) }
+        SpacesSwitcher.hide()
+    }
+
+    private func layoutTiles(_ items: [SpaceItem], _ selectedIndex: Int) {
+        let size = SpaceTileView.tileSize(for: items)
+        let padding = Appearance.windowPadding
+        let gap = Appearance.interCellPadding
+        let columns = SpacesOrderResolver.gridColumns(
+            count: items.count, maxColumns: Self.maxColumns(size.width, gap, padding))
+        let rows = Int((Double(items.count) / Double(columns)).rounded(.up))
+        while tiles.count < items.count {
+            let tile = SpaceTileView()
+            tiles.append(tile)
+            backgroundView.addSubview(tile)
+        }
+        for (i, tile) in tiles.enumerated() {
+            tile.isHidden = i >= items.count
+            guard i < items.count else { continue }
+            tile.frame = NSRect(
+                x: padding + CGFloat(i % columns) * (size.width + gap),
+                // AppKit's origin is bottom-left, so the first row has to be laid out last to read top-down.
+                y: padding + CGFloat(rows - 1 - i / columns) * (size.height + gap),
+                width: size.width, height: size.height)
+            tile.update(items[i], i == selectedIndex)
+            tile.needsLayout = true
+        }
+        let perRow = CGFloat(min(items.count, columns))
+        setContentSize(NSSize(
+            width: (padding * 2 + perRow * size.width + max(perRow - 1, 0) * gap).rounded(),
+            height: (padding * 2 + CGFloat(rows) * size.height + CGFloat(max(rows - 1, 0)) * gap).rounded()))
+    }
+
+    /// The widest row the panel may occupy. 90% of the screen rather than all of it: `repositionPanel`
+    /// centres the panel, so a panel wider than the screen loses both of its ends off-screen.
+    private static func maxColumns(_ tileWidth: CGFloat, _ gap: CGFloat, _ padding: CGFloat) -> Int {
+        let available = NSScreen.preferred.frame.width * 0.9 - padding * 2
+        return max(1, Int((available + gap) / (tileWidth + gap)))
+    }
+}

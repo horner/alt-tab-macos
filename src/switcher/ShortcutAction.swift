@@ -34,6 +34,11 @@ enum ShortcutActions {
             guard SwitcherSession.isActive else { return }
             TilesView.toggleSearchModeFromShortcut()
         }),
+        // The Spaces switcher's release commits on the HOLD shortcut, mirroring `holdShortcut`'s role for
+        // the window switcher; its next shortcut both summons and cycles.
+        ShortcutAction(id: SpacesSwitcher.nextShortcutId, perform: { SpacesSwitcher.showOrCycle() }),
+        ShortcutAction(id: SpacesSwitcher.previousShortcutId, perform: { SpacesSwitcher.cycle(-1) }),
+        ShortcutAction(id: SpacesSwitcher.holdShortcutId, perform: { SpacesSwitcher.focusSelected() }),
     ]
 
     /// Acting on a tile is a commitment to THAT window, so from here the selection follows it by id rather

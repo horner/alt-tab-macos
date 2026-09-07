@@ -431,6 +431,14 @@
 		5A1100000000000000020017 /* AttentionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1100000000000000010017 /* AttentionModel.swift */; };
 		5A1100000000000000030017 /* AttentionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1100000000000000010017 /* AttentionModel.swift */; };
 		5A1100000000000000040017 /* AttentionModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A1100000000000000010018 /* AttentionModelTests.swift */; };
+		0000CC00000000000000000F /* SpacesSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC00000000000000000E /* SpacesSwitcher.swift */; };
+		0000CC000000000000000011 /* SpacesList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC000000000000000010 /* SpacesList.swift */; };
+		0000CC000000000000000013 /* SpacesOrderResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC000000000000000012 /* SpacesOrderResolver.swift */; };
+		0000CC000000000000000014 /* SpacesOrderResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC000000000000000012 /* SpacesOrderResolver.swift */; };
+		0000CC000000000000000016 /* SpacesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC000000000000000015 /* SpacesPanel.swift */; };
+		0000CC000000000000000018 /* SpacesPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC000000000000000017 /* SpacesPreferences.swift */; };
+		0000CC00000000000000001A /* SpacesOrderResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC000000000000000019 /* SpacesOrderResolverTests.swift */; };
+		0000CC00000000000000001C /* SpacesSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC00000000000000001B /* SpacesSheet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -876,6 +884,13 @@
 		5A1100000000000000010011 /* AxObserverRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AxObserverRegistry.swift; sourceTree = "<group>"; };
 		5A1100000000000000010017 /* AttentionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttentionModel.swift; sourceTree = "<group>"; };
 		5A1100000000000000010018 /* AttentionModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttentionModelTests.swift; sourceTree = "<group>"; };
+		0000CC00000000000000000E /* SpacesSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesSwitcher.swift; sourceTree = "<group>"; };
+		0000CC000000000000000010 /* SpacesList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesList.swift; sourceTree = "<group>"; };
+		0000CC000000000000000012 /* SpacesOrderResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesOrderResolver.swift; sourceTree = "<group>"; };
+		0000CC000000000000000015 /* SpacesPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesPanel.swift; sourceTree = "<group>"; };
+		0000CC000000000000000017 /* SpacesPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesPreferences.swift; sourceTree = "<group>"; };
+		0000CC000000000000000019 /* SpacesOrderResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesOrderResolverTests.swift; sourceTree = "<group>"; };
+		0000CC00000000000000001B /* SpacesSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1090,6 +1105,7 @@
 				5FC5980000000000000A0101 /* NativeHotkeyResolverTests.swift */,
 				5F21C9DF2C6E94240091F72F /* ShortcutsWhenActiveSheet.swift */,
 				5F21C9E12C6E94410091F72F /* AdditionalControlsSheet.swift */,
+				0000CC00000000000000001B /* SpacesSheet.swift */,
 			);
 			path = controls;
 			sourceTree = "<group>";
@@ -1591,6 +1607,19 @@
 			path = fr.lproj;
 			sourceTree = "<group>";
 		};
+		0000CC00000000000000001D /* spaces */ = {
+			isa = PBXGroup;
+			children = (
+				0000CC00000000000000000E /* SpacesSwitcher.swift */,
+				0000CC000000000000000010 /* SpacesList.swift */,
+				0000CC000000000000000012 /* SpacesOrderResolver.swift */,
+				0000CC000000000000000015 /* SpacesPanel.swift */,
+				0000CC000000000000000017 /* SpacesPreferences.swift */,
+				0000CC000000000000000019 /* SpacesOrderResolverTests.swift */,
+			);
+			path = spaces;
+			sourceTree = "<group>";
+		};
 		D04BA6251F309645757C6000 /* src */ = {
 			isa = PBXGroup;
 			children = (
@@ -1603,6 +1632,7 @@
 				CC00000000000000000C0001 /* pro */,
 				CC00000000000000000C0010 /* switcher */,
 				CC00000000000000000C0011 /* preferences */,
+				0000CC00000000000000001D /* spaces */,
 				71FD1536EE94015DF0B9D6E7 /* vendors */,
 				22F7376E535079E83916A3CD /* util */,
 				5230A54090E2067083AB1CD6 /* events */,
@@ -2084,6 +2114,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0000CC000000000000000014 /* SpacesOrderResolver.swift in Sources */,
+				0000CC00000000000000001A /* SpacesOrderResolverTests.swift in Sources */,
 				5A1100000000000000030001 /* TrackingTypes.swift in Sources */,
 				5A1100000000000000030017 /* AttentionModel.swift in Sources */,
 				5A1100000000000000030006 /* AxObserverHealth.swift in Sources */,
@@ -2222,6 +2254,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0000CC00000000000000000F /* SpacesSwitcher.swift in Sources */,
+				0000CC000000000000000011 /* SpacesList.swift in Sources */,
+				0000CC000000000000000013 /* SpacesOrderResolver.swift in Sources */,
+				0000CC000000000000000016 /* SpacesPanel.swift in Sources */,
+				0000CC000000000000000018 /* SpacesPreferences.swift in Sources */,
+				0000CC00000000000000001C /* SpacesSheet.swift in Sources */,
 				5A1100000000000000020001 /* TrackingTypes.swift in Sources */,
 				5A1100000000000000020017 /* AttentionModel.swift in Sources */,
 				5A1100000000000000020006 /* AxObserverHealth.swift in Sources */,

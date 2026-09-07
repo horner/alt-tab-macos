@@ -29,6 +29,7 @@ class ControlsTab {
 
     static var shortcutsWhenActiveSheet: ShortcutsWhenActiveSheet!
     static var additionalControlsSheet: AdditionalControlsSheet!
+    static var spacesSheet: SpacesSheet!
 
     /// Map from a tab-segment `NSSegmentedControl` (Filtering / Appearance / Ordering) to the
     /// per-segment list of searchable strings. Consulted by
@@ -109,6 +110,7 @@ class ControlsTab {
 
     static func initializePreferencesDependentState() {
         applyActiveShortcutPreferences()
+        applySpacesShortcutPreferences()
         staticManagedShortcutPreferences.forEach { applyShortcutPreference($0) }
         applyArrowKeysPreferenceWithoutDialogs()
         applyVimKeysPreferenceWithoutDialogs()
@@ -124,7 +126,8 @@ class ControlsTab {
         let shortcutsView = makeShortcutsView()
         let additionalControlsButton = NSButton(title: NSLocalizedString("Additional controls…", comment: ""), target: self, action: #selector(showAdditionalControlsSettings))
         let shortcutsButton = NSButton(title: NSLocalizedString("Shortcuts when active…", comment: ""), target: self, action: #selector(showShortcutsSettings))
-        let tools = StackView([additionalControlsButton, shortcutsButton], .horizontal)
+        let spacesButton = NSButton(title: NSLocalizedString("Spaces…", comment: ""), target: self, action: #selector(showSpacesSettings))
+        let tools = StackView([additionalControlsButton, shortcutsButton, spacesButton], .horizontal)
         let view = TableGroupSetView(originalViews: [shortcutsView], toolsViews: [tools], padding: 0, bottomPadding: 0, othersAlignment: .leading, toolsAlignment: .trailing)
 
         // Sheets are built lazily on first show. Pre-build search visibility is provided by
@@ -158,6 +161,7 @@ class ControlsTab {
         }
         shortcutsWhenActiveSheet = nil
         additionalControlsSheet = nil
+        spacesSheet = nil
         arrowKeysCheckbox = nil
         vimKeysCheckbox = nil
         shortcutControls.removeAll()
@@ -180,6 +184,8 @@ class ControlsTab {
 
     static func preferenceChanged(_ key: String) {
         switch key {
+        case let k where Preferences.spacesShortcutKeys.contains(k):
+            applySpacesShortcutPreferences()
         case "shortcutCount":
             applyActiveShortcutPreferences()
             (0..<Preferences.shortcutCount).forEach { initializeShortcutRecorderState($0) }
@@ -772,6 +778,36 @@ class ControlsTab {
         SettingsWindow.shared.beginSheetWithSearchHighlight(additionalControlsSheet)
     }
 
+    @objc static func showSpacesSettings() {
+        if spacesSheet == nil { spacesSheet = SpacesSheet() }
+        SettingsWindow.shared.beginSheetWithSearchHighlight(spacesSheet)
+    }
+
+    /// The Spaces switcher's pair mirrors a numbered shortcut's hold/next pair — the hold commits on
+    /// release, the next key summons and cycles, and the next key's binding carries the hold's modifiers
+    /// so the global tap sees the full chord — but it has its own ids and no shortcut index, so none of
+    /// the `"holdShortcut"` / `"nextWindowShortcut"` prefix paths above apply to it.
+    private static func applySpacesShortcutPreferences() {
+        let hold = Preferences.holdSpacesShortcut
+        if let hold {
+            addShortcut(.up, .global, hold, SpacesSwitcher.holdShortcutId, nil)
+        } else {
+            removeShortcutIfExists(SpacesSwitcher.holdShortcutId)
+        }
+        if let next = Preferences.nextSpaceShortcut {
+            addShortcut(.down, .global, combineShortcuts(hold, next), SpacesSwitcher.nextShortcutId, nil)
+        } else {
+            removeShortcutIfExists(SpacesSwitcher.nextShortcutId)
+        }
+        // `.local`, and bound bare rather than combined with the hold: ⌃⇧⇥ is a different chord from ⌃⇥, so
+        // `RegisterEventHotKey` never fires for it. The tap matches ⇧ on its own once the panel is up.
+        if let previous = Preferences.previousSpaceShortcut {
+            addShortcut(.down, .local, previous, SpacesSwitcher.previousShortcutId, nil)
+        } else {
+            removeShortcutIfExists(SpacesSwitcher.previousShortcutId)
+        }
+    }
+
     private static func addShortcut(_ triggerPhase: ShortcutTriggerPhase, _ scope: ShortcutScope, _ shortcut: Shortcut, _ controlId: String, _ index: Int?) {
         let atShortcut = ATShortcut(shortcut, controlId, scope, triggerPhase, index)
         removeShortcutIfExists(controlId)
@@ -805,6 +841,10 @@ class ControlsTab {
 
     @objc static func shortcutChangedCallback(_ sender: NSControl) {
         let controlId = sender.identifier!.rawValue
+        if SpacesSwitcher.owns(controlId) {
+            applySpacesShortcutPreferences()
+            return
+        }
         if isShortcutPreferenceKey(controlId) && Preferences.nameToIndex(controlId) >= Preferences.shortcutCount {
             return
         }
@@ -924,6 +964,7 @@ class ControlsTab {
     /// resolve to e.g. "Shortcut 2 - Trigger" — naming WHICH shortcut, since "Select next window"
     /// alone doesn't disambiguate when several shortcuts exist.
     static func conflictLabel(_ id: String) -> String? {
+        if SpacesSwitcher.owns(id) { return NSLocalizedString("Spaces switcher", comment: "") }
         if arrowKeys.contains(id) { return NSLocalizedString("Arrow keys", comment: "") }
         if vimKeyActions.values.contains(id) { return NSLocalizedString("Vim keys", comment: "") }
         if id.hasPrefix("holdShortcut") || id.hasPrefix("nextWindowShortcut") {
