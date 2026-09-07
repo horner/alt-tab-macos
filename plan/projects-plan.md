@@ -130,7 +130,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** A Project is a first-class object; every Space has a Desktop Project; `WindowFilterResolver` can narrow the switcher to a custom Project's members; `projectsEnabled` exists and is off. Nothing is visible to the user — correctness is proven by unit tests and the Space uuid probe.
 **Commit:** per task
-**Status:** in progress (3 of 6 tasks complete)
+**Status:** in progress (4 of 6 tasks complete)
 
 - [x] 1.1 — Read `"uuid"` from each `CGSCopyManagedDisplaySpaces` dictionary in `SpacesList.enumerate()` into a new `SpaceItem.uuid: String`, with a temporary debug log of every Space's uuid. Relaunch, then log out and back in, and confirm each Desktop keeps its uuid. Record the result as a `> Note:` here. If absent, stop and ask — the fallback (`"ManagedSpaceID"`) changes the persistence story. Files: `src/spaces/SpacesList.swift`
 
@@ -142,7 +142,9 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 1.3 — Add `ProjectMembershipResolver` as a pure kernel with its triad, *depends on 1.2*: given `isEnabled`, the active Project's kind and members, return the ids to filter by, or nil when no filtering applies. Disabled → nil; Desktop Project → nil (the `spacesToShow` clause already expresses it). Scenarios: disabled filters nothing; desktop filters nothing; custom keeps only members; an id whose window is gone is ignored; an empty custom Project yields an empty set, not everything; a window may sit in several Projects. Files: `src/projects/ProjectMembershipResolver.swift`, `src/projects/ProjectMembershipResolverSpecs.md`, `src/projects/ProjectMembershipResolverTests.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
 > Note: Debug build and all 1,184 tests passed. audit-specs-tests: 6 tests and 6 matching scenarios, no orphans or description drift. Existing WindowFilterResolver and SpacesOrderResolver tests remain byte-for-byte unchanged.
-- [ ] 1.4 — Add one clause to `WindowFilterResolver.shouldShow()`: a defaulted `activeProjectMembers: Set<String>? = nil` parameter that, when non-nil, requires the window's tracked id to be in it. The nil default keeps every existing call and test at its current result. Files: `src/switcher/state/WindowFilterResolver.swift`
+- [x] 1.4 — Add one clause to `WindowFilterResolver.shouldShow()`: a defaulted `activeProjectMembers: Set<String>? = nil` parameter that, when non-nil, requires the window's tracked id to be in it. The nil default keeps every existing call and test at its current result. Files: `src/switcher/state/WindowFilterResolver.swift`
+
+> Note: Debug build and all 1,184 tests passed with the pre-existing WindowFilterResolver tests unmodified. The upstream change is the defaulted parameter, one membership clause, and its adjacent predicate description.
 - [ ] 1.5 — Pass the resolver's result at the line-154 call site, *depends on 1.3 and 1.4*, and add one `Projects.windowsRemoved(_:)` call in `Windows.removeWindows()` that purges ids from every custom Project. Files: `src/switcher/state/Windows.swift`, `src/projects/Projects.swift`
 - [ ] 1.6 — Add the `projectsEnabled` preference (default `false`) in a new `ProjectsPreferences` extension, and seed the registry at launch from `SpacesList.enumerate()` plus a `Projects`-owned `activeSpaceDidChangeNotification` observer (do not edit `SpacesList.startObservingSpaceChanges()`), so every Space has its Desktop Project and `Projects.active` tracks the current Space. Files: `src/projects/ProjectsPreferences.swift`, `src/projects/Projects.swift`, `src/App.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
