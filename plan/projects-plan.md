@@ -2,7 +2,7 @@
 
 **Objective:** Add **Projects** to AltTab: isolated collections of windows that Alt-Tab cycles within, so unrelated work stays apart. The existing Spaces switcher stays as it is — it moves between macOS Desktops, and people need that. Projects are a separate, **opt-in** feature (a single `projectsEnabled` preference, off by default) with their own shortcut and panel, in a new `src/projects/` folder. Every macOS Space gets an automatic Project record, so the first app opened on a Desktop gives it a sticky name; a user can also create *custom* Projects that gather windows from any Space. While a custom Project is active, Alt-Tab lists only its members, and windows opened during that time join it. Both panels' tiles grow a thumbnail, and a user can choose any window as the icon of a Project or a Desktop, optionally pinning that picture permanently. The work is meant to become an upstream PR, so it touches upstream code in as few, small, listed places as possible: `WindowFilterResolver.shouldShow()` is a pure predicate that takes one more defaulted parameter, and everything else lives in new folders or in the Spaces-switcher files this fork already owns.
 
-**Status:** 2 of 9 milestones complete
+**Status:** 2 of 9 milestones complete; M3 implementation complete, live verification pending
 
 ## Working agreement
 
@@ -207,7 +207,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** in progress (6 of 7 tasks complete)
+**Status:** implementation complete (7 of 7 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -227,7 +227,9 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.6 — Layout preset and conflict warning in `ProjectsSheet`, *depends on 3.5*: a "Use ⌘ / ⌥ / ⌃ layout" button that, after an `NSAlert` confirmation naming the four keys it will change, writes via `Preferences.setShortcut`: `holdShortcut0` = ⌘, `holdShortcut1` = ⌘, `holdProjectsShortcut` = ⌥, `holdSpacesShortcut` = ⌃ (shortcut 3 and every next/previous key untouched). Below the hold recorder, a red note appears whenever the Project hold equals any window-switcher or Spaces hold, naming the clash, because that registration fails silently with -9878. Files: `src/projects/ProjectsSheet.swift`
 
 > Note: Debug build passed. Live confirmation lists exactly the four hold changes. Preset applied; next/previous keys stayed unchanged. A deliberate Option hold clash names Window shortcut 2 in a wrapping red note; reapplying the preset removes the note and its row.
-- [ ] 3.7 — Regenerate the source strings. Files: `resources/l10n/Localizable.strings`
+- [x] 3.7 — Regenerate the source strings. Files: `resources/l10n/Localizable.strings`
+
+> Note: Source strings regenerated; generated-file check exited 0. All 1,203 tests pass, all 25 new resolver scenarios match their specs, and protected tests remain byte-identical. Live settings, preset, clash warning, and Desktop-only panel checks passed; actual Research creation/cross-Space filtering and registration-log verification are still pending. Screenshots saved in docs/projects. No M4 work started.
 
 **Verification:**
 1. Build and tests pass (existing `SpacesOrderResolverTests` untouched); `audit-specs-tests` clean for `ProjectsOrderResolver`; `ensure_generated_files_are_up_to_date.sh` exits 0.
@@ -236,6 +238,10 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 4. Enabled: bind the hold key; the panel lists "Desktop N" (current) and "Research"; release on Research — Alt-Tab lists only its members across Spaces; release on the Desktop entry — Alt-Tab is back to normal.
 5. Preset: click "Use ⌘ / ⌥ / ⌃ layout", confirm — ⌘⇥ now opens the window switcher (the macOS app switcher no longer appears), ⌥⇥ the Project switcher, ⌃⇥ the Spaces switcher; the debug log shows no -9878. Set the Project hold back to ⌥ while windows are still on ⌥ — the red clash note appears.
 6. Upstream touch-budget diff check.
+
+> Handoff checkpoint: the native UI automation exposes settings and switcher panels but not the status-bar icon. The user has been asked to leave AltTabDebug's Projects submenu open on a normal app window so the Research creation/membership walkthrough can finish. M3 is not claimed fully verified. The Debug app currently has Projects enabled with the tested preset; both release styles are restored to Focus. The preset changes Window shortcut 2 from its original Option hold to Command. Logout/login UUID stability remains deferred by user approval.
+
+> Try it: Settings → Controls → Projects… → Enable Projects flips `projectsEnabled` immediately. Confirm “Use ⌘ / ⌥ / ⌃ layout”; keep On release set to Focus. Hold Option and tap Tab to select Projects, tap Shift while holding Option to step back, and release Option to select. Command-Tab opens windows; Control-Tab opens Spaces when its next key is bound to Tab (already bound in this Debug profile). Use the menu-bar Projects → New Project from this Window… to create Research, then Add this Window to Project on other windows. Across-Space listing also requires the existing window filters to allow all Spaces/screens. M4 auto-capture, activation pinning, and Project Escape cancellation are not implemented.
 
 ### Milestone 4 — Active-Project lifecycle: pinning and auto-capture
 
