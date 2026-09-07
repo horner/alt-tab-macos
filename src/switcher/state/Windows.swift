@@ -166,6 +166,7 @@ class Windows {
             frontmostPid: Applications.frontmostPid,
             visibleSpaceIds: Spaces.visibleSpaces,
             exceptions: f.exceptions,
+            activeProjectMembers: Projects.activeMembers,
             isOnPreferredScreen: window.isOnScreen(NSScreen.preferred))
     }
 
@@ -814,6 +815,7 @@ class Windows {
             w.lastFocusOrder -= howManyToShift
             return false
         }
+        Projects.windowsRemoved(windows)
         // Drop the cached `SCWindow` for any window we're removing. Otherwise the array
         // grows over time as new shareable-content refreshes leave stale entries behind
         // (see leak #5).

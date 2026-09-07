@@ -130,7 +130,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** A Project is a first-class object; every Space has a Desktop Project; `WindowFilterResolver` can narrow the switcher to a custom Project's members; `projectsEnabled` exists and is off. Nothing is visible to the user — correctness is proven by unit tests and the Space uuid probe.
 **Commit:** per task
-**Status:** in progress (4 of 6 tasks complete)
+**Status:** in progress (5 of 6 tasks complete)
 
 - [x] 1.1 — Read `"uuid"` from each `CGSCopyManagedDisplaySpaces` dictionary in `SpacesList.enumerate()` into a new `SpaceItem.uuid: String`, with a temporary debug log of every Space's uuid. Relaunch, then log out and back in, and confirm each Desktop keeps its uuid. Record the result as a `> Note:` here. If absent, stop and ask — the fallback (`"ManagedSpaceID"`) changes the persistence story. Files: `src/spaces/SpacesList.swift`
 
@@ -145,7 +145,9 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 1.4 — Add one clause to `WindowFilterResolver.shouldShow()`: a defaulted `activeProjectMembers: Set<String>? = nil` parameter that, when non-nil, requires the window's tracked id to be in it. The nil default keeps every existing call and test at its current result. Files: `src/switcher/state/WindowFilterResolver.swift`
 
 > Note: Debug build and all 1,184 tests passed with the pre-existing WindowFilterResolver tests unmodified. The upstream change is the defaulted parameter, one membership clause, and its adjacent predicate description.
-- [ ] 1.5 — Pass the resolver's result at the line-154 call site, *depends on 1.3 and 1.4*, and add one `Projects.windowsRemoved(_:)` call in `Windows.removeWindows()` that purges ids from every custom Project. Files: `src/switcher/state/Windows.swift`, `src/projects/Projects.swift`
+- [x] 1.5 — Pass the resolver's result at the line-154 call site, *depends on 1.3 and 1.4*, and add one `Projects.windowsRemoved(_:)` call in `Windows.removeWindows()` that purges ids from every custom Project. Files: `src/switcher/state/Windows.swift`, `src/projects/Projects.swift`
+
+> Note: Debug build passed; the unchanged test target remains at 1,184 passing tests from 1.4. A standalone smoke check of the actual registry and resolver passed desktop identity, disabled creation/filtering, overlapping memberships, removal from both Projects, empty filtering, and deletion. Windows.swift gained only the filter argument and one removal hook.
 - [ ] 1.6 — Add the `projectsEnabled` preference (default `false`) in a new `ProjectsPreferences` extension, and seed the registry at launch from `SpacesList.enumerate()` plus a `Projects`-owned `activeSpaceDidChangeNotification` observer (do not edit `SpacesList.startObservingSpaceChanges()`), so every Space has its Desktop Project and `Projects.active` tracks the current Space. Files: `src/projects/ProjectsPreferences.swift`, `src/projects/Projects.swift`, `src/App.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
 **Verification:**
