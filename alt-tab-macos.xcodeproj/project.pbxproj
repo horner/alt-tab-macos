@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6AEBEDA9547721AF3C46DBEC /* ProjectNameResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5371DE2C0F835BAD1AF5335E /* ProjectNameResolverTests.swift */; };
+		43CD1813ADF4B33A8400A61B /* ProjectNameResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */; };
+		CF3DC6A39A6D5D01B0C85B08 /* ProjectNameResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */; };
 		AA8E2AB44ABDE8861E1872C4 /* ProjectsPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6956D5A824809FDFB8430AF3 /* ProjectsPreferences.swift */; };
 		E4916672E3F37C25ACE8086B /* ProjectMembershipResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07E0B4B7F20E4250B013E058 /* ProjectMembershipResolverTests.swift */; };
 		E8C6B859A2A1D79590ED3517 /* ProjectMembershipResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4999806373D9BBF8225F4A69 /* ProjectMembershipResolver.swift */; };
@@ -461,6 +464,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D7B6A0B0A47F44D8EAA5B2FB /* ProjectNameResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectNameResolverSpecs.md; sourceTree = "<group>"; };
+		5371DE2C0F835BAD1AF5335E /* ProjectNameResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNameResolverTests.swift; sourceTree = "<group>"; };
+		AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNameResolver.swift; sourceTree = "<group>"; };
 		6956D5A824809FDFB8430AF3 /* ProjectsPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsPreferences.swift; sourceTree = "<group>"; };
 		242CCD8399505E29F594D454 /* ProjectMembershipResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectMembershipResolverSpecs.md; sourceTree = "<group>"; };
 		07E0B4B7F20E4250B013E058 /* ProjectMembershipResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMembershipResolverTests.swift; sourceTree = "<group>"; };
@@ -930,6 +936,9 @@
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
+				D7B6A0B0A47F44D8EAA5B2FB /* ProjectNameResolverSpecs.md */,
+				5371DE2C0F835BAD1AF5335E /* ProjectNameResolverTests.swift */,
+				AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */,
 				6956D5A824809FDFB8430AF3 /* ProjectsPreferences.swift */,
 				242CCD8399505E29F594D454 /* ProjectMembershipResolverSpecs.md */,
 				07E0B4B7F20E4250B013E058 /* ProjectMembershipResolverTests.swift */,
@@ -2137,6 +2146,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6AEBEDA9547721AF3C46DBEC /* ProjectNameResolverTests.swift in Sources */,
+				43CD1813ADF4B33A8400A61B /* ProjectNameResolver.swift in Sources */,
 				E4916672E3F37C25ACE8086B /* ProjectMembershipResolverTests.swift in Sources */,
 				E8C6B859A2A1D79590ED3517 /* ProjectMembershipResolver.swift in Sources */,
 				0000CC000000000000000014 /* SpacesOrderResolver.swift in Sources */,
@@ -2279,6 +2290,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CF3DC6A39A6D5D01B0C85B08 /* ProjectNameResolver.swift in Sources */,
 				AA8E2AB44ABDE8861E1872C4 /* ProjectsPreferences.swift in Sources */,
 				85ED4BC5ADE1055EE64788B5 /* ProjectMembershipResolver.swift in Sources */,
 				26C4D4265CCFF5A4F1D70297 /* Projects.swift in Sources */,
