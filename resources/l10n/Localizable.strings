@@ -44,6 +44,9 @@
 "Active app" = "Active app";
 
 /* No comment provided by engineer. */
+"Active Project: %@" = "Active Project: %@";
+
+/* No comment provided by engineer. */
 "Active screen" = "Active screen";
 
 /* No comment provided by engineer. */
@@ -53,7 +56,13 @@
 "Add a running app" = "Add a running app";
 
 /* No comment provided by engineer. */
+"Add All Visible Windows to Active Project" = "Add All Visible Windows to Active Project";
+
+/* No comment provided by engineer. */
 "Add an app from disk" = "Add an app from disk";
+
+/* No comment provided by engineer. */
+"Add this Window to Active Project" = "Add this Window to Active Project";
 
 /* Projects submenu */
 "Add this Window to Project" = "Add this Window to Project";
@@ -505,8 +514,17 @@
 /* No comment provided by engineer. */
 "Never send crash reports" = "Never send crash reports";
 
+/* No comment provided by engineer. */
+"New Project from All Visible Windows…" = "New Project from All Visible Windows…";
+
 /* Projects menu action */
 "New Project from this Window…" = "New Project from this Window…";
+
+/* No comment provided by engineer. */
+"New Project…" = "New Project…";
+
+/* No comment provided by engineer. */
+"No Active Project" = "No Active Project";
 
 /* No comment provided by engineer. */
 "No response from server." = "No response from server.";
