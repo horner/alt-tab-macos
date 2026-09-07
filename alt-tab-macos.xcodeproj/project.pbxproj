@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA8E2AB44ABDE8861E1872C4 /* ProjectsPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6956D5A824809FDFB8430AF3 /* ProjectsPreferences.swift */; };
 		E4916672E3F37C25ACE8086B /* ProjectMembershipResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07E0B4B7F20E4250B013E058 /* ProjectMembershipResolverTests.swift */; };
 		E8C6B859A2A1D79590ED3517 /* ProjectMembershipResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4999806373D9BBF8225F4A69 /* ProjectMembershipResolver.swift */; };
 		85ED4BC5ADE1055EE64788B5 /* ProjectMembershipResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4999806373D9BBF8225F4A69 /* ProjectMembershipResolver.swift */; };
@@ -445,6 +446,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		6956D5A824809FDFB8430AF3 /* ProjectsPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsPreferences.swift; sourceTree = "<group>"; };
 		242CCD8399505E29F594D454 /* ProjectMembershipResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectMembershipResolverSpecs.md; sourceTree = "<group>"; };
 		07E0B4B7F20E4250B013E058 /* ProjectMembershipResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMembershipResolverTests.swift; sourceTree = "<group>"; };
 		4999806373D9BBF8225F4A69 /* ProjectMembershipResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMembershipResolver.swift; sourceTree = "<group>"; };
@@ -903,6 +905,7 @@
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
+				6956D5A824809FDFB8430AF3 /* ProjectsPreferences.swift */,
 				242CCD8399505E29F594D454 /* ProjectMembershipResolverSpecs.md */,
 				07E0B4B7F20E4250B013E058 /* ProjectMembershipResolverTests.swift */,
 				4999806373D9BBF8225F4A69 /* ProjectMembershipResolver.swift */,
@@ -2231,6 +2234,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA8E2AB44ABDE8861E1872C4 /* ProjectsPreferences.swift in Sources */,
 				85ED4BC5ADE1055EE64788B5 /* ProjectMembershipResolver.swift in Sources */,
 				26C4D4265CCFF5A4F1D70297 /* Projects.swift in Sources */,
 				0000CC00000000000000000F /* SpacesSwitcher.swift in Sources */,

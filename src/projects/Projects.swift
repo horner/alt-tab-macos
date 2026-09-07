@@ -1,4 +1,4 @@
-import Foundation
+import Cocoa
 
 final class Project {
     enum Kind: Equatable {
@@ -32,7 +32,26 @@ enum Projects {
     static private(set) var list = [Project]()
     static private(set) var byId = [String: Project]()
     static var active: Project?
-    static var isEnabled: Bool { UserDefaults.standard.bool(forKey: "projectsEnabled") }
+    static var isEnabled: Bool { Preferences.projectsEnabled }
+    static private(set) var spaces = [SpaceItem]()
+    private static var spaceObserver: NSObjectProtocol?
+
+    static func startObservingSpaceChanges() {
+        guard spaceObserver == nil else { return }
+        refreshSpaces()
+        spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
+        ) { _ in
+            Spaces.refresh()
+            refreshSpaces()
+        }
+    }
+
+    private static func refreshSpaces() {
+        spaces = SpacesList.enumerate(includeFullscreen: true).map { $0.0 }
+        spaces.forEach { _ = forSpace(uuid: $0.uuid) }
+        active = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) }
+    }
 
     static var activeMembers: Set<String>? {
         guard isEnabled, let project = active else { return nil }

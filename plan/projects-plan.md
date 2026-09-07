@@ -2,7 +2,7 @@
 
 **Objective:** Add **Projects** to AltTab: isolated collections of windows that Alt-Tab cycles within, so unrelated work stays apart. The existing Spaces switcher stays as it is — it moves between macOS Desktops, and people need that. Projects are a separate, **opt-in** feature (a single `projectsEnabled` preference, off by default) with their own shortcut and panel, in a new `src/projects/` folder. Every macOS Space gets an automatic Project record, so the first app opened on a Desktop gives it a sticky name; a user can also create *custom* Projects that gather windows from any Space. While a custom Project is active, Alt-Tab lists only its members, and windows opened during that time join it. Both panels' tiles grow a thumbnail, and a user can choose any window as the icon of a Project or a Desktop, optionally pinning that picture permanently. The work is meant to become an upstream PR, so it touches upstream code in as few, small, listed places as possible: `WindowFilterResolver.shouldShow()` is a pure predicate that takes one more defaulted parameter, and everything else lives in new folders or in the Spaces-switcher files this fork already owns.
 
-**Status:** 0 of 9 milestones complete
+**Status:** 1 of 9 milestones complete
 
 ## Working agreement
 
@@ -46,7 +46,7 @@ The complete list of upstream files this plan may edit, and how. Anything not he
 |---|---|---|
 | [src/switcher/state/WindowFilterResolver.swift](src/switcher/state/WindowFilterResolver.swift) | one defaulted parameter `activeProjectMembers: Set<String>? = nil` and one clause | 1.4 |
 | [src/switcher/state/Windows.swift](src/switcher/state/Windows.swift) | pass that argument at line 154; one call in `appendWindow()`; one call in `removeWindows()` | 1.5, 2.5, 4.4, 8.3 |
-| [src/preferences/Preferences.swift](src/preferences/Preferences.swift) | generalise the `key == "exceptions"` JSON branch in `set()`; extend `spacesShortcutKeys` (already this fork's line) | 2.1, 3.5 |
+| [src/preferences/Preferences.swift](src/preferences/Preferences.swift) | merge `projectsDefaultValues` immediately after the Spaces defaults; generalise the `key == "exceptions"` JSON branch in `set()`; extend `spacesShortcutKeys` (already this fork's line) | 1.6, 2.1, 3.5 |
 | [src/Menubar.swift](src/Menubar.swift) | one "Projects" submenu block in `initialize()` and one refresh call in `menuWillOpen` | 2.7, 6.5 |
 | [src/switcher/ATShortcut.swift](src/switcher/ATShortcut.swift), [src/switcher/ShortcutAction.swift](src/switcher/ShortcutAction.swift), [src/preferences/settings-window/tabs/controls/ControlsTab.swift](src/preferences/settings-window/tabs/controls/ControlsTab.swift), [src/preferences/settings-window/SettingsSearchIndex.swift](src/preferences/settings-window/SettingsSearchIndex.swift), [src/events/KeyboardEventsTestable.swift](src/events/KeyboardEventsTestable.swift), [src/_test-support/Mocks.swift](src/_test-support/Mocks.swift), [src/App.swift](src/App.swift) | **only the lines the Spaces commit already touches**: generalise each `SpacesSwitcher` special case into a list lookup, add the Projects sheet next to the Spaces sheet, add startup calls next to the Spaces ones | 3.2, 3.5 |
 | [alt-tab-macos.xcodeproj/project.pbxproj](alt-tab-macos.xcodeproj/project.pbxproj) | register new files | many |
@@ -93,7 +93,7 @@ No precedent in the codebase; grep for `applicationSupportDirectory` first and f
 
 ### What must not change
 
-- **The Spaces switcher keeps its behaviour, shortcuts, preference keys, sheet and strings.** Edits under [src/spaces/](src/spaces/) are limited to: reading the Space uuid (1.1), moving grid/tile rendering into a shared panel (3.1), richer tile content (5.3).
+- **The Spaces switcher keeps its behaviour, shortcuts, preference keys, sheet and strings.** Edits under [src/spaces/](src/spaces/) are limited to: reading the Space uuid (1.1), exposing enumeration with a defaulted fullscreen-inclusion flag for registry seeding (1.6), moving grid/tile rendering into a shared panel (3.1), richer tile content (5.3).
 - **With `projectsEnabled` off, the app is indistinguishable from the Spaces commit alone** — no Project shortcuts registered, no filter, no menu items, no registry seeding beyond what Desktop naming/icons need. This is verified in every milestone.
 - **macOS Space topology is not the feature and is never renamed:** [src/switcher/state/Spaces.swift](src/switcher/state/Spaces.swift) (`visibleSpaces`, `currentSpaceId`, `idsAndIndexes`, `refresh()`, `query()`, `applyTopology()`); `CGSSpaceID`; `Window.spaceIds` / `spaceIndexes` / `isOnAllSpaces`; `spacesToShow` / `SpacesToShowPreference` ([src/preferences/MacroPreferences.swift](src/preferences/MacroPreferences.swift) line 166); `WindowFilterResolver`'s `onlyVisibleSpaces` / `onlyNonVisibleSpaces` / `visibleSpaceIds`; `.spaceChangeSettled`.
 
@@ -130,7 +130,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** A Project is a first-class object; every Space has a Desktop Project; `WindowFilterResolver` can narrow the switcher to a custom Project's members; `projectsEnabled` exists and is off. Nothing is visible to the user — correctness is proven by unit tests and the Space uuid probe.
 **Commit:** per task
-**Status:** in progress (5 of 6 tasks complete)
+**Status:** complete
 
 - [x] 1.1 — Read `"uuid"` from each `CGSCopyManagedDisplaySpaces` dictionary in `SpacesList.enumerate()` into a new `SpaceItem.uuid: String`, with a temporary debug log of every Space's uuid. Relaunch, then log out and back in, and confirm each Desktop keeps its uuid. Record the result as a `> Note:` here. If absent, stop and ask — the fallback (`"ManagedSpaceID"`) changes the persistence story. Files: `src/spaces/SpacesList.swift`
 
@@ -148,7 +148,12 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 1.5 — Pass the resolver's result at the line-154 call site, *depends on 1.3 and 1.4*, and add one `Projects.windowsRemoved(_:)` call in `Windows.removeWindows()` that purges ids from every custom Project. Files: `src/switcher/state/Windows.swift`, `src/projects/Projects.swift`
 
 > Note: Debug build passed; the unchanged test target remains at 1,184 passing tests from 1.4. A standalone smoke check of the actual registry and resolver passed desktop identity, disabled creation/filtering, overlapping memberships, removal from both Projects, empty filtering, and deletion. Windows.swift gained only the filter argument and one removal hook.
-- [ ] 1.6 — Add the `projectsEnabled` preference (default `false`) in a new `ProjectsPreferences` extension, and seed the registry at launch from `SpacesList.enumerate()` plus a `Projects`-owned `activeSpaceDidChangeNotification` observer (do not edit `SpacesList.startObservingSpaceChanges()`), so every Space has its Desktop Project and `Projects.active` tracks the current Space. Files: `src/projects/ProjectsPreferences.swift`, `src/projects/Projects.swift`, `src/App.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
+- [x] 1.6 — Add the `projectsEnabled` preference (default `false`) in a new `ProjectsPreferences` extension, and seed the registry at launch from `SpacesList.enumerate()` plus a `Projects`-owned `activeSpaceDidChangeNotification` observer (do not edit `SpacesList.startObservingSpaceChanges()`), so every Space has its Desktop Project and `Projects.active` tracks the current Space. Files: `src/projects/ProjectsPreferences.swift`, `src/projects/Projects.swift`, `src/App.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
+
+> Note: Debug build and all 1,184 tests passed; both protected test files are unchanged. Defaults remain off. The registry seeds from all enumerated Spaces and owns its main-queue Space-change observer. Diff reviewed against the two approved budget additions; no further upstream seams were added. UUID relaunch evidence is recorded in 1.1; logout/login remains explicitly deferred.
+
+> Note: 2026-09-07: the dispatcher approved two narrow budget additions: merge `projectsDefaultValues` beside the existing Spaces defaults in `Preferences.swift`, and expose `SpacesList.enumerate(includeFullscreen: Bool = false)` so only registry seeding includes hidden fullscreen Spaces. Task 1.6 may additionally edit those two files; the Spaces switcher keeps the default enumeration behavior.
+
 
 **Verification:**
 1. `bash ai/build.sh > /tmp/at-build.log 2>&1` then `grep -E "error:|BUILD (SUCCEEDED|FAILED)" /tmp/at-build.log | grep -v iOSSimulator | sort -u` → `** BUILD SUCCEEDED **`, no `error:`.
@@ -317,6 +322,8 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - **Editing any upstream file not in the touch budget.**
 
 ## Decisions
+
+- **2026-09-07: approve only the two task 1.6 integration exceptions** recorded above; keep the remaining touch budget unchanged.
 
 - **2026-09-07: defer task 1.1’s logout/login UUID check and continue Milestones 1–3 after relaunch stability is verified**, approved by the dispatcher.
 
