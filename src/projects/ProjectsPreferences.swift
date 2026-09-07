@@ -1,9 +1,17 @@
 import Foundation
+import ShortcutRecorder
 
 extension Preferences {
     static var projectsEnabled: Bool { UserDefaults.standard.bool(forKey: "projectsEnabled") }
     static var projects: [ProjectEntry] { CachedUserDefaults.json("projects", [ProjectEntry].self) }
-    static var projectsDefaultValues: [String: Any] { ["projectsEnabled": "false", "projects": "[]"] }
+    static var projectsShortcutStyle: ShortcutStylePreference { CachedUserDefaults.macroPref("projectsShortcutStyle", ShortcutStylePreference.allCases) }
+    static var projectsDefaultValues: [String: Any] {
+        ["projectsEnabled": "false", "projects": "[]",
+         ProjectSwitcher.holdShortcutId: defaultShortcut(""),
+         ProjectSwitcher.nextShortcutId: defaultShortcut("⇥"),
+         ProjectSwitcher.previousShortcutId: defaultShortcut("⇧"),
+         "projectsShortcutStyle": ShortcutStylePreference.focusOnRelease.indexAsString]
+    }
 }
 
 struct ProjectEntry: Codable {

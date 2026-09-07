@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D942EE6C91EC9EABAC196472 /* ProjectsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3901B8785EDFDB0F22108C8E /* ProjectsSheet.swift */; };
 		2F629E580F888BF0BF65BD7C /* ProjectsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3184D81303B4B7FB86ABCC9E /* ProjectsPanel.swift */; };
 		0252784946083707BFBF6BD4 /* ProjectSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BC79C62F49CD271374BA85D /* ProjectSwitcher.swift */; };
 		8CEAB3DE253F0BFD5CDAAE8C /* ProjectsOrderResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A17C51F22330F343F4D8F718 /* ProjectsOrderResolverTests.swift */; };
@@ -457,6 +458,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		3901B8785EDFDB0F22108C8E /* ProjectsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsSheet.swift; sourceTree = "<group>"; };
 		3184D81303B4B7FB86ABCC9E /* ProjectsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsPanel.swift; sourceTree = "<group>"; };
 		0BC79C62F49CD271374BA85D /* ProjectSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSwitcher.swift; sourceTree = "<group>"; };
 		68E93046C25BCB7430BB0DAA /* ProjectsOrderResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectsOrderResolverSpecs.md; sourceTree = "<group>"; };
@@ -935,6 +937,7 @@
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
+				3901B8785EDFDB0F22108C8E /* ProjectsSheet.swift */,
 				3184D81303B4B7FB86ABCC9E /* ProjectsPanel.swift */,
 				0BC79C62F49CD271374BA85D /* ProjectSwitcher.swift */,
 				68E93046C25BCB7430BB0DAA /* ProjectsOrderResolverSpecs.md */,
@@ -2279,6 +2282,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D942EE6C91EC9EABAC196472 /* ProjectsSheet.swift in Sources */,
 				2F629E580F888BF0BF65BD7C /* ProjectsPanel.swift in Sources */,
 				0252784946083707BFBF6BD4 /* ProjectSwitcher.swift in Sources */,
 				D434C355DA0D70822C00D53F /* ProjectsOrderResolver.swift in Sources */,

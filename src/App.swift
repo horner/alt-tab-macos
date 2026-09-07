@@ -468,6 +468,7 @@ class App: AppCenterApplication {
         _ = TilesPanel()
         _ = PreviewPanel()
         _ = SpacesPanel()
+        if Projects.isEnabled { _ = ProjectsPanel.shared }
         Spaces.refresh()
         SpacesList.startObservingSpaceChanges()
         Projects.startObservingSpaceChanges()
