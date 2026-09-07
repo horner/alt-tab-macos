@@ -1,0 +1,15 @@
+Sparkle 2.9.1 imports "SUlog.h" but the header is internal/SULog.h. Builds fine on
+case-insensitive APFS; fails to compile on a case-sensitive volume.
+
+--- a/Sources/Sparkle/SPUNoUpdateFoundInfo.m
++++ b/Sources/Sparkle/SPUNoUpdateFoundInfo.m
+@@ -9,7 +9,7 @@
+ #import "SPUNoUpdateFoundInfo.h"
+ #import "SUAppcastItem.h"
+ #import "SUHost.h"
+ #import "SULocalizations.h"
+-#import "SUlog.h"
++#import "SULog.h"
+ 
+ 
+ #include "AppKitPrevention.h"
