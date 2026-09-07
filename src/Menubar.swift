@@ -36,6 +36,7 @@ class Menubar {
         permissionCalloutMenuItems = [permissionCalloutMenuItem, calloutSeparator]
         addMenuItem(NSLocalizedString("Show", comment: "Menubar option"), #selector(App.showUiFromShortcut0), "", "eye", nil, App.self)
         menu.addItem(NSMenuItem.separator())
+        ProjectsMenu.install(in: menu)
         addMenuItem(NSLocalizedString("Settings…", comment: "Menubar option"), #selector(App.showSettingsWindow), ",", "gear", nil, App.self)
         addMenuItem(NSLocalizedString("Check for updates…", comment: "Menubar option"), #selector(App.checkForUpdatesNow), "", "checkmark.arrow.trianglehead.clockwise", nil, App.self)
         addMenuItem(NSLocalizedString("Check permissions…", comment: "Menubar option"), #selector(App.checkPermissions), "", "hand.raised", nil, App.self)
@@ -419,6 +420,7 @@ private final class MenubarMenuDelegate: NSObject, NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         LicenseManager.shared.refreshState()
         Menubar.refreshPermissionCallout()
+        ProjectsMenu.refresh(menu)
     }
 }
 
