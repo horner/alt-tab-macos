@@ -55,6 +55,9 @@
 /* No comment provided by engineer. */
 "Add an app from disk" = "Add an app from disk";
 
+/* Projects submenu */
+"Add this Window to Project" = "Add this Window to Project";
+
 /* No comment provided by engineer. */
 "Additional controls" = "Additional controls";
 
@@ -274,6 +277,9 @@
 /* Menubar option */
 "Debug tools" = "Debug tools";
 
+/* Projects submenu */
+"Delete Project" = "Delete Project";
+
 /* Spaces switcher tile label */
 "Desktop %d" = "Desktop %d";
 
@@ -478,11 +484,17 @@
 /* No comment provided by engineer. */
 "My Account" = "My Account";
 
+/* Desktop menu action */
+"Name this Desktop…" = "Name this Desktop…";
+
 /* No comment provided by engineer. */
 "Never" = "Never";
 
 /* No comment provided by engineer. */
 "Never send crash reports" = "Never send crash reports";
+
+/* Projects menu action */
+"New Project from this Window…" = "New Project from this Window…";
 
 /* No comment provided by engineer. */
 "No response from server." = "No response from server.";
@@ -577,6 +589,12 @@
 /* No comment provided by engineer. */
 "Pro Lifetime license activated for %@" = "Pro Lifetime license activated for %@";
 
+/* Unnamed custom Project */
+"Project %d" = "Project %d";
+
+/* Projects menu */
+"Projects" = "Projects";
+
 /* %@ is AltTab */
 "Quit %@" = "Quit %@";
 
@@ -598,6 +616,9 @@
 /* No comment provided by engineer. */
 "Remember my choice" = "Remember my choice";
 
+/* Projects submenu */
+"Rename Project" = "Rename Project";
+
 /* No comment provided by engineer. */
 "Report a bug" = "Report a bug";
 
@@ -612,6 +633,9 @@
 
 /* No comment provided by engineer. */
 "Restart Now" = "Restart Now";
+
+/* Project name prompt */
+"Save" = "Save";
 
 /* No comment provided by engineer. */
 "Screen including menu bar" = "Screen including menu bar";
