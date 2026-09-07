@@ -21,7 +21,7 @@ extension AuxiliarySwitcher {
 }
 
 enum AuxiliarySwitchers {
-    static let all: [AuxiliarySwitcher.Type] = [SpacesSwitcher.self]
+    static let all: [AuxiliarySwitcher.Type] = [SpacesSwitcher.self, ProjectSwitcher.self]
 
     static func owner(of id: String) -> AuxiliarySwitcher.Type? {
         all.first { $0.owns(id) }
@@ -46,13 +46,13 @@ enum SpacesSwitcher: AuxiliarySwitcher {
             return isActive && Preferences.spacesShortcutStyle == .focusOnRelease
         }
         // never summon on top of the window switcher: both panels would fight for key focus
-        guard !SwitcherSession.isActive else { return false }
+        guard !SwitcherSession.isActive, !ProjectSwitcher.isActive else { return false }
         // stepping backwards only means something once the panel is up; a bare ⇧ must not summon it
         return id != previousShortcutId || isActive
     }
 
     static func showOrCycle() {
-        guard !SwitcherSession.isActive else { return }
+        guard !SwitcherSession.isActive, !ProjectSwitcher.isActive else { return }
         guard !isActive else {
             cycle(1)
             return
