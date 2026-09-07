@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4E3DFF3A5459781DA62232BC /* ProjectNamePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0979BB63E6A39BF14ABF47 /* ProjectNamePrompt.swift */; };
 		6AEBEDA9547721AF3C46DBEC /* ProjectNameResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5371DE2C0F835BAD1AF5335E /* ProjectNameResolverTests.swift */; };
 		43CD1813ADF4B33A8400A61B /* ProjectNameResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */; };
 		CF3DC6A39A6D5D01B0C85B08 /* ProjectNameResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */; };
@@ -449,6 +450,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		EA0979BB63E6A39BF14ABF47 /* ProjectNamePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNamePrompt.swift; sourceTree = "<group>"; };
 		D7B6A0B0A47F44D8EAA5B2FB /* ProjectNameResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectNameResolverSpecs.md; sourceTree = "<group>"; };
 		5371DE2C0F835BAD1AF5335E /* ProjectNameResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNameResolverTests.swift; sourceTree = "<group>"; };
 		AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNameResolver.swift; sourceTree = "<group>"; };
@@ -911,6 +913,7 @@
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
+				EA0979BB63E6A39BF14ABF47 /* ProjectNamePrompt.swift */,
 				D7B6A0B0A47F44D8EAA5B2FB /* ProjectNameResolverSpecs.md */,
 				5371DE2C0F835BAD1AF5335E /* ProjectNameResolverTests.swift */,
 				AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */,
@@ -2245,6 +2248,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4E3DFF3A5459781DA62232BC /* ProjectNamePrompt.swift in Sources */,
 				CF3DC6A39A6D5D01B0C85B08 /* ProjectNameResolver.swift in Sources */,
 				AA8E2AB44ABDE8861E1872C4 /* ProjectsPreferences.swift in Sources */,
 				85ED4BC5ADE1055EE64788B5 /* ProjectMembershipResolver.swift in Sources */,
