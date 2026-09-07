@@ -34,6 +34,18 @@ enum Projects {
     static var active: Project?
     static var isEnabled: Bool { UserDefaults.standard.bool(forKey: "projectsEnabled") }
 
+    static var activeMembers: Set<String>? {
+        guard isEnabled, let project = active else { return nil }
+        return ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: project.isCustom, members: project.members)
+    }
+
+    static func windowsRemoved(_ windows: [Window]) {
+        let ids = Set(windows.map { $0.tracked.id })
+        for project in list where project.isCustom {
+            project.members.subtract(ids)
+        }
+    }
+
     static func forSpace(uuid: String) -> Project {
         let id = "desktop-\(uuid)"
         if let existing = byId[id] { return existing }
