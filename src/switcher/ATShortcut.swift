@@ -42,10 +42,10 @@ class ATShortcut {
 
     private func modifiersMatch(_ modifiers: CarbonModifierFlags) -> Bool {
         let session = SwitcherSession.current
-        // The Spaces switcher has no `SwitcherSession`: its own hold shortcut supplies the modifiers to
-        // strip off the base key, and its own liveness stands in for `sessionActive`.
-        let isSpacesShortcut = SpacesSwitcher.owns(id)
-        let holdShortcutId = isSpacesShortcut ? SpacesSwitcher.holdShortcutId : Preferences.indexToName("holdShortcut", session?.shortcutIndex ?? 0)
+        // Auxiliary switchers have no `SwitcherSession`: their hold shortcut supplies the modifiers to
+        // strip off the base key, and their liveness stands in for `sessionActive`.
+        let auxiliary = AuxiliarySwitchers.owner(of: id)
+        let holdShortcutId = auxiliary?.holdShortcutId ?? Preferences.indexToName("holdShortcut", session?.shortcutIndex ?? 0)
         let holdModifiersCleaned = ControlsTab.shortcuts[holdShortcutId]?.shortcut.carbonModifierFlags.cleaned() ?? 0
         let shortcutModifiersCleaned = shortcut.carbonModifierFlags.cleaned()
         // The match decision (incl. the search-editing gate for modifier-only shortcuts like
@@ -55,18 +55,18 @@ class ATShortcut {
             eventModifiers: modifiers.cleaned(),
             shortcutModifiers: shortcutModifiersCleaned,
             holdModifiers: holdModifiersCleaned,
-            isHoldShortcut: id.hasPrefix("holdShortcut") || id == SpacesSwitcher.holdShortcutId,
-            isNextWindowShortcut: id.hasPrefix("nextWindowShortcut") || id == SpacesSwitcher.nextShortcutId,
-            sessionActive: isSpacesShortcut ? SpacesSwitcher.isActive : session != nil,
+            isHoldShortcut: id.hasPrefix("holdShortcut") || id == auxiliary?.holdShortcutId,
+            isNextWindowShortcut: id.hasPrefix("nextWindowShortcut") || id == auxiliary?.nextShortcutId,
+            sessionActive: auxiliary?.isActive ?? (session != nil),
             isModifierOnly: shortcut.keyCode == .none,
             isSearchEditing: TilesView.isSearchEditing,
             shortcutHasCommandModifier: (shortcutModifiersCleaned & (UInt32(cmdKey) | UInt32(controlKey))) != 0)
     }
 
     func shouldTrigger() -> Bool {
-        // Must come first: the `.global` `.up` arm below requires a `SwitcherSession`, which a Spaces
-        // summon never creates, so a release would otherwise never commit the highlighted Space.
-        if SpacesSwitcher.owns(id) { return SpacesSwitcher.shouldTrigger(id, triggerPhase) }
+        // Must come first: the `.global` `.up` arm below requires a `SwitcherSession`, which an auxiliary
+        // summon never creates, so a release would otherwise never commit its selection.
+        if let auxiliary = AuxiliarySwitchers.owner(of: id) { return auxiliary.shouldTrigger(id, triggerPhase) }
         let session = SwitcherSession.current
         if scope == .global {
             if triggerPhase == .down, session == nil || index == nil || index == session?.shortcutIndex {
