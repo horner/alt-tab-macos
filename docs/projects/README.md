@@ -37,3 +37,9 @@ These captures show actual Debug app UI, with no mock content or image edits.
 The annotated capture below shows the menu before this addition. The updated menu names the active Project and offers **Add this Window to Active Project** and **Add All Visible Windows to Active Project**. Under **Projects**, choose **New Project…** for an empty collection or **New Project from All Visible Windows…** to capture the current Desktop and activate the new Project after saving its name. Covered windows are included; minimized windows, hidden apps, other Desktops, and inactive tabs are excluded. This is a one-time capture; automatic membership remains outside phase 3.
 
 ![User-annotated menu before the phase 3 addition](screenshots/m3-menu-request.png)
+
+**Saved Desktop names in the Spaces switcher**
+
+Tiles now show their Desktop number alongside the saved name. User names take priority over automatic app names; unnamed Desktops retain their original labels. The live capture confirms the saved Desktop 2 name survives relaunch and appears without clipping.
+
+![Spaces switcher showing saved Desktop names](screenshots/m3-named-desktops.jpg)
