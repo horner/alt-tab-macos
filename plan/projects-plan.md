@@ -207,7 +207,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** in progress (5 of 7 tasks complete)
+**Status:** in progress (6 of 7 tasks complete)
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -224,7 +224,9 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.5 — Preferences and registration, *depends on 3.4*: defaults in `ProjectsPreferences` per the Key layout table (hold **unbound**; next ⇥; previous ⇧ bound bare with `.local` scope exactly as Spaces does), `projectsShortcutStyle`; registration in `ControlsTab` **guarded by `Projects.isEnabled`**, placed beside the Spaces block; a `ProjectsSheet` with an "Enable Projects" switch on top, then hold / next / previous / on-release rows and `searchableStrings`; a `showProjectsSettings` selector indexed in `SettingsSearchIndex` beside the Spaces one. Toggling the switch registers or unregisters the shortcuts immediately. Files: `src/projects/ProjectsPreferences.swift`, `src/preferences/settings-window/tabs/controls/ControlsTab.swift`, `src/projects/ProjectsSheet.swift`, `src/preferences/settings-window/SettingsSearchIndex.swift`, `src/preferences/Preferences.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
 > Note: Debug build passed. Live disabled sheet shows only Enable Projects; enabling reveals unbound Hold, Tab next, bare Shift previous, and Focus release. Registration requires both enablement and a bound hold, preventing a naked global Tab. Settings and startup changes remain within existing Spaces seams.
-- [ ] 3.6 — Layout preset and conflict warning in `ProjectsSheet`, *depends on 3.5*: a "Use ⌘ / ⌥ / ⌃ layout" button that, after an `NSAlert` confirmation naming the four keys it will change, writes via `Preferences.setShortcut`: `holdShortcut0` = ⌘, `holdShortcut1` = ⌘, `holdProjectsShortcut` = ⌥, `holdSpacesShortcut` = ⌃ (shortcut 3 and every next/previous key untouched). Below the hold recorder, a red note appears whenever the Project hold equals any window-switcher or Spaces hold, naming the clash, because that registration fails silently with -9878. Files: `src/projects/ProjectsSheet.swift`
+- [x] 3.6 — Layout preset and conflict warning in `ProjectsSheet`, *depends on 3.5*: a "Use ⌘ / ⌥ / ⌃ layout" button that, after an `NSAlert` confirmation naming the four keys it will change, writes via `Preferences.setShortcut`: `holdShortcut0` = ⌘, `holdShortcut1` = ⌘, `holdProjectsShortcut` = ⌥, `holdSpacesShortcut` = ⌃ (shortcut 3 and every next/previous key untouched). Below the hold recorder, a red note appears whenever the Project hold equals any window-switcher or Spaces hold, naming the clash, because that registration fails silently with -9878. Files: `src/projects/ProjectsSheet.swift`
+
+> Note: Debug build passed. Live confirmation lists exactly the four hold changes. Preset applied; next/previous keys stayed unchanged. A deliberate Option hold clash names Window shortcut 2 in a wrapping red note; reapplying the preset removes the note and its row.
 - [ ] 3.7 — Regenerate the source strings. Files: `resources/l10n/Localizable.strings`
 
 **Verification:**
