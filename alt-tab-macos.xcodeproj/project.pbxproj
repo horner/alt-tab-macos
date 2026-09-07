@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D27FAF23969FB3D99AF7FFB7 /* GridPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F58B65C7F4849FFC4576307A /* GridPanel.swift */; };
 		A092D7F2840D4BAFEDD96930 /* ProjectsMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84DD042E86E580656BEB1ACC /* ProjectsMenu.swift */; };
 		4E3DFF3A5459781DA62232BC /* ProjectNamePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0979BB63E6A39BF14ABF47 /* ProjectNamePrompt.swift */; };
 		6AEBEDA9547721AF3C46DBEC /* ProjectNameResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5371DE2C0F835BAD1AF5335E /* ProjectNameResolverTests.swift */; };
@@ -451,6 +452,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F58B65C7F4849FFC4576307A /* GridPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GridPanel.swift; sourceTree = "<group>"; };
 		84DD042E86E580656BEB1ACC /* ProjectsMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsMenu.swift; sourceTree = "<group>"; };
 		EA0979BB63E6A39BF14ABF47 /* ProjectNamePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNamePrompt.swift; sourceTree = "<group>"; };
 		D7B6A0B0A47F44D8EAA5B2FB /* ProjectNameResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectNameResolverSpecs.md; sourceTree = "<group>"; };
@@ -912,6 +914,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		3D9FFBAA0EA25C8300CA1F57 /* grid-panel */ = {
+			isa = PBXGroup;
+			children = (
+				F58B65C7F4849FFC4576307A /* GridPanel.swift */,
+			);
+			path = "grid-panel";
+			sourceTree = "<group>";
+		};
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
@@ -1627,6 +1637,7 @@
 		D04BA6251F309645757C6000 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				3D9FFBAA0EA25C8300CA1F57 /* grid-panel */,
 				34692E3B015FCA62616A9F30 /* projects */,
 				D04BA70746DEEC3D30B43F81 /* main.swift */,
 				CC00000000000000000C0003 /* macos */,
@@ -2251,6 +2262,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D27FAF23969FB3D99AF7FFB7 /* GridPanel.swift in Sources */,
 				A092D7F2840D4BAFEDD96930 /* ProjectsMenu.swift in Sources */,
 				4E3DFF3A5459781DA62232BC /* ProjectNamePrompt.swift in Sources */,
 				CF3DC6A39A6D5D01B0C85B08 /* ProjectNameResolver.swift in Sources */,
