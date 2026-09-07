@@ -5,9 +5,10 @@ class KeyboardEventsTestable {
         var ids = [String: Int]()
         (0..<Preferences.maxShortcutCount).forEach { ids[Preferences.indexToName("nextWindowShortcut", $0)] = $0 }
         (0..<Preferences.maxShortcutCount).forEach { ids[Preferences.indexToName("holdShortcut", $0)] = Preferences.maxShortcutCount + $0 }
-        // the Spaces switcher's two shortcuts take the ids just past the per-shortcut block
-        ids[SpacesSwitcher.holdShortcutId] = Preferences.maxShortcutCount * 2
-        ids[SpacesSwitcher.nextShortcutId] = Preferences.maxShortcutCount * 2 + 1
+        for (index, switcher) in AuxiliarySwitchers.all.enumerated() {
+            ids[switcher.holdShortcutId] = Preferences.maxShortcutCount * 2 + index * 2
+            ids[switcher.nextShortcutId] = Preferences.maxShortcutCount * 2 + index * 2 + 1
+        }
         return ids
     }
 }

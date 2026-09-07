@@ -164,6 +164,11 @@ enum SpacesSwitcher {
     static func shouldTrigger(_ id: String, _ triggerPhase: ShortcutTriggerPhase) -> Bool { false }
 }
 
+enum AuxiliarySwitchers {
+    static let all = [SpacesSwitcher.self]
+    static func owner(of id: String) -> SpacesSwitcher.Type? { all.first { $0.owns(id) } }
+}
+
 class TilesView {
     static var isSearchEditing: Bool {
         get { App.app.tilesPanel.tilesView.isSearchEditing }

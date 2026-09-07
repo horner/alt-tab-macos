@@ -90,7 +90,7 @@ class Preferences {
         staticShortcutKeys + spacesShortcutKeys
             + (0..<maxShortcutCount).flatMap { [indexToName("holdShortcut", $0), indexToName("nextWindowShortcut", $0)] }
     }
-    static let spacesShortcutKeys = [SpacesSwitcher.holdShortcutId, SpacesSwitcher.nextShortcutId, SpacesSwitcher.previousShortcutId]
+    static let spacesShortcutKeys = AuxiliarySwitchers.all.flatMap { $0.shortcutIds }
     static let emptyShortcut = Shortcut(code: .none, modifierFlags: [], characters: nil, charactersIgnoringModifiers: nil)
     private static let shortcutStorageStringField = "string"
     private static let shortcutStorageDataField = "secureData"

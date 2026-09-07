@@ -1,16 +1,43 @@
 import Cocoa
 
+protocol AuxiliarySwitcher {
+    static var holdShortcutId: String { get }
+    static var nextShortcutId: String { get }
+    static var previousShortcutId: String { get }
+    static var label: String { get }
+    static var isActive: Bool { get }
+    static var isEnabled: Bool { get }
+    static func owns(_ id: String) -> Bool
+    static func shouldTrigger(_ id: String, _ triggerPhase: ShortcutTriggerPhase) -> Bool
+    static func showOrCycle()
+    static func cycle(_ step: Int)
+    static func focusSelected()
+}
+
+extension AuxiliarySwitcher {
+    static var isEnabled: Bool { true }
+    static var shortcutIds: [String] { [holdShortcutId, nextShortcutId, previousShortcutId] }
+    static func owns(_ id: String) -> Bool { id == holdShortcutId || id == nextShortcutId || id == previousShortcutId }
+}
+
+enum AuxiliarySwitchers {
+    static let all: [AuxiliarySwitcher.Type] = [SpacesSwitcher.self]
+
+    static func owner(of id: String) -> AuxiliarySwitcher.Type? {
+        all.first { $0.owns(id) }
+    }
+}
+
 /// Alt-tab, but for macOS Spaces: hold a modifier, tap a key to walk the list of Desktops, release to go
 /// there. Deliberately independent of `SwitcherSession` and the window switcher's pipeline — filters,
 /// search, thumbnails and drag & drop have no meaning for a Space — so the two can never be active at
 /// once and this feature stays contained to `src/spaces/`.
-enum SpacesSwitcher {
+enum SpacesSwitcher: AuxiliarySwitcher {
+    static let label = NSLocalizedString("Spaces switcher", comment: "")
     static let holdShortcutId = "holdSpacesShortcut"
     static let nextShortcutId = "nextSpaceShortcut"
     static let previousShortcutId = "previousSpaceShortcut"
     static private(set) var isActive = false
-
-    static func owns(_ id: String) -> Bool { id == holdShortcutId || id == nextShortcutId || id == previousShortcutId }
 
     /// `ATShortcut.shouldTrigger` gates every global `.up` on a live `SwitcherSession`, which a Spaces
     /// summon never creates, so our shortcuts need their own gate.
