@@ -9,14 +9,20 @@ class SpaceItem {
     /// number the system's own "Switch to Desktop N" shortcut takes, which the Ctrl+N fallback relies on.
     let desktopNumber: Int
     let isCurrent: Bool
-    let label: String
+    private let fallbackLabel: String
+    var label: String {
+        guard let project = Projects.byId["desktop-\(uuid)"],
+              let name = ProjectNameResolver.normalized(project.name) ?? ProjectNameResolver.normalized(project.autoName),
+              name != fallbackLabel else { return fallbackLabel }
+        return "\(fallbackLabel) · \(name)"
+    }
 
     init(spaceId: CGSSpaceID, uuid: String, desktopNumber: Int, isCurrent: Bool, label: String) {
         self.spaceId = spaceId
         self.uuid = uuid
         self.desktopNumber = desktopNumber
         self.isCurrent = isCurrent
-        self.label = label
+        fallbackLabel = label
     }
 
     var isFullscreen: Bool { desktopNumber == 0 }
