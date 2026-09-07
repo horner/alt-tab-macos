@@ -31,3 +31,9 @@ M3 settings and panel checks:
 
 
 These captures show actual Debug app UI, with no mock content or image edits.
+
+**Phase 3 menu addition — requested behavior**
+
+The annotated capture below shows the menu before this addition. The updated menu names the active Project and offers **Add this Window to Active Project** and **Add All Visible Windows to Active Project**. Under **Projects**, choose **New Project…** for an empty collection or **New Project from All Visible Windows…** to capture the current Desktop and activate the new Project after saving its name. Covered windows are included; minimized windows, hidden apps, other Desktops, and inactive tabs are excluded. This is a one-time capture; automatic membership remains outside phase 3.
+
+![User-annotated menu before the phase 3 addition](screenshots/m3-menu-request.png)

@@ -207,7 +207,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (7 of 7 tasks); live verification pending
+**Status:** implementation complete (8 of 8 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -242,6 +242,10 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 > Handoff checkpoint: the native UI automation exposes settings and switcher panels but not the status-bar icon. The user has been asked to leave AltTabDebug's Projects submenu open on a normal app window so the Research creation/membership walkthrough can finish. M3 is not claimed fully verified. The Debug app currently has Projects enabled with the tested preset; both release styles are restored to Focus. The preset changes Window shortcut 2 from its original Option hold to Command. Logout/login UUID stability remains deferred by user approval.
 
 > Try it: Settings → Controls → Projects… → Enable Projects flips `projectsEnabled` immediately. Confirm “Use ⌘ / ⌥ / ⌃ layout”; keep On release set to Focus. Hold Option and tap Tab to select Projects, tap Shift while holding Option to step back, and release Option to select. Command-Tab opens windows; Control-Tab opens Spaces when its next key is bound to Tab (already bound in this Debug profile). Use the menu-bar Projects → New Project from this Window… to create Research, then Add this Window to Project on other windows. Across-Space listing also requires the existing window filters to allow all Spaces/screens. M4 auto-capture, activation pinning, and Project Escape cancellation are not implemented.
+
+- [x] 3.8 — User-requested phase 3 addition: show the active custom Project in the root menu; offer direct add-focused/add-all-visible actions; allow empty Project creation and creation from all visible windows on the current Desktop. Successful creation activates the Project; cancellation changes neither membership nor active selection. Visible includes covered windows, excludes hidden/minimized/windowless/phantom/inactive-tab destinations, and ignores existing Project/window-switcher filters. Files: `src/projects/ProjectsMenu.swift`, generated source strings, phase screenshots/captions in `docs/projects/`.
+
+> Note: Debug build and all 1,203 tests pass. Actual ProjectsMenu source passed a native NSMenu fixture smoke check for disabled state, empty creation, active label, focused add, visible-window exclusions, activation on save, cancellation, and stale-window pruning. No protected tests or new upstream files changed. The annotated request is documented as a before-change image; a live menu screenshot remains pending.
 
 ### Milestone 4 — Active-Project lifecycle: pinning and auto-capture
 
