@@ -8,7 +8,7 @@ import Foundation
 /// touches `Spaces.screenSpacesMap` + multi-screen quartz math). Everything else is a pure
 /// expression over the inputs, evaluated inline so `&&` short-circuits exactly like the original.
 enum WindowFilterResolver {
-    /// True iff the window passes every active filter. Mirrors the original predicate term-for-term;
+    /// True iff the window passes every active filter;
     /// `isOnPreferredScreen` is an `@autoclosure` so the (relatively expensive) OS call only fires
     /// when the short-circuit reaches it — phantom / hidden / windowless windows never trigger it.
     static func shouldShow(_ s: WindowState, _ app: ApplicationState,
@@ -25,8 +25,10 @@ enum WindowFilterResolver {
                            frontmostPid: pid_t? = nil,
                            visibleSpaceIds: [UInt64] = [],       // CGSSpaceID === UInt64
                            exceptions: [ExceptionEntry] = [],
+                           activeProjectMembers: Set<String>? = nil,
                            isOnPreferredScreen: @autoclosure () -> Bool) -> Bool {
         !s.isPhantom &&
+            (activeProjectMembers?.contains(s.id) ?? true) &&
             !ExceptionMatcher.hidesWindow(s, app, exceptions: exceptions,
                 activeAppOverride: onlyFrontmostApp && frontmostPid == app.pid) &&
             !(onlyFrontmostApp && !(frontmostPid == app.pid)) &&
