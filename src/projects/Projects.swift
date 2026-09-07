@@ -66,10 +66,35 @@ enum Projects {
         return ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: project.isCustom, members: project.members)
     }
 
+    /// Discovery applies the real Space after appendWindow, in the same main-queue turn.
+    static func windowAdded(_ window: Window) {
+        DispatchQueue.main.async { [weak window] in
+            guard let window, !window.isWindowlessApp, Windows.list.contains(where: { $0 === window }) else { return }
+            for space in spaces where window.spaceIds.contains(space.spaceId) {
+                claimName(window.application.localizedName, for: forSpace(uuid: space.uuid))
+            }
+            if isEnabled, let project = active, project.isCustom {
+                claimName(window.application.localizedName, for: project)
+            }
+        }
+    }
+
+    private static func claimName(_ appName: String?, for project: Project) {
+        project.autoName = ProjectNameResolver.claim(name: project.name, autoName: project.autoName, appName: appName)
+    }
+
     static func windowsRemoved(_ windows: [Window]) {
         let ids = Set(windows.map { $0.tracked.id })
-        for project in list where project.isCustom {
-            project.members.subtract(ids)
+        let spaceIds = Set(windows.filter { !$0.isWindowlessApp }.flatMap { $0.spaceIds })
+        for project in list {
+            if project.isCustom {
+                let hadMember = !project.members.isDisjoint(with: ids)
+                project.members.subtract(ids)
+                if hadMember { project.autoName = ProjectNameResolver.forget(autoName: project.autoName, hasLiveWindows: !project.members.isEmpty) }
+            } else if let space = spaces.first(where: { "desktop-\($0.uuid)" == project.id }), spaceIds.contains(space.spaceId) {
+                let hasLiveWindows = Windows.list.contains { !$0.isWindowlessApp && $0.spaceIds.contains(space.spaceId) }
+                project.autoName = ProjectNameResolver.forget(autoName: project.autoName, hasLiveWindows: hasLiveWindows)
+            }
         }
     }
 

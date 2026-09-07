@@ -706,6 +706,7 @@ class Windows {
     static func appendWindow(_ window: Window) {
         window.lastFocusOrder = list.count
         list.append(window)
+        Projects.windowAdded(window)
         bumpAppWindowSetVersion(window.application.pid)
         if let wid = window.cgWindowId {
             byWindowId[wid] = window
