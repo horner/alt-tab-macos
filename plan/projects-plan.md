@@ -167,7 +167,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** Projects and their names survive a relaunch. A user can always name the current Desktop; when Projects are enabled they can also create a custom Project from the focused window, add the focused window to one, rename and delete — all from the menu bar. Desktops pick up a sticky name from the first app opened on them.
 **Commit:** per task
-**Status:** in progress (6 of 8 tasks complete)
+**Status:** in progress (7 of 8 tasks complete)
 
 - [x] 2.1 — Generalise the JSON branch in `Preferences.set()` so it is not hardcoded to `key == "exceptions"`. Files: `src/preferences/Preferences.swift`
 
@@ -187,7 +187,9 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 2.6 — Build the name prompt as an `NSAlert` with an `NSTextField` accessory view modelled on `UpgradeTab.presentActivationSheet`, prefilled with the current resolved name. Files: `src/projects/ProjectNamePrompt.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
 > Note: Debug build passed. The prompt follows the existing NSAlert/text-field pattern, prefills the resolved name, saves normalized input and maps Escape to Cancel. End-to-end prompt verification follows when the menu entry is connected in 2.7.
-- [ ] 2.7 — Menu bar, *depends on 2.6*: one block in `Menubar.initialize()` adding "Name this Desktop…" (always) and, **only when enabled**, a "Projects" submenu with "New Project from this Window…", "Add this Window to Project ▸", "Rename Project ▸", "Delete Project ▸". One call in `menuWillOpen` delegates to `ProjectsMenu.refresh(_:)`, which lives in the projects folder and owns the dynamic submenus and hidden state. Files: `src/Menubar.swift`, `src/projects/ProjectsMenu.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
+- [x] 2.7 — Menu bar, *depends on 2.6*: one block in `Menubar.initialize()` adding "Name this Desktop…" (always) and, **only when enabled**, a "Projects" submenu with "New Project from this Window…", "Add this Window to Project ▸", "Rename Project ▸", "Delete Project ▸". One call in `menuWillOpen` delegates to `ProjectsMenu.refresh(_:)`, which lives in the projects folder and owns the dynamic submenus and hidden state. Files: `src/Menubar.swift`, `src/projects/ProjectsMenu.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
+
+> Note: Debug build passed. Real NSMenu smoke checks with model/prompt fixtures passed disabled visibility, enabled actions, focused-window membership, dynamic names, deletion and cancelled creation. Live AltTabDebug persisted automatic names for all 13 Desktops. The CUA tool cannot expose the menu-bar icon, so the physical menu/prompt walkthrough remains pending; no extra production test hook was added.
 - [ ] 2.8 — Regenerate the source strings. Files: `resources/l10n/Localizable.strings`
 
 **Verification:**
