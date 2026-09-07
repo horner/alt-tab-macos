@@ -274,6 +274,12 @@
 /* Menubar option */
 "Debug tools" = "Debug tools";
 
+/* Spaces switcher tile label */
+"Desktop %d" = "Desktop %d";
+
+/* No comment provided by engineer. */
+"Desktop order" = "Desktop order";
+
 /* No comment provided by engineer. */
 "Disabled" = "Disabled";
 
@@ -336,6 +342,9 @@
 
 /* No comment provided by engineer. */
 "Free" = "Free";
+
+/* Spaces switcher tile label */
+"Fullscreen" = "Fullscreen";
 
 /* No comment provided by engineer. */
 "Fullscreen/Defullscreen window" = "Fullscreen/Defullscreen window";
@@ -503,6 +512,9 @@
 "On Day 15, Pro features revert to the free version." = "On Day 15, Pro features revert to the free version.";
 
 /* No comment provided by engineer. */
+"On release" = "On release";
+
+/* No comment provided by engineer. */
 "Only on different screen" = "Only on different screen";
 
 /* No comment provided by engineer. */
@@ -513,6 +525,9 @@
 
 /* No comment provided by engineer. */
 "Open Trackpad Settings…" = "Open Trackpad Settings…";
+
+/* No comment provided by engineer. */
+"Order spaces by" = "Order spaces by";
 
 /* No comment provided by engineer. */
 "Order windows by" = "Order windows by";
@@ -575,6 +590,9 @@
 "Recently Focused First" = "Recently Focused First";
 
 /* No comment provided by engineer. */
+"Recently visited first" = "Recently visited first";
+
+/* No comment provided by engineer. */
 "Reliable, fast window switching with high-quality thumbnails" = "Reliable, fast window switching with high-quality thumbnails";
 
 /* No comment provided by engineer. */
@@ -620,7 +638,13 @@
 "Search — find a window by typing" = "Search — find a window by typing";
 
 /* No comment provided by engineer. */
+"Select next space" = "Select next space";
+
+/* No comment provided by engineer. */
 "Select next window" = "Select next window";
+
+/* No comment provided by engineer. */
+"Select previous space" = "Select previous space";
 
 /* No comment provided by engineer. */
 "Select previous window" = "Select previous window";
@@ -683,6 +707,9 @@
 "Show details (for support)" = "Show details (for support)";
 
 /* No comment provided by engineer. */
+"Show fullscreen spaces" = "Show fullscreen spaces";
+
+/* No comment provided by engineer. */
 "Show fullscreen windows" = "Show fullscreen windows";
 
 /* No comment provided by engineer. */
@@ -732,6 +759,12 @@
 
 /* No comment provided by engineer. */
 "Space Order" = "Space Order";
+
+/* No comment provided by engineer. */
+"Spaces switcher" = "Spaces switcher";
+
+/* No comment provided by engineer. */
+"Spaces…" = "Spaces…";
 
 /* No comment provided by engineer. */
 "Start" = "Start";

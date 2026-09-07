@@ -149,6 +149,21 @@ class TilesPanel {
     }
 }
 
+// Stub so `ATShortcut.swift` and `KeyboardEventsTestable.swift` compile in the test target. The real
+// coordinator lives in `src/spaces/` and drags in the panel, `Windows`, `Spaces` and `Preferences`.
+// Only the ids and the two gates are referenced from those two files, and no test drives a Spaces
+// summon, so `isActive` stays false and `shouldTrigger` is never reached.
+enum SpacesSwitcher {
+    static let holdShortcutId = "holdSpacesShortcut"
+    static let nextShortcutId = "nextSpaceShortcut"
+    static let previousShortcutId = "previousSpaceShortcut"
+    static let isActive = false
+
+    static func owns(_ id: String) -> Bool { id == holdShortcutId || id == nextShortcutId || id == previousShortcutId }
+
+    static func shouldTrigger(_ id: String, _ triggerPhase: ShortcutTriggerPhase) -> Bool { false }
+}
+
 class TilesView {
     static var isSearchEditing: Bool {
         get { App.app.tilesPanel.tilesView.isSearchEditing }

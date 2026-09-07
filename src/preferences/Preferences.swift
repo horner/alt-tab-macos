@@ -73,6 +73,7 @@ class Preferences {
             values[indexToName("shortcutStyleOverride", index)] = ShortcutStylePreference.doNothingOnRelease.indexAsString
             values[indexToName("previewFocusedWindowOverride", index)] = "false"
         }
+        values.merge(spacesDefaultValues) { current, _ in current }
         return values
     }()
 
@@ -85,8 +86,10 @@ class Preferences {
         "minDeminWindowShortcut", "toggleFullscreenWindowShortcut", "quitAppShortcut", "hideShowAppShortcut", "searchShortcut",
     ]
     static var allShortcutPreferenceKeys: [String] {
-        staticShortcutKeys + (0..<maxShortcutCount).flatMap { [indexToName("holdShortcut", $0), indexToName("nextWindowShortcut", $0)] }
+        staticShortcutKeys + spacesShortcutKeys
+            + (0..<maxShortcutCount).flatMap { [indexToName("holdShortcut", $0), indexToName("nextWindowShortcut", $0)] }
     }
+    static let spacesShortcutKeys = [SpacesSwitcher.holdShortcutId, SpacesSwitcher.nextShortcutId, SpacesSwitcher.previousShortcutId]
     static let emptyShortcut = Shortcut(code: .none, modifierFlags: [], characters: nil, charactersIgnoringModifiers: nil)
     private static let shortcutStorageStringField = "string"
     private static let shortcutStorageDataField = "secureData"
