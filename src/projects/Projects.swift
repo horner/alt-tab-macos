@@ -13,10 +13,10 @@ final class Project {
     let id: String
     let kind: Kind
     let homeSpaceUuid: String
-    var name: String?
-    var autoName: String?
+    var name: String? { didSet { if name != oldValue { Projects.save() } } }
+    var autoName: String? { didSet { if autoName != oldValue { Projects.save() } } }
     var members = Set<String>()
-    var iconSource = IconSource.mostRecent
+    var iconSource = IconSource.mostRecent { didSet { Projects.save() } }
 
     init(id: String, kind: Kind, homeSpaceUuid: String) {
         self.id = id
@@ -35,9 +35,13 @@ enum Projects {
     static var isEnabled: Bool { Preferences.projectsEnabled }
     static private(set) var spaces = [SpaceItem]()
     private static var spaceObserver: NSObjectProtocol?
+    private static var isLoading = false
+    private static var retainedEntries = [ProjectEntry]()
+    private static var iconFileNames = [String: String]()
 
     static func startObservingSpaceChanges() {
         guard spaceObserver == nil else { return }
+        load()
         refreshSpaces()
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
@@ -49,7 +53,11 @@ enum Projects {
 
     private static func refreshSpaces() {
         spaces = SpacesList.enumerate(includeFullscreen: true).map { $0.0 }
+        let previousCount = list.count
+        isLoading = true
         spaces.forEach { _ = forSpace(uuid: $0.uuid) }
+        isLoading = false
+        if list.count != previousCount { save() }
         active = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) }
     }
 
@@ -81,6 +89,8 @@ enum Projects {
         if active === project { active = nil }
         byId.removeValue(forKey: id)
         list.removeAll { $0.id == id }
+        iconFileNames.removeValue(forKey: id)
+        save()
     }
 
     static func add(windowId: String, to project: Project) {
@@ -93,10 +103,45 @@ enum Projects {
         project.members.remove(windowId)
     }
 
+    private static func load() {
+        isLoading = true
+        defer { isLoading = false }
+        for entry in Preferences.projects {
+            guard byId[entry.id] == nil else { continue }
+            let kind: Project.Kind
+            if entry.kind == "desktop", let uuid = entry.spaceUuid {
+                kind = .desktop(spaceUuid: uuid)
+            } else if entry.kind == "custom", !entry.homeSpaceUuid.isEmpty {
+                kind = .custom
+            } else {
+                retainedEntries.append(entry)
+                continue
+            }
+            let project = Project(id: entry.id, kind: kind, homeSpaceUuid: entry.homeSpaceUuid)
+            project.name = entry.name
+            project.autoName = entry.autoName
+            iconFileNames[project.id] = entry.iconFileName
+            insert(project)
+        }
+    }
+
+    static func save() {
+        guard !isLoading else { return }
+        let entries = list.map { project -> ProjectEntry in
+            let uuid: String?
+            if case .desktop(let spaceUuid) = project.kind { uuid = spaceUuid } else { uuid = nil }
+            return ProjectEntry(id: project.id, kind: project.isCustom ? "custom" : "desktop", spaceUuid: uuid,
+                homeSpaceUuid: project.homeSpaceUuid, name: project.name, autoName: project.autoName,
+                iconFileName: iconFileNames[project.id])
+        }
+        Preferences.set("projects", entries + retainedEntries, false)
+    }
+
     @discardableResult
     private static func insert(_ project: Project) -> Project {
         list.append(project)
         byId[project.id] = project
+        save()
         return project
     }
 }
