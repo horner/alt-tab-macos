@@ -40,6 +40,8 @@ From [AGENTS.md](AGENTS.md):
 
 ### Upstream touch budget
 
+User-approved documentation addition: `docs/projects/` contains phase screenshots and captions only.
+
 The complete list of upstream files this plan may edit, and how. Anything not here is off-limits without asking.
 
 | File | Allowed edit | Task |
@@ -205,7 +207,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** in progress (2 of 7 tasks complete)
+**Status:** in progress (3 of 7 tasks complete)
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -213,7 +215,9 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.2 — Generalise the auxiliary-switcher seams: an `AuxiliarySwitcher` protocol (`owns`, `shouldTrigger`, `holdShortcutId`, `isActive`) and a static list of switchers; replace each `SpacesSwitcher.owns(...)` special case at the seams named in Context with a lookup over that list, **editing only those lines**. `SpacesSwitcher` conforms; behaviour unchanged. Update the `Mocks.swift` stub. Files: `src/switcher/ATShortcut.swift`, `src/switcher/ShortcutAction.swift`, `src/preferences/settings-window/tabs/controls/ControlsTab.swift`, `src/preferences/Preferences.swift`, `src/events/KeyboardEventsTestable.swift`, `src/spaces/SpacesSwitcher.swift`, `src/_test-support/Mocks.swift`
 
 > Note: Debug build and all 1,196 tests passed. Spaces retains its original ids and bare local previous-key binding. The seven-file diff is confined to the existing Spaces shortcut seams and its test stub; protected filter/order tests are unchanged. Per-keystroke ownership checks use direct id comparisons without allocating a key array.
-- [ ] 3.3 — Add `ProjectsOrderResolver` as a pure kernel with its triad: the current Desktop first, then custom Projects most-recently-activated first, never-activated by creation order. Reuse `SpacesOrderResolver.cycle`, `initialSelection` and `gridColumns`. Files: `src/projects/ProjectsOrderResolver.swift`, `src/projects/ProjectsOrderResolverSpecs.md`, `src/projects/ProjectsOrderResolverTests.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
+- [x] 3.3 — Add `ProjectsOrderResolver` as a pure kernel with its triad: the current Desktop first, then custom Projects most-recently-activated first, never-activated by creation order. Reuse `SpacesOrderResolver.cycle`, `initialSelection` and `gridColumns`. Files: `src/projects/ProjectsOrderResolver.swift`, `src/projects/ProjectsOrderResolverSpecs.md`, `src/projects/ProjectsOrderResolverTests.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
+
+> Note: Debug build and all 1,203 tests passed; seven order scenarios match their specs. Protected tests are unchanged. Saved native M2 baseline and M3 shared-grid screenshots in docs/projects under the user-approved documentation scope.
 - [ ] 3.4 — Add `ProjectSwitcher` (ids `holdProjectsShortcut`, `nextProjectShortcut`, `previousProjectShortcut`; `showOrCycle`, `cycle`, `focusSelected`, `hide`) conforming to `AuxiliarySwitcher`, and `ProjectsPanel` on `GridPanel`, *depends on 3.1–3.3*. `shouldTrigger` returns false when disabled. Selecting sets `Projects.active`; a custom Project with members also focuses its most-recently-focused member. Files: `src/projects/ProjectSwitcher.swift`, `src/projects/ProjectsPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 - [ ] 3.5 — Preferences and registration, *depends on 3.4*: defaults in `ProjectsPreferences` per the Key layout table (hold **unbound**; next ⇥; previous ⇧ bound bare with `.local` scope exactly as Spaces does), `projectsShortcutStyle`; registration in `ControlsTab` **guarded by `Projects.isEnabled`**, placed beside the Spaces block; a `ProjectsSheet` with an "Enable Projects" switch on top, then hold / next / previous / on-release rows and `searchableStrings`; a `showProjectsSettings` selector indexed in `SettingsSearchIndex` beside the Spaces one. Toggling the switch registers or unregisters the shortcuts immediately. Files: `src/projects/ProjectsPreferences.swift`, `src/preferences/settings-window/tabs/controls/ControlsTab.swift`, `src/projects/ProjectsSheet.swift`, `src/preferences/settings-window/SettingsSearchIndex.swift`, `src/preferences/Preferences.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 - [ ] 3.6 — Layout preset and conflict warning in `ProjectsSheet`, *depends on 3.5*: a "Use ⌘ / ⌥ / ⌃ layout" button that, after an `NSAlert` confirmation naming the four keys it will change, writes via `Preferences.setShortcut`: `holdShortcut0` = ⌘, `holdShortcut1` = ⌘, `holdProjectsShortcut` = ⌥, `holdSpacesShortcut` = ⌃ (shortcut 3 and every next/previous key untouched). Below the hold recorder, a red note appears whenever the Project hold equals any window-switcher or Spaces hold, naming the clash, because that registration fails silently with -9878. Files: `src/projects/ProjectsSheet.swift`
