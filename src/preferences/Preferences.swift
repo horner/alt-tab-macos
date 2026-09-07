@@ -74,6 +74,7 @@ class Preferences {
             values[indexToName("previewFocusedWindowOverride", index)] = "false"
         }
         values.merge(spacesDefaultValues) { current, _ in current }
+        values.merge(projectsDefaultValues) { current, _ in current }
         return values
     }()
 

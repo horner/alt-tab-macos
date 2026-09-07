@@ -111,7 +111,7 @@ class SpacesList {
     /// Returns each Space paired with its rank in the WindowServer's display-then-Space walk.
     /// `CGSCopyManagedDisplaySpaces`' per-Space `"type"` is 0 for a user Desktop and 4 for a fullscreen
     /// Space; reading it here avoids declaring a `CGSSpaceGetType` private symbol for one call site.
-    private static func enumerate() -> [(SpaceItem, Int)] {
+    static func enumerate(includeFullscreen: Bool = false) -> [(SpaceItem, Int)] {
         let raw = CGSCopyManagedDisplaySpaces(CGS_CONNECTION) as! [NSDictionary]
         let currentSpaceId = Spaces.currentSpaceId
         var result = [(SpaceItem, Int)]()
@@ -125,7 +125,7 @@ class SpacesList {
                 Logger.debug { "Space UUID: id64=\(spaceId) uuid=\(uuid)" }
                 let isFullscreen = (space["type"] as? Int ?? 0) != 0
                 if !isFullscreen { desktopNumber += 1 }
-                guard !isFullscreen || Preferences.showFullscreenSpaces else { continue }
+                guard includeFullscreen || !isFullscreen || Preferences.showFullscreenSpaces else { continue }
                 let item = SpaceItem(
                     spaceId: spaceId,
                     uuid: uuid,

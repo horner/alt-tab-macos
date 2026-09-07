@@ -483,6 +483,7 @@ class App: AppCenterApplication {
         _ = SpacesPanel()
         Spaces.refresh()
         SpacesList.startObservingSpaceChanges()
+        Projects.startObservingSpaceChanges()
         Screens.refresh()
         ScreensEvents.observe()
         SystemAppearanceEvents.observe()
