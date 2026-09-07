@@ -1,17 +1,19 @@
 import Cocoa
 
-/// One row of the Spaces switcher. `spaceId` is the only stable identity across refreshes; everything
-/// else is re-derived on each summon.
+/// One row of the Spaces switcher. `spaceId` identifies a Space in this session; `uuid` identifies
+/// its persistent Desktop record. The remaining fields are re-derived on each summon.
 class SpaceItem {
     let spaceId: CGSSpaceID
+    let uuid: String
     /// 1-based "Desktop N" as macOS numbers user Spaces, or 0 for a fullscreen Space. This is also the
     /// number the system's own "Switch to Desktop N" shortcut takes, which the Ctrl+N fallback relies on.
     let desktopNumber: Int
     let isCurrent: Bool
     let label: String
 
-    init(spaceId: CGSSpaceID, desktopNumber: Int, isCurrent: Bool, label: String) {
+    init(spaceId: CGSSpaceID, uuid: String, desktopNumber: Int, isCurrent: Bool, label: String) {
         self.spaceId = spaceId
+        self.uuid = uuid
         self.desktopNumber = desktopNumber
         self.isCurrent = isCurrent
         self.label = label
@@ -119,11 +121,14 @@ class SpacesList {
             for space in display["Spaces"] as! [NSDictionary] {
                 defer { rank += 1 }
                 let spaceId = space["id64"] as! CGSSpaceID
+                let uuid = space["uuid"] as! String
+                Logger.debug { "Space UUID: id64=\(spaceId) uuid=\(uuid)" }
                 let isFullscreen = (space["type"] as? Int ?? 0) != 0
                 if !isFullscreen { desktopNumber += 1 }
                 guard !isFullscreen || Preferences.showFullscreenSpaces else { continue }
                 let item = SpaceItem(
                     spaceId: spaceId,
+                    uuid: uuid,
                     desktopNumber: isFullscreen ? 0 : desktopNumber,
                     isCurrent: spaceId == currentSpaceId,
                     label: label(spaceId, isFullscreen ? 0 : desktopNumber))
