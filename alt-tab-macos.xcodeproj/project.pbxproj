@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		26C4D4265CCFF5A4F1D70297 /* Projects.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC7D86505C304207EADFAEC /* Projects.swift */; };
 		1C96101BC5817A7F85FA1F8D /* titles_show_running_applications_light@2x.heic in Resources */ = {isa = PBXBuildFile; fileRef = 1C961F57248D4E2377A9038E /* titles_show_running_applications_light@2x.heic */; };
 		1C96108A0CB2565233FE100B /* TableGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C961FB3DCF4906FEEF4A23D /* TableGroupView.swift */; };
 		1C9610F8AF7AD8CA53B62913 /* titles_hide_status_icons_light@2x.heic in Resources */ = {isa = PBXBuildFile; fileRef = 1C961E64CF8FB6E3FDAA3DAA /* titles_hide_status_icons_light@2x.heic */; };
@@ -441,6 +442,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		DCC7D86505C304207EADFAEC /* Projects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Projects.swift; sourceTree = "<group>"; };
 		02540420CE27E6C973652426 /* menubar-0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "menubar-0.pdf"; sourceTree = "<group>"; };
 		126D5AA615CEE89F73C22DA7 /* menubar-1.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "menubar-1.pdf"; sourceTree = "<group>"; };
 		1C961003A0D16B9AE3932B3F /* thumbnails_show_colored_circles_light@2x.heic */ = {isa = PBXFileReference; lastKnownFileType = image.heic; path = "thumbnails_show_colored_circles_light@2x.heic"; sourceTree = "<group>"; };
@@ -892,6 +894,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		34692E3B015FCA62616A9F30 /* projects */ = {
+			isa = PBXGroup;
+			children = (
+				DCC7D86505C304207EADFAEC /* Projects.swift */,
+			);
+			path = "projects";
+			sourceTree = "<group>";
+		};
 		1C961658C754FEAB9B5F562B /* illustrations */ = {
 			isa = PBXGroup;
 			children = (
@@ -1590,6 +1600,7 @@
 		D04BA6251F309645757C6000 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				34692E3B015FCA62616A9F30 /* projects */,
 				D04BA70746DEEC3D30B43F81 /* main.swift */,
 				CC00000000000000000C0003 /* macos */,
 				D04BA2CBF267F267225CA671 /* kit */,
@@ -2209,6 +2220,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				26C4D4265CCFF5A4F1D70297 /* Projects.swift in Sources */,
 				0000CC00000000000000000F /* SpacesSwitcher.swift in Sources */,
 				0000CC000000000000000011 /* SpacesList.swift in Sources */,
 				0000CC000000000000000013 /* SpacesOrderResolver.swift in Sources */,
