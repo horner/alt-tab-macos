@@ -30,6 +30,7 @@ class ControlsTab {
     static var shortcutsWhenActiveSheet: ShortcutsWhenActiveSheet!
     static var additionalControlsSheet: AdditionalControlsSheet!
     static var spacesSheet: SpacesSheet!
+    static var projectsSheet: ProjectsSheet!
 
     /// Map from a tab-segment `NSSegmentedControl` (Filtering / Appearance / Ordering) to the
     /// per-segment list of searchable strings. Consulted by
@@ -127,7 +128,8 @@ class ControlsTab {
         let additionalControlsButton = NSButton(title: NSLocalizedString("Additional controls…", comment: ""), target: self, action: #selector(showAdditionalControlsSettings))
         let shortcutsButton = NSButton(title: NSLocalizedString("Shortcuts when active…", comment: ""), target: self, action: #selector(showShortcutsSettings))
         let spacesButton = NSButton(title: NSLocalizedString("Spaces…", comment: ""), target: self, action: #selector(showSpacesSettings))
-        let tools = StackView([additionalControlsButton, shortcutsButton, spacesButton], .horizontal)
+        let projectsButton = NSButton(title: NSLocalizedString("Projects…", comment: ""), target: self, action: #selector(showProjectsSettings))
+        let tools = StackView([additionalControlsButton, shortcutsButton, spacesButton, projectsButton], .horizontal)
         let view = TableGroupSetView(originalViews: [shortcutsView], toolsViews: [tools], padding: 0, bottomPadding: 0, othersAlignment: .leading, toolsAlignment: .trailing)
 
         // Sheets are built lazily on first show. Pre-build search visibility is provided by
@@ -162,6 +164,7 @@ class ControlsTab {
         shortcutsWhenActiveSheet = nil
         additionalControlsSheet = nil
         spacesSheet = nil
+        projectsSheet = nil
         arrowKeysCheckbox = nil
         vimKeysCheckbox = nil
         shortcutControls.removeAll()
@@ -184,7 +187,7 @@ class ControlsTab {
 
     static func preferenceChanged(_ key: String) {
         switch key {
-        case let k where Preferences.spacesShortcutKeys.contains(k):
+        case let k where k == "projectsEnabled" || Preferences.spacesShortcutKeys.contains(k):
             applyAuxiliaryShortcutPreferences()
         case "shortcutCount":
             applyActiveShortcutPreferences()
@@ -781,6 +784,11 @@ class ControlsTab {
     @objc static func showSpacesSettings() {
         if spacesSheet == nil { spacesSheet = SpacesSheet() }
         SettingsWindow.shared.beginSheetWithSearchHighlight(spacesSheet)
+    }
+
+    @objc static func showProjectsSettings() {
+        if projectsSheet == nil { projectsSheet = ProjectsSheet() }
+        SettingsWindow.shared.beginSheetWithSearchHighlight(projectsSheet)
     }
 
     private static func applyAuxiliaryShortcutPreferences() {

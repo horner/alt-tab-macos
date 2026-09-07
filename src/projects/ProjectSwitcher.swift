@@ -14,7 +14,7 @@ enum ProjectSwitcher: AuxiliarySwitcher {
     static func shouldTrigger(_ id: String, _ triggerPhase: ShortcutTriggerPhase) -> Bool {
         guard isEnabled else { return false }
         guard triggerPhase == .down else {
-            return isActive && (UserDefaults.standard.string(forKey: "projectsShortcutStyle") ?? ShortcutStylePreference.focusOnRelease.indexAsString) == ShortcutStylePreference.focusOnRelease.indexAsString
+            return isActive && Preferences.projectsShortcutStyle == .focusOnRelease
         }
         guard !SwitcherSession.isActive, !SpacesSwitcher.isActive else { return false }
         return id != previousShortcutId || isActive
