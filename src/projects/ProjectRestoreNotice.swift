@@ -1,13 +1,15 @@
 import Cocoa
 
 enum ProjectRestoreNotice {
-    private static var pending = [String: (String, Bool)]()
+    private typealias Assignment = (windowName: String, projectName: String, differentDesktop: Bool)
+    private static var pending = [String: Assignment]()
+    private static var queued = [Assignment]()
     private static var showWork: DispatchWorkItem?
     private static var hideWork: DispatchWorkItem?
     private static var panel: NSPanel?
 
-    static func record(windowId: String, projectName: String, differentDesktop: Bool) {
-        pending[windowId] = (projectName, differentDesktop)
+    static func record(windowId: String, windowName: String, projectName: String, differentDesktop: Bool) {
+        pending[windowId + "\u{0}" + projectName] = (windowName, projectName, differentDesktop)
         guard showWork == nil else { return }
         let work = DispatchWorkItem { flush() }
         showWork = work
@@ -17,17 +19,21 @@ enum ProjectRestoreNotice {
     private static func flush() {
         showWork = nil
         guard !pending.isEmpty, Projects.isEnabled else { pending.removeAll(); return }
-        let assignments = pending
+        let assignments = pending.values.sorted { ($0.projectName, $0.windowName) < ($1.projectName, $1.windowName) }
         pending.removeAll()
-        let grouped = Dictionary(grouping: assignments.values, by: { $0.0 })
-        let summary = grouped.keys.sorted().map { "\($0) (\(grouped[$0]!.count))" }.joined(separator: ", ")
-        let different = assignments.values.filter { $0.1 }.count
-        let detail = different > 0 ? String(format: NSLocalizedString("%d restored on a different Desktop", comment: "Project restoration notice"), different) : ""
-        show(summary, detail: detail)
-        Logger.debug { "projects restoration notice windows=\(assignments.count) projects=\(summary) differentDesktop=\(different)" }
+        queued.append(contentsOf: assignments)
+        if hideWork == nil { showNext() }
+        Logger.debug { "projects restoration notice assignments=\(assignments.count) differentDesktop=\(assignments.filter { $0.differentDesktop }.count)" }
     }
 
-    private static func show(_ summary: String, detail: String) {
+    private static func showNext() {
+        guard !queued.isEmpty, Projects.isEnabled else { queued.removeAll(); return }
+        let assignments = Array(queued.prefix(5))
+        queued.removeFirst(assignments.count)
+        show(assignments)
+    }
+
+    private static func show(_ assignments: [Assignment]) {
         guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
         hideWork?.cancel()
         let window = panel ?? NSPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -39,7 +45,7 @@ enum ProjectRestoreNotice {
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = true
-        let height: CGFloat = detail.isEmpty ? 84 : 106
+        let height = CGFloat(52 + assignments.count * 48)
         let view = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: 380, height: height))
         view.material = .hudWindow
         view.state = .active
@@ -47,12 +53,22 @@ enum ProjectRestoreNotice {
         view.layer?.cornerRadius = 12
         view.layer?.masksToBounds = true
         addLabel(NSLocalizedString("Restored Project assignments", comment: "Project restoration notice"), y: height - 32, bold: true, in: view)
-        addLabel(summary, y: height - 56, bold: false, in: view)
-        if !detail.isEmpty { addLabel(detail, y: 14, bold: false, in: view) }
+        for (index, assignment) in assignments.enumerated() {
+            let y = height - 58 - CGFloat(index * 48)
+            addLabel(assignment.windowName, y: y, bold: false, in: view)
+            let destination = assignment.differentDesktop
+                ? String(format: NSLocalizedString("→ %@ (different Desktop)", comment: "Restored window destination Project"), assignment.projectName)
+                : "→ \(assignment.projectName)"
+            addLabel(destination, y: y - 20, bold: false, in: view)
+        }
         window.contentView = view
         window.setFrame(NSRect(x: screen.visibleFrame.maxX - 400, y: screen.visibleFrame.maxY - height - 20, width: 380, height: height), display: true)
         window.orderFrontRegardless()
-        let work = DispatchWorkItem { window.orderOut(nil) }
+        let work = DispatchWorkItem {
+            window.orderOut(nil)
+            hideWork = nil
+            DispatchQueue.main.async { showNext() }
+        }
         hideWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 6, execute: work)
     }

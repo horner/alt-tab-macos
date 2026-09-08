@@ -167,7 +167,7 @@ enum Projects {
                         if isEnabled, inserted, !project.memberIdentities.contains(identity), let candidate {
                             let origins = Set(project.memberPatterns.filter { ProjectReattachResolver.matchesObservation($0, candidate) }.compactMap { $0.spaceUuid })
                             let elsewhere = candidate.spaceUuid.map { !origins.isEmpty && !origins.contains($0) } ?? false
-                            ProjectRestoreNotice.record(windowId: identity.windowId, projectName: project.resolvedName, differentDesktop: elsewhere)
+                            ProjectRestoreNotice.record(windowId: identity.windowId, windowName: ProjectNameResolver.normalized(window.title) ?? window.application.localizedName ?? candidate.bundleIdentifier, projectName: project.resolvedName, differentDesktop: elsewhere)
                         }
                         Logger.debug { "projects restored project=\(project.id) window=\(identity.windowId) pid=\(identity.pid)" }
                     }
