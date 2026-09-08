@@ -75,6 +75,8 @@ class CursorEvents {
     private static func handleLeftMouseDown(_ cgEvent: CGEvent) -> Unmanaged<CGEvent>? {
         sawLeftMouseDown = true // this gesture's down is ours; its up is a click, not a foreign drop
         if TilesView.hasMarkedText() || ContextMenuEvents.isMenuOpen { return Unmanaged.passUnretained(cgEvent) }
+        if ProjectContextHeader.handleMouseButton(down: true, at: cgEvent.location) { return nil }
+        if ProjectContextHeader.isPointerInsidePopover(at: cgEvent.location) { return Unmanaged.passUnretained(cgEvent) }
         if isPointerInsideSearchField() {
             mouseDownInsideSearchField = true
             return Unmanaged.passUnretained(cgEvent)
@@ -96,6 +98,8 @@ class CursorEvents {
             return Unmanaged.passUnretained(cgEvent)
         }
         if TilesView.hasMarkedText() || ContextMenuEvents.isMenuOpen { return Unmanaged.passUnretained(cgEvent) }
+        if ProjectContextHeader.handleMouseButton(down: false, at: cgEvent.location) { return nil }
+        if ProjectContextHeader.isPointerInsidePopover(at: cgEvent.location) { return Unmanaged.passUnretained(cgEvent) }
         if mouseDownInsideSearchField || isPointerInsideSearchField() {
             mouseDownInsideSearchField = false
             return Unmanaged.passUnretained(cgEvent)

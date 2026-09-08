@@ -106,8 +106,12 @@ An explicit move also prevents linked-Desktop capture from adding that window ba
 
 **Switch Projects inside the window switcher**
 
-A compact numbered strip sits beneath the context title. Click a Project or press its digit (0–9) to update the windows in place. **0** returns to normal Desktop filtering; custom Projects follow in creation order. **All Projects** opens a compact, scrollable grid, including Projects beyond 9. Opening the grid keeps the switcher open after releasing the hold key; select a window and press Return to focus it, or Escape to dismiss. While editing search, numbers remain search text.
+A compact numbered strip sits beneath the context title. Click a Project or press its displayed digit (1–9, then 0) to update the windows in place. **1** returns to normal Desktop filtering; custom Projects follow in creation order. **All Projects** opens a compact, scrollable grid, including unnumbered, click-only Projects after the tenth entry. Opening the grid keeps the switcher open after releasing the hold key; select a window and press Return to focus it, or Escape to dismiss. While editing search, numbers remain search text.
 
 ![Compact numbered Project strip in the window switcher](screenshots/m3-project-strip.jpg)
 
 ![All Projects in a centered compact grid](screenshots/m3-project-compact-grid.jpg)
+
+The numbered strip now follows keyboard order **1–9, then 0**. Later entries show only their names. Pointer clicks on the strip and grid use the switcher’s mouse-event routing; pressing on one button and releasing elsewhere cancels the click. Earlier screenshots above show the superseded numbering.
+
+![Corrected 1–9, 0 Project buttons, followed by click-only Projects](screenshots/m3-project-pointer-numbering.jpg)
