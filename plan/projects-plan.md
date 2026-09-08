@@ -209,7 +209,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (15 of 15 tasks); live verification pending
+**Status:** implementation complete (16 of 16 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -276,6 +276,10 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.15 — Harmonize the single-window menu action with bulk add: “Add active window to: {Project}”. Files: `src/projects/ProjectsMenu.swift`, generated strings.
 
 > Note: Single-window action now uses the same destination-name format as bulk add. Debug build passed; source strings regenerated.
+
+- [x] 3.16 — User-requested Desktop name hierarchy: explicit Desktop name is line one; smaller line two is “D:N - window title”. Without an explicit name, the detail is the only line. Keep app icons and bounded title widths. Files: `src/spaces/SpacesList.swift`, `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, generated strings and docs screenshots/captions.
+
+> Note: Debug build and all 1,207 tests passed. Focused label checks and live captures verify explicit-name priority, smaller details, unnamed single-line tiles, and the main window context header. Screenshots embedded in docs/projects/README.md; temporary window-release Hold setting restored to Focus.
 
 ### Milestone 4 — Active-Project lifecycle: pinning and auto-capture
 

@@ -9,30 +9,25 @@ class SpaceItem {
     /// number the system's own "Switch to Desktop N" shortcut takes, which the Ctrl+N fallback relies on.
     let desktopNumber: Int
     let isCurrent: Bool
-    private let fallbackLabel: String
     private(set) weak var previewWindow: Window?
     private(set) var previewIcon: NSImage?
-    var label: String {
-        guard let window = previewWindow else {
-            let project = Projects.byId["desktop-\(uuid)"]
-            return ProjectNameResolver.normalized(project?.name) ?? ProjectNameResolver.normalized(project?.autoName) ?? fallbackLabel
-        }
-        return ProjectNameResolver.normalized(window.title) ?? ProjectNameResolver.normalized(window.application.localizedName) ?? fallbackLabel
-    }
-    var subtitle: String? {
+    private var desktopName: String? { ProjectNameResolver.normalized(Projects.byId["desktop-\(uuid)"]?.name) }
+    var label: String { desktopName ?? windowDetail }
+    var subtitle: String? { desktopName == nil ? nil : windowDetail }
+
+    private var windowDetail: String {
         let desktop = desktopNumber == 0 ? NSLocalizedString("Fullscreen", comment: "Spaces switcher tile label")
-            : String(format: NSLocalizedString("Desktop %d", comment: "Spaces switcher tile label"), desktopNumber)
-        let app = ProjectNameResolver.normalized(previewWindow?.application.localizedName)
-        let name = ProjectNameResolver.normalized(Projects.byId["desktop-\(uuid)"]?.name)
-        return [desktop, app, name == label || name == app ? nil : name].compactMap { $0 }.joined(separator: " · ")
+            : String(format: NSLocalizedString("D:%d", comment: "Compact Desktop number"), desktopNumber)
+        let title = ProjectNameResolver.normalized(previewWindow?.title)
+            ?? ProjectNameResolver.normalized(previewWindow?.application.localizedName)
+        return title.map { "\(desktop) - \($0)" } ?? desktop
     }
 
-    init(spaceId: CGSSpaceID, uuid: String, desktopNumber: Int, isCurrent: Bool, label: String) {
+    init(spaceId: CGSSpaceID, uuid: String, desktopNumber: Int, isCurrent: Bool) {
         self.spaceId = spaceId
         self.uuid = uuid
         self.desktopNumber = desktopNumber
         self.isCurrent = isCurrent
-        fallbackLabel = label
         previewWindow = mostRecentlyFocusedWindow()
         previewIcon = previewWindow?.icon.map { NSImage(cgImage: $0, size: .zero) }
     }
@@ -148,19 +143,11 @@ class SpacesList {
                     spaceId: spaceId,
                     uuid: uuid,
                     desktopNumber: isFullscreen ? 0 : desktopNumber,
-                    isCurrent: spaceId == currentSpaceId,
-                    label: label(spaceId, isFullscreen ? 0 : desktopNumber))
+                    isCurrent: spaceId == currentSpaceId)
                 result.append((item, rank))
             }
         }
         return result
     }
 
-    private static func label(_ spaceId: CGSSpaceID, _ desktopNumber: Int) -> String {
-        guard desktopNumber == 0 else {
-            return String(format: NSLocalizedString("Desktop %d", comment: "Spaces switcher tile label"), desktopNumber)
-        }
-        let appName = Windows.list.first { $0.spaceIds.contains(spaceId) }?.application.localizedName
-        return appName ?? NSLocalizedString("Fullscreen", comment: "Spaces switcher tile label")
-    }
 }

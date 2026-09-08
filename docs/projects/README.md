@@ -57,3 +57,13 @@ The primary line now contains only the window title. The app name appears with D
 **Project menu navigation**
 
 The active/no-active Project row now opens a submenu. It lists the active Project's windows and offers **Other Projects → Project → Activate Project / window**. Choosing a window selects its Project and focuses that window. **Use Desktop (No Project)** returns to normal window filtering. The bulk-add action names its destination: **Add all visible to: Research**. A live screenshot of this menu revision is pending.
+
+**Main switcher context and named Desktop hierarchy**
+
+The main window switcher now shows its Project or Desktop scope above the windows. Here the current Desktop is named “AltTab”.
+
+![Main switcher showing its Desktop context](screenshots/m3-window-context.jpg)
+
+Named Desktop tiles put the explicit name first, with smaller `D:N - window title` below. Unnamed tiles show just `D:N - window title`. Desktop 3 shows the shared `cloud (-zsh)` title.
+
+![Desktop names above compact window details](screenshots/m3-desktop-name-first.jpg)

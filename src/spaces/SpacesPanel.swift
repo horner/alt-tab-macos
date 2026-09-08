@@ -2,6 +2,7 @@ import Cocoa
 import Carbon.HIToolbox.Events
 
 extension SpaceItem: GridTileItem {
+    var maximumTileWidth: CGFloat? { 380 }
     /// The fallback AppKit images are available on every supported macOS version.
     var icon: NSImage? {
         if let previewIcon { return previewIcon }
