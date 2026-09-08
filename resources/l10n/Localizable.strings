@@ -413,12 +413,6 @@
 "Fullscreen/Defullscreen window" = "Fullscreen/Defullscreen window";
 
 /* No comment provided by engineer. */
-"Gather active Project’s windows here" = "Gather active Project’s windows here";
-
-/* No comment provided by engineer. */
-"Gather windows" = "Gather windows";
-
-/* No comment provided by engineer. */
 "General" = "General";
 
 /* No comment provided by engineer. */
@@ -570,9 +564,6 @@
 
 /* Project assignment conflict */
 "Move windows to %@?" = "Move windows to %@?";
-
-/* No comment provided by engineer. */
-"Moved: %d. Already here: %d. Fullscreen skipped: %d. Unconfirmed or failed: %d." = "Moved: %1$d. Already here: %2$d. Fullscreen skipped: %3$d. Unconfirmed or failed: %4$d.";
 
 /* No comment provided by engineer. */
 "Multiple screens" = "Multiple screens";

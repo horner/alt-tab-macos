@@ -4,8 +4,6 @@ final class ProjectsMenu: NSObject {
     private static var desktopItem: NSMenuItem!
     private static var projectsItem: NSMenuItem!
     private static weak var focusedWindow: Window?
-    private static var gatherItem: NSMenuItem!
-    private static var gathering = false
     private static var unassignedItem: NSMenuItem!
     private static var activeItem: NSMenuItem!
     private static var addToProjectItem: NSMenuItem!
@@ -38,9 +36,6 @@ final class ProjectsMenu: NSObject {
         [activeItem!, addFocusedItem!, addVisibleItem!].forEach { $0.isHidden = !Projects.isEnabled; menu.addItem($0) }
         addToProjectItem = addProjects(to: menu, title: NSLocalizedString("Add active window to", comment: "Projects submenu"), action: #selector(addWindow))
         addToProjectItem.isHidden = !Projects.isEnabled
-        gatherItem = item(NSLocalizedString("Gather active Project’s windows here", comment: ""), #selector(gatherWindows))
-        gatherItem.isHidden = !Projects.isEnabled
-        menu.addItem(gatherItem)
         unassignedItem = item(NSLocalizedString("Windows without a Project", comment: ""), nil)
         unassignedItem.isHidden = !Projects.isEnabled
         menu.addItem(unassignedItem)
@@ -56,8 +51,6 @@ final class ProjectsMenu: NSObject {
         desktopUuid = Projects.spaces.first { $0.isCurrent }?.uuid
         visibleWindows = Windows.list.filter { isVisibleOnDesktop($0) }
         refreshActiveItems()
-        gatherItem.isHidden = !Projects.isEnabled
-        gatherItem.isEnabled = !gathering && Projects.active?.isCustom == true && Projects.spaces.contains { $0.isCurrent && $0.desktopNumber > 0 }
         addProjects(to: menu, title: addToProjectItem.title, action: #selector(addWindow), enabled: focusedWindow != nil, parent: addToProjectItem)
         addToProjectItem.isHidden = !Projects.isEnabled
         unassignedItem.isHidden = !Projects.isEnabled
@@ -83,33 +76,6 @@ final class ProjectsMenu: NSObject {
             action: #selector(addWindow), enabled: focusedWindow != nil)
         addProjects(to: submenu, title: NSLocalizedString("Rename Project", comment: "Projects submenu"), action: #selector(renameProject))
         addProjects(to: submenu, title: NSLocalizedString("Delete Project", comment: "Projects submenu"), action: #selector(deleteProject))
-    }
-
-    @objc private static func gatherWindows() {
-        logMenu("gatherWindows", "requested")
-        guard !gathering, Projects.isEnabled, let project = Projects.active, project.isCustom,
-              let destination = Projects.spaces.first(where: { $0.isCurrent && $0.desktopNumber > 0 }) else { return }
-        let windows = Windows.list.filter { !$0.isWindowlessApp && !$0.isPhantom && !$0.isTabbed && project.members.contains($0.tracked.id) }
-        let skipped = windows.filter { $0.isFullscreen }.count
-        let wids = windows.filter { !$0.isFullscreen }.compactMap { $0.cgWindowId }
-        gathering = true
-        // End menu tracking before submitting the move, so the menu dismisses before any window changes.
-        DispatchQueue.main.async {
-            CGSCallScheduler.gatherWindows(wids, to: destination.spaceId) { results in
-                gathering = false
-                Logger.debug { "projects gather project=\(project.id) destination=\(destination.spaceId) results=\(results) skippedFullscreen=\(skipped)" }
-                Applications.manuallyRefreshAllWindows()
-                let moved = results.values.filter { $0 == "moved" }.count
-                let already = results.values.filter { $0 == "already-here" }.count
-                let skipped = skipped + results.values.filter { $0 == "skipped-fullscreen" }.count
-                let failed = results.count - moved - already - results.values.filter { $0 == "skipped-fullscreen" }.count
-                let alert = NSAlert()
-                alert.messageText = NSLocalizedString("Gather windows", comment: "")
-                alert.informativeText = String(format: NSLocalizedString("Moved: %d. Already here: %d. Fullscreen skipped: %d. Unconfirmed or failed: %d.", comment: ""), moved, already, skipped, failed)
-                alert.addButton(withTitle: NSLocalizedString("OK", comment: ""))
-                alert.runModal()
-            }
-        }
     }
 
     private static func logMenu(_ action: String, _ phase: String, _ sender: NSMenuItem? = nil) {

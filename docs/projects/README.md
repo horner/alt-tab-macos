@@ -90,7 +90,6 @@ Newly created windows (for example Chrome **⌘N**) on the current Desktop join 
 
 Use the top-level **Add active window to → Project** menu to assign the focused window directly to any custom Project, including when no Project is active. The current Project selection is preserved.
 
-**Gather active Project’s windows here** moves that Project’s ordinary windows to the current Desktop. Fullscreen windows are skipped; hidden/minimized states are preserved. A result dialog reports moved, already present, skipped and unconfirmed/failed counts; the debug log includes each window ID. This explicit action uses private SkyLight APIs, with the macOS 14.5+ compatibility path documented in [Hammerspoon](https://github.com/Hammerspoon/hammerspoon/blob/master/extensions/spaces/libspaces.m).
 
 In **Settings → Controls → Projects…**, **Show from active Project** defaults to **All Spaces/Screens**. Active Project members then appear across Desktops and displays even if the ordinary Filtering settings say “Visible Spaces.” Choose **Current Space/Screen** to restrict them to the current Desktop and main screen. Other filters (such as hidden/minimized windows) remain in effect. Without an active custom Project, ordinary Filtering settings apply.
 
@@ -135,3 +134,5 @@ Restoration displays a brief, non-activating notice grouped over one second, lis
 Open the active Project’s menu → **History**, or **Other Projects → Project → History**. Each remembered title shows **Open now** or how long ago AltTab last observed it. Open entries can be selected to focus the window; historical entries are read-only, with the full title, app identifier, and timestamp in their tooltip. Duplicate title observations are grouped using their latest timestamp.
 
 History survives app closure and explicit moves/removals. It is separate from restoration rules, so a past entry does not automatically rejoin a Project it was removed from. Older observations without a timestamp show **Last seen unknown**. The initial recovery history uses timestamps from the saved event log where available.
+
+Gather was removed after a controlled cross-process test could not move a test window between Desktops. Project selection, window focusing, history, and assignment restoration remain available.
