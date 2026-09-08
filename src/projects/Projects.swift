@@ -94,10 +94,20 @@ enum Projects {
 
     /// Discovery applies the real Space after appendWindow, in the same main-queue turn.
     static func windowAdded(_ window: Window) {
+        // discoveryLanded consumes the WindowServer creation marker after appendWindow returns.
+        // Capture it now so startup discovery and re-admission never count as a new window.
+        let isNew = window.cgWindowId.map { Windows.recentlyCreatedWindows.contains($0) } ?? false
+        let creationProject = isEnabled && isNew ? active : nil
         DispatchQueue.main.async { [weak window] in
             guard let window, !window.isWindowlessApp, Windows.list.contains(where: { $0 === window }) else { return }
             Logger.debug { "projects discovered window=\(window.tracked.id) spaces=\(window.spaceIds) phantom=\(window.isPhantom) active=\(active?.id ?? "none")" }
             restoreMembership(window)
+            if !window.isPhantom, let project = creationProject, project.isCustom {
+                Logger.debug { "projects auto-add source=window-created project=\(project.id) window=\(window.tracked.id)" }
+                add(windowId: window.tracked.id, to: project)
+            } else {
+                Logger.debug { "projects auto-add skipped window=\(window.tracked.id) new=\(isNew) target=\(creationProject?.id ?? "none") phantom=\(window.isPhantom)" }
+            }
             for space in spaces where window.spaceIds.contains(space.spaceId) {
                 let desktop = forSpace(uuid: space.uuid)
                 claimName(window.application.localizedName, for: desktop)
