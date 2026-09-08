@@ -59,6 +59,12 @@
 "Add a running app" = "Add a running app";
 
 /* No comment provided by engineer. */
+"Add active window to: %@" = "Add active window to: %@";
+
+/* No comment provided by engineer. */
+"Add active window to: No Active Project" = "Add active window to: No Active Project";
+
+/* No comment provided by engineer. */
 "Add all visible to: %@" = "Add all visible to: %@";
 
 /* No comment provided by engineer. */
@@ -66,9 +72,6 @@
 
 /* No comment provided by engineer. */
 "Add an app from disk" = "Add an app from disk";
-
-/* No comment provided by engineer. */
-"Add this Window to Active Project" = "Add this Window to Active Project";
 
 /* Projects submenu */
 "Add this Window to Project" = "Add this Window to Project";
