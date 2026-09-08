@@ -5,6 +5,9 @@
 "%@ — last seen %@" = "%1$@ — last seen %2$@";
 
 /* No comment provided by engineer. */
+"%d selected window(s) already belong to: %@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships." = "%1$d selected window(s) already belong to: %2$@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships.";
+
+/* No comment provided by engineer. */
 "3-finger Horizontal Swipe" = "3-finger Horizontal Swipe";
 
 /* No comment provided by engineer. */
@@ -481,6 +484,9 @@
 /* No comment provided by engineer. */
 "Invalid license key." = "Invalid license key.";
 
+/* Project membership action */
+"Keep in Both" = "Keep in Both";
+
 /* No comment provided by engineer. */
 "Language" = "Language";
 
@@ -535,11 +541,17 @@
 /* No comment provided by engineer. */
 "Miscellaneous" = "Miscellaneous";
 
+/* Project membership action */
+"Move" = "Move";
+
 /* LetsMove replacement alert */
 "Move to Applications Folder" = "Move to Applications Folder";
 
 /* LetsMove replacement alert */
 "Move to Applications folder?" = "Move to Applications folder?";
+
+/* Project assignment conflict */
+"Move windows to %@?" = "Move windows to %@?";
 
 /* No comment provided by engineer. */
 "Moved: %d. Already here: %d. Fullscreen skipped: %d. Unconfirmed or failed: %d." = "Moved: %1$d. Already here: %2$d. Fullscreen skipped: %3$d. Unconfirmed or failed: %4$d.";

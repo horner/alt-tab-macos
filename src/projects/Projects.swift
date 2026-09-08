@@ -17,6 +17,8 @@ final class Project {
     var autoName: String? { didSet { if autoName != oldValue { Projects.save() } } }
     var members = Set<String>()
     var memberIdentities = [ProjectWindowIdentity]()
+    var excludedMembers = [ProjectWindowIdentity]()
+    var excludedWindowIds = Set<String>()
     var linkedProjectId: String?
     var iconSource = IconSource.mostRecent { didSet { Projects.save() } }
 
@@ -104,14 +106,14 @@ enum Projects {
             restoreMembership(window)
             if !window.isPhantom, let project = creationProject, project.isCustom {
                 Logger.debug { "projects auto-add source=window-created project=\(project.id) window=\(window.tracked.id)" }
-                add(windowId: window.tracked.id, to: project)
+                addAutomatically(windowId: window.tracked.id, to: project)
             } else {
                 Logger.debug { "projects auto-add skipped window=\(window.tracked.id) new=\(isNew) target=\(creationProject?.id ?? "none") phantom=\(window.isPhantom)" }
             }
             for space in spaces where window.spaceIds.contains(space.spaceId) {
                 let desktop = forSpace(uuid: space.uuid)
                 claimName(window.application.localizedName, for: desktop)
-                if isEnabled, !window.isPhantom, let project = linkedProject(for: desktop) { add(windowId: window.tracked.id, to: project) }
+                if isEnabled, !window.isPhantom, let project = linkedProject(for: desktop) { addAutomatically(windowId: window.tracked.id, to: project) }
             }
             if isEnabled, let project = active, project.isCustom {
                 claimName(window.application.localizedName, for: project)
@@ -130,6 +132,11 @@ enum Projects {
                 windowIdentities[identity.windowId] = identity
                 var changed = false
                 for project in list where project.isCustom {
+                    if project.excludedMembers.contains(identity) { project.excludedWindowIds.insert(identity.windowId) }
+                    if project.excludedWindowIds.contains(identity.windowId), !project.excludedMembers.contains(identity) {
+                        project.excludedMembers.append(identity)
+                        changed = true
+                    }
                     if project.memberIdentities.contains(identity) {
                         project.members.insert(identity.windowId)
                         Logger.debug { "projects restored project=\(project.id) window=\(identity.windowId) pid=\(identity.pid)" }
@@ -156,6 +163,7 @@ enum Projects {
         var changed = false
         let spaceIds = Set(windows.filter { !$0.isWindowlessApp }.flatMap { $0.spaceIds })
         for project in list {
+            project.excludedWindowIds.subtract(ids)
             if project.isCustom {
                 let removed = project.members.intersection(ids)
                 Logger.debug { "projects tracking removal project=\(project.id) removed=\(removed.sorted()) before=\(project.members.count)" }
@@ -209,7 +217,7 @@ enum Projects {
         guard let space = spaces.first(where: { $0.uuid == desktop.homeSpaceUuid }) else { return }
         var changed = false
         for window in Windows.list where !window.isWindowlessApp && !window.isPhantom && window.spaceIds.contains(space.spaceId) {
-            if insertMember(window.tracked.id, into: project) { changed = true }
+            if !isExcluded(window.tracked.id, from: project), insertMember(window.tracked.id, into: project) { changed = true }
         }
         if changed { save() }
     }
@@ -227,7 +235,34 @@ enum Projects {
 
     static func add(windowId: String, to project: Project) {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
+        let wasExcluded = project.excludedWindowIds.remove(windowId) != nil || project.excludedMembers.contains { $0.windowId == windowId }
+        project.excludedMembers.removeAll { $0.windowId == windowId }
+        let inserted = insertMember(windowId, into: project)
+        if inserted || wasExcluded { save() }
+    }
+
+    private static func isExcluded(_ windowId: String, from project: Project) -> Bool {
+        if project.excludedWindowIds.contains(windowId) { return true }
+        if let identity = windowIdentities[windowId] { return project.excludedMembers.contains(identity) }
+        // Defer auto-capture until launch-time identity validation can distinguish a reused window ID.
+        return project.excludedMembers.contains { $0.windowId == windowId }
+    }
+
+    private static func addAutomatically(windowId: String, to project: Project) {
+        guard isEnabled, project.isCustom, byId[project.id] === project, !isExcluded(windowId, from: project) else { return }
         if insertMember(windowId, into: project) { save() }
+    }
+
+    static func assign(_ windowIds: Set<String>, to project: Project, move: Bool) {
+        guard isEnabled, project.isCustom, byId[project.id] === project else { return }
+        let liveIds = Set(Windows.list.filter { !$0.isWindowlessApp }.map { $0.tracked.id }).intersection(windowIds)
+        if move {
+            for source in list where source.isCustom && source !== project {
+                for id in source.members.intersection(liveIds) { remove(windowId: id, from: source) }
+            }
+        }
+        for id in liveIds { add(windowId: id, to: project) }
+        Logger.debug { "projects assignment target=\(project.id) move=\(move) windows=\(liveIds.sorted())" }
     }
 
     private static func insertMember(_ windowId: String, into project: Project) -> Bool {
@@ -240,6 +275,8 @@ enum Projects {
     static func remove(windowId: String, from project: Project) {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
         Logger.debug { "projects explicit remove project=\(project.id) window=\(windowId) wasMember=\(project.members.contains(windowId))" }
+        project.excludedWindowIds.insert(windowId)
+        if let identity = windowIdentities[windowId], !project.excludedMembers.contains(identity) { project.excludedMembers.append(identity) }
         project.members.remove(windowId)
         project.memberIdentities.removeAll { $0.windowId == windowId }
         save()
@@ -261,6 +298,7 @@ enum Projects {
             }
             let project = Project(id: entry.id, kind: kind, homeSpaceUuid: entry.homeSpaceUuid)
             project.memberIdentities = entry.members
+            project.excludedMembers = entry.excludedMembers
             project.linkedProjectId = entry.linkedProjectId
             project.name = entry.name
             project.autoName = entry.autoName
@@ -276,7 +314,7 @@ enum Projects {
             if case .desktop(let spaceUuid) = project.kind { uuid = spaceUuid } else { uuid = nil }
             return ProjectEntry(id: project.id, kind: project.isCustom ? "custom" : "desktop", spaceUuid: uuid,
                 homeSpaceUuid: project.homeSpaceUuid, name: project.name, autoName: project.autoName,
-                iconFileName: iconFileNames[project.id], members: project.memberIdentities, linkedProjectId: project.linkedProjectId)
+                iconFileName: iconFileNames[project.id], members: project.memberIdentities, linkedProjectId: project.linkedProjectId, excludedMembers: project.excludedMembers)
         }
         Preferences.set("projects", entries + retainedEntries, false)
     }

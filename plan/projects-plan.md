@@ -213,7 +213,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (24 of 24 tasks); live verification pending
+**Status:** implementation complete (25 of 25 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -293,6 +293,8 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.22 — User-requested top-level “Add active window to” submenu lists custom Projects and uses the existing logged single-window membership action. Available without an active Project; disabled without a focused window or any custom Projects. Files: `src/projects/ProjectsMenu.swift`, generated strings, docs and plan.
 - [x] 3.23 — Explicit user-approved gather action moves the active custom Project’s ordinary windows onto the current Desktop, skips fullscreen windows, verifies resulting membership and reports counts plus per-window debug outcomes. A serialized scheduler lane prevents overlapping compatibility-ID mutations. Files: `ProjectsMenu.swift`, the two approved upstream files, generated strings, docs and plan. Validation: Debug build and 1,207 tests pass; production scheduler source fixture covers confirmed move, already-here, fullscreen, missing-window, failed-move and compatibility-ID cleanup; menu fixture checks custom-Project gating. Actual cross-Desktop movement remains pending live verification.
 - [x] 3.24 — Active-Project location filtering defaults to All Spaces/Screens, overriding ordinary Space/screen settings. Optional Current Space/Screen mode uses the current Space and main screen. Other window filters and normal Desktop filtering remain intact. Files: new `ProjectScopeResolver` triad, Projects preferences/sheet, approved `Windows.swift` hook, registration, strings, docs and plan. Validation: Debug build and 1,212 tests pass; live dropdown persistence verified for both choices and restored to All; inline screenshot saved. Existing WindowFilterResolver implementation/tests unchanged.
+- [x] 3.25 — User-requested conflict confirmation for single-window and all-visible add actions: Move is the default, Keep in Both explicitly shares, Cancel changes no memberships. One batch prompt lists conflicting Projects. Explicit moves suppress automatic re-add to source Projects via persisted process-qualified exclusions; explicit adds clear exclusions. Files: `src/projects/`, project registration, generated strings, docs and plan. Validation: production-source fixtures cover move, copy, cancel, no-conflict bypass, stale windows and linked recapture across process restarts; native prompt inspected with sample data. Debug build and 1,212 tests pass; rebuilt app restarted with event logging.
+
 
 
 

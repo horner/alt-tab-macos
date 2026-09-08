@@ -95,3 +95,11 @@ Use the top-level **Add active window to → Project** menu to assign the focuse
 In **Settings → Controls → Projects…**, **Show from active Project** defaults to **All Spaces/Screens**. Active Project members then appear across Desktops and displays even if the ordinary Filtering settings say “Visible Spaces.” Choose **Current Space/Screen** to restrict them to the current Desktop and main screen. Other filters (such as hidden/minimized windows) remain in effect. Without an active custom Project, ordinary Filtering settings apply.
 
 ![Project location scope set to All Spaces/Screens in the rebuilt app](screenshots/m3-project-location-scope.jpg)
+
+**Adding windows already in another Project**
+
+The single-window and **Add all visible** actions ask once when any selected window already belongs to another Project. **Move** is the default (Return): it removes the selected windows from their other Projects and adds them to the destination. **Keep in Both** explicitly retains the old memberships. **Cancel** (Escape) changes nothing, including unassigned windows in a mixed batch. No prompt appears without conflicting memberships.
+
+An explicit move also prevents linked-Desktop capture from adding that window back to its source Project, including after an AltTab restart. Explicitly adding it back clears that exclusion. The dialog below uses production UI with isolated sample membership data.
+
+![Project membership conflict with Move as the default action](screenshots/m3-project-membership-conflict.jpg)

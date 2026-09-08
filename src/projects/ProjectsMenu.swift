@@ -349,9 +349,9 @@ final class ProjectsMenu: NSObject {
         logMenu("addVisibleWindows", "requested", sender)
         defer { logMenu("addVisibleWindows", "finished", sender) }
         guard Projects.isEnabled, let id = sender.representedObject as? String, let project = Projects.byId[id] else { return }
-        for window in visibleWindows where Windows.list.contains(where: { $0 === window }) && isVisibleOnDesktop(window) {
-            Projects.add(windowId: window.tracked.id, to: project)
-        }
+        ProjectAssignmentPrompt.add(visibleWindows.filter { window in
+            Windows.list.contains(where: { $0 === window }) && isVisibleOnDesktop(window)
+        }, to: project)
     }
 
     @objc private static func addWindow(_ sender: NSMenuItem) {
@@ -359,7 +359,7 @@ final class ProjectsMenu: NSObject {
         defer { logMenu("addWindow", "finished", sender) }
         guard Projects.isEnabled, let window = focusedWindow, Windows.list.contains(where: { $0 === window }),
               let id = sender.representedObject as? String, let project = Projects.byId[id] else { return }
-        Projects.add(windowId: window.tracked.id, to: project)
+        ProjectAssignmentPrompt.add([window], to: project)
     }
 
     @objc private static func renameProject(_ sender: NSMenuItem) {
