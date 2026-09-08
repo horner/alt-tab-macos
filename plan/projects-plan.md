@@ -207,7 +207,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (9 of 9 tasks); live verification pending
+**Status:** implementation complete (10 of 10 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -250,6 +250,10 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.9 — User-requested phase 3 fix: display the saved Desktop name in Spaces tiles beside the original Desktop number, using the persistent UUID record. User names take priority over automatic names; unnamed Spaces retain their existing label. This label-only addition works with Projects disabled and does not start M4 or the remaining M5 tile work. File: `src/spaces/SpacesList.swift`.
 
 > Note: Debug build passed. Focused checks cover unnamed fallback, automatic name, explicit-name priority, renaming, stable UUID with changed session ID, clearing, and duplicate-label suppression. Live Spaces panel shows the saved Desktop 2 name after relaunch; screenshot is embedded in docs/projects/README.md. No protected tests or upstream files changed.
+
+- [x] 3.10 — User-requested phase 3 layout: Spaces tiles show the most recently focused eligible window's app and title on line one with its app icon; smaller line two shows Desktop N and an explicit Desktop name when distinct. Empty Desktops retain a name/fallback and desktop icon. Bound long titles and expose full text in tooltip/accessibility. Files: `src/spaces/SpacesList.swift`, `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, docs screenshots/captions. M4 remains untouched.
+
+> Note: Debug build and all 1,203 tests pass; protected tests are unchanged. Focused source checks cover app/title composition, duplicate/missing names, MRU eligibility, empty Desktops, and saved-name subtitles. Live screenshot confirms app icons, title-first layout, smaller Desktop labels, and bounded long titles; embedded in docs/projects/README.md.
 
 ### Milestone 4 — Active-Project lifecycle: pinning and auto-capture
 

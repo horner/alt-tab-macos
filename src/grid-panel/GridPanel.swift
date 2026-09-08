@@ -3,23 +3,23 @@ import Carbon.HIToolbox.Events
 
 protocol GridTileItem {
     var label: String { get }
+    var subtitle: String? { get }
     var icon: NSImage? { get }
     var isCurrent: Bool { get }
+}
+
+extension GridTileItem {
+    var subtitle: String? { nil }
 }
 
 class GridTileView: NSView {
     private let iconView = NSImageView()
     private let labelView = NSTextField(labelWithString: "")
+    private let subtitleView = NSTextField(labelWithString: "")
+    private static var subtitleFont: NSFont { NSFont.systemFont(ofSize: max(10, Appearance.font.pointSize - 2)) }
     private var isHighlighted = false
 
-    /// Width follows the widest label, not the icon: "Desktop 10" is wider than the desktop glyph, and a
-    /// tile that only fits the glyph truncates every label to "Deskto…", which is the one thing that
-    /// distinguishes the tiles from each other.
-    /// Measured through a real `NSTextField`'s cell because `String.size(withAttributes:)` returns the
-    /// typographic width and misses the cell's own inset. It has to be `cellSize`, which recomputes from the
-    /// current `stringValue`; `fittingSize` caches and reports the first measured label's width for every
-    /// subsequent one. The label is then given `pad` of margin on each side on top of the `pad` the tile
-    /// already insets it by: sized to the measured width exactly, the widest label still truncates.
+    /// NSTextField cell size includes the inset omitted by String.size(withAttributes:).
     private static let sizingLabel = NSTextField(labelWithString: "")
 
     static func tileSize(for items: [GridTileItem]) -> NSSize {
@@ -30,8 +30,11 @@ class GridTileView: NSView {
             sizingLabel.stringValue = item.label
             return sizingLabel.cell?.cellSize.width ?? 0
         }.max() ?? 0
-        return NSSize(width: max((icon * 1.6).rounded(), (widestLabel + pad * 4).rounded(.up)),
-            height: (icon + Appearance.fontHeight + pad * 3).rounded())
+        let hasSubtitle = items.contains { $0.subtitle != nil }
+        let width = max((icon * 1.6).rounded(), (widestLabel + pad * 4).rounded(.up))
+        let extraHeight = hasSubtitle ? subtitleFont.pointSize + pad : 0
+        return NSSize(width: hasSubtitle ? min(width, 380, NSScreen.preferred.frame.width * 0.9 - Appearance.windowPadding * 2) : width,
+            height: (icon + Appearance.fontHeight + pad * 3 + extraHeight).rounded())
     }
 
     init() {
@@ -48,6 +51,10 @@ class GridTileView: NSView {
         labelView.backgroundColor = .clear
         addSubview(iconView)
         addSubview(labelView)
+        subtitleView.alignment = .center
+        subtitleView.lineBreakMode = .byTruncatingTail
+        subtitleView.backgroundColor = .clear
+        addSubview(subtitleView)
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -57,7 +64,13 @@ class GridTileView: NSView {
         labelView.stringValue = item.label
         labelView.textColor = Appearance.fontColor
         labelView.font = Appearance.font
-        setAccessibilityLabel(item.label)
+        subtitleView.stringValue = item.subtitle ?? ""
+        subtitleView.font = Self.subtitleFont
+        subtitleView.textColor = Appearance.fontColor.withAlphaComponent(0.75)
+        subtitleView.isHidden = item.subtitle == nil
+        toolTip = [item.label, item.subtitle].compactMap { $0 }.joined(separator: "\n")
+        setAccessibilityLabel(toolTip)
+        needsLayout = true
         guard highlighted != isHighlighted else { return }
         isHighlighted = highlighted
         layer!.backgroundColor = (highlighted ? Appearance.highlightFocusedBackgroundColor : .clear).cgColor
@@ -68,9 +81,11 @@ class GridTileView: NSView {
         super.layout()
         let pad = Appearance.intraCellPadding
         let labelHeight = Appearance.fontHeight + pad
-        labelView.frame = NSRect(x: pad, y: pad, width: bounds.width - pad * 2, height: labelHeight)
-        iconView.frame = NSRect(x: pad, y: labelHeight + pad, width: bounds.width - pad * 2,
-            height: bounds.height - labelHeight - pad * 2)
+        let subtitleHeight = subtitleView.isHidden ? 0 : Self.subtitleFont.pointSize + pad
+        subtitleView.frame = NSRect(x: pad, y: pad, width: bounds.width - pad * 2, height: subtitleHeight)
+        labelView.frame = NSRect(x: pad, y: pad + subtitleHeight, width: bounds.width - pad * 2, height: labelHeight)
+        iconView.frame = NSRect(x: pad, y: labelHeight + pad + subtitleHeight, width: bounds.width - pad * 2,
+            height: bounds.height - labelHeight - subtitleHeight - pad * 2)
     }
 
 
