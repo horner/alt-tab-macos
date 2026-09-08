@@ -139,8 +139,12 @@ Gather was removed after a controlled cross-process test could not move a test w
 
 **Browser URLs in Project history**
 
-Safari and Chrome history entries include the observed active-tab URL below the window title. AltTab reads document accessibility metadata in the background when windows are discovered, titles refresh, or the menu opens. It does not inspect page contents or unfinished address-bar text. A fresh menu read may appear the next time you open History.
+Safari and Chrome entries include the observed active-tab URL below the window title in the active Project, Other Projects, Windows without a Project, and History menus. AltTab reads document accessibility metadata in the background when windows are discovered, titles refresh, or the menu opens. It does not inspect page contents or unfinished address-bar text. A fresh menu read may appear the next time you open History.
 
 Restoration prefers an exact app/URL match, so a changed or sign-in title can still recover its Project. Shared URLs use saved Desktop context; ambiguous matches stay unassigned. Earlier observed URLs remain saved as tabs navigate. Existing assigned windows keep their Project when their URL changes, and explicit moves/removals still take priority.
 
 Capture covers the active tab of each window, not every background tab. If the browser exposes no URL, existing title/Desktop recovery applies. A redirect destination is only known if AltTab observed it previously; this cannot reconstruct an unseen original URL. Stored web URLs omit embedded credentials and common transient authentication parameters, while document queries and routes remain part of matching. URL values are not included in debug logs.
+
+**Assignment checkmarks**
+
+In **Add active window to → Project**, a checkmark identifies each Project that already contains the focused window. The direct **Add active window to: Project** action shows the same membership state. Checked entries remain selectable; the marker reports window membership, not which Project is active.
