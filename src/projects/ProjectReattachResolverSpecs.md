@@ -19,3 +19,6 @@ manually created windows in those first 30 seconds; linked Desktop assignment st
 - **testOrdinaryNewWindowJoinsActiveProject** — a new unassigned window on the current Desktop joins after the grace period.
 - **testSavedOwnerOtherDesktopAndRediscoveryBlockActiveAssignment** — restoration priority and Desktop scope prevent active-Project capture.
 - **testPatternsSurviveEncodingWithoutRunningApp** — durable assignments encode independently of process identity.
+
+- **testMovingOneOfTwoIdenticallyTitledWindowsPreservesTheirSeparateAssignments** — live identity membership outranks a broad title exclusion, while an explicit identity exclusion always blocks restoration, including stale membership.
+- **testNewIdentityRequiresUniqueUnexcludedPattern** — a newly launched window needs one unexcluded pattern owner.

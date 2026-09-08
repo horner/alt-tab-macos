@@ -398,6 +398,8 @@ User explicitly authorized this milestone after the reboot test. Milestones 4–
 - [x] 8.3 — Restore unique exact bundle/title matches before automatic assignment. Ambiguous matches stay unassigned automatically; saved/live ownership prevents linked capture from adding a second Project. Active-Project auto-add requires a new window on the current Desktop and an app age of at least 30 seconds. Added ProjectReattachResolver triad, registration, docs and screenshot. Validation: Debug build and 1,227 tests pass; all eight resolver tests have matching specs. Live recovery shows reopened artipod windows; snapshot/log patterns imported with a backup, and user-approved preference for Chevron-Case/cloud/artipod applied only to recovery conflicts. No pre-existing WindowFilterResolver tests changed. Owning-app restart and a second reboot remain manual verification items.
 
 
+- [x] 8.4 — Preserve distinct live assignments for identically titled windows: exact identity membership takes precedence over a broad title exclusion, and identity exclusions block all restoration paths. Two regression scenarios added; Debug build and 1,229 tests pass. User authorized moving 11 Chrome windows by saved Desktop mapping, plus two clear changed-title matches; three Welcome and two -zsh windows are explicitly left alone.
+
 **Verification:**
 1. Build and tests pass; `audit-specs-tests` clean for `ProjectReattachResolver`.
 2. Build Research from a Safari and a Terminal window; quit and relaunch AltTab — both still listed.

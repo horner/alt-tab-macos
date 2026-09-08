@@ -40,4 +40,22 @@ final class ProjectReattachResolverTests: XCTestCase {
     func testPatternsSurviveEncodingWithoutRunningApp() throws {
         XCTAssertEqual(try JSONDecoder().decode(ProjectWindowPattern.self, from: JSONEncoder().encode(cloud)), cloud)
     }
+    func testMovingOneOfTwoIdenticallyTitledWindowsPreservesTheirSeparateAssignments() {
+        XCTAssertTrue(ProjectReattachResolver.shouldRestore(hasLiveIdentity: true, identityExcluded: false,
+            patternExcluded: true, isUniquePatternOwner: false))
+        XCTAssertFalse(ProjectReattachResolver.shouldRestore(hasLiveIdentity: false, identityExcluded: true,
+            patternExcluded: false, isUniquePatternOwner: true))
+        XCTAssertFalse(ProjectReattachResolver.shouldRestore(hasLiveIdentity: true, identityExcluded: true,
+            patternExcluded: false, isUniquePatternOwner: true))
+    }
+
+    func testNewIdentityRequiresUniqueUnexcludedPattern() {
+        XCTAssertTrue(ProjectReattachResolver.shouldRestore(hasLiveIdentity: false, identityExcluded: false,
+            patternExcluded: false, isUniquePatternOwner: true))
+        XCTAssertFalse(ProjectReattachResolver.shouldRestore(hasLiveIdentity: false, identityExcluded: false,
+            patternExcluded: true, isUniquePatternOwner: true))
+        XCTAssertFalse(ProjectReattachResolver.shouldRestore(hasLiveIdentity: false, identityExcluded: false,
+            patternExcluded: false, isUniquePatternOwner: false))
+    }
+
 }

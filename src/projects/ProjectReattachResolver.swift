@@ -11,6 +11,11 @@ enum ProjectReattachResolver {
         return Set(assignments.compactMap { $0.value.contains(pattern) ? $0.key : nil })
     }
 
+    static func shouldRestore(hasLiveIdentity: Bool, identityExcluded: Bool, patternExcluded: Bool, isUniquePatternOwner: Bool) -> Bool {
+        guard !identityExcluded else { return false }
+        return hasLiveIdentity || (!patternExcluded && isUniquePatternOwner)
+    }
+
     static func allowsActiveAssignment(isNew: Bool, applicationAge: TimeInterval, onCurrentDesktop: Bool, hasSavedOwner: Bool) -> Bool {
         isNew && applicationAge >= 30 && onCurrentDesktop && !hasSavedOwner
     }
