@@ -3,10 +3,11 @@ import ShortcutRecorder
 
 extension Preferences {
     static var projectsEnabled: Bool { UserDefaults.standard.bool(forKey: "projectsEnabled") }
+    static var projectsFollowDesktop: Bool { UserDefaults.standard.bool(forKey: "projectsFollowDesktop") }
     static var projects: [ProjectEntry] { CachedUserDefaults.json("projects", [ProjectEntry].self) }
     static var projectsShortcutStyle: ShortcutStylePreference { CachedUserDefaults.macroPref("projectsShortcutStyle", ShortcutStylePreference.allCases) }
     static var projectsDefaultValues: [String: Any] {
-        ["projectsEnabled": "false", "projects": "[]",
+        ["projectsEnabled": "false", "projectsFollowDesktop": "false", "projects": "[]",
          ProjectSwitcher.holdShortcutId: defaultShortcut(""),
          ProjectSwitcher.nextShortcutId: defaultShortcut("⇥"),
          ProjectSwitcher.previousShortcutId: defaultShortcut("⇧"),

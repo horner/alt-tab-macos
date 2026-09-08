@@ -75,3 +75,5 @@ In **Name this Desktop…**, check **Link this Desktop to a Project**. Choose **
 This capture uses the production AppKit dialog with isolated sample data (“Research” and “Casework”); it does not modify your Desktops or Projects.
 
 ![Desktop naming dialog with an existing Project selected](screenshots/m3-desktop-project-link.jpg)
+
+Desktop switches keep your active Project by default. In **Settings → Controls → Projects switcher**, enable **Switch active Project when switching Desktops** to select the destination Desktop’s linked Project automatically (or normal Desktop scope when unlinked). The setting is off by default; linked window membership works independently.

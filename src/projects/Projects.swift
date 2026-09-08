@@ -78,9 +78,10 @@ enum Projects {
                 if let project = linkedProject(for: desktop) { captureDesktopWindows(desktop, into: project) }
             }
         }
+        if isEnabled, !Preferences.projectsFollowDesktop, let active, active.isCustom, byId[active.id] === active { return }
         active = spaces.first { $0.isCurrent }.map { space in
             let desktop = forSpace(uuid: space.uuid)
-            return isEnabled ? linkedProject(for: desktop) ?? desktop : desktop
+            return isEnabled && Preferences.projectsFollowDesktop ? linkedProject(for: desktop) ?? desktop : desktop
         }
     }
 

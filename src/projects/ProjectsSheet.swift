@@ -3,12 +3,13 @@ import Cocoa
 final class ProjectsSheet: SheetWindow {
     private static let title = NSLocalizedString("Projects switcher", comment: "")
     private static let enable = NSLocalizedString("Enable Projects", comment: "")
+    private static let followDesktop = NSLocalizedString("Switch active Project when switching Desktops", comment: "")
     private static let hold = NSLocalizedString("Hold", comment: "")
     private static let next = NSLocalizedString("Select next project", comment: "")
     private static let previous = NSLocalizedString("Select previous project", comment: "")
     private static let style = NSLocalizedString("On release", comment: "")
     private static let preset = NSLocalizedString("Use ⌘ / ⌥ / ⌃ layout", comment: "")
-    static let searchableStrings = [title, enable, hold, next, previous, style, preset] + ShortcutStylePreference.allCases.map { $0.localizedString }
+    static let searchableStrings = [title, enable, followDesktop, hold, next, previous, style, preset] + ShortcutStylePreference.allCases.map { $0.localizedString }
     private var groups: NSStackView?
     private var warning: NSTextField?
     private var warningRow: TableGroupView.RowInfo?
@@ -41,6 +42,9 @@ final class ProjectsSheet: SheetWindow {
         toggle.action = #selector(toggleEnabled(_:))
         _ = table.addRow(TableGroupView.Row(leftTitle: Self.enable, rightViews: [toggle]))
         if Projects.isEnabled {
+            let follow = Switch(Preferences.projectsFollowDesktop)
+            follow.onAction = { control in Preferences.set("projectsFollowDesktop", (control as! NSButton).state == .on ? "true" : "false") }
+            _ = table.addRow(TableGroupView.Row(leftTitle: Self.followDesktop, rightViews: [follow]))
             addRecorder(table, Self.hold, ProjectSwitcher.holdShortcutId)
             let note = NSTextField(wrappingLabelWithString: "")
             note.preferredMaxLayoutWidth = SheetWindow.width - 40
