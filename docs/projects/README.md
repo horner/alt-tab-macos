@@ -91,3 +91,7 @@ Newly created windows (for example Chrome **⌘N**) join the active custom Proje
 Use the top-level **Add active window to → Project** menu to assign the focused window directly to any custom Project, including when no Project is active. The current Project selection is preserved.
 
 **Gather active Project’s windows here** moves that Project’s ordinary windows to the current Desktop. Fullscreen windows are skipped; hidden/minimized states are preserved. A result dialog reports moved, already present, skipped and unconfirmed/failed counts; the debug log includes each window ID. This explicit action uses private SkyLight APIs, with the macOS 14.5+ compatibility path documented in [Hammerspoon](https://github.com/Hammerspoon/hammerspoon/blob/master/extensions/spaces/libspaces.m).
+
+In **Settings → Controls → Projects…**, **Show from active Project** defaults to **All Spaces/Screens**. Active Project members then appear across Desktops and displays even if the ordinary Filtering settings say “Visible Spaces.” Choose **Current Space/Screen** to restrict them to the current Desktop and main screen. Other filters (such as hidden/minimized windows) remain in effect. Without an active custom Project, ordinary Filtering settings apply.
+
+![Project location scope set to All Spaces/Screens in the rebuilt app](screenshots/m3-project-location-scope.jpg)

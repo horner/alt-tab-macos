@@ -148,6 +148,10 @@ class Windows {
     }
 
     private static func refreshIfWindowShouldBeShownToTheUser(_ window: Window, _ f: WindowFilters) {
+        let members = Projects.activeMembers
+        let scope = ProjectScopeResolver.resolve(hasActiveProject: members != nil, currentOnly: Preferences.projectsCurrentSpaceOnly,
+            visibleOnly: f.spacesToShow == .visible, nonVisibleOnly: f.spacesToShow == .nonVisible,
+            screenOnly: f.screensToShow == .showingAltTab, visibleSpaceIds: Spaces.visibleSpaces, currentSpaceId: Spaces.currentSpaceId)
         // `isOnPreferredScreen` is the one irreducibly OS-coupled fact (touches `Spaces.screenSpacesMap` +
         // multi-screen quartz math); passed as `@autoclosure` so it's only evaluated if the cheaper
         // filters above don't already exclude the window.
@@ -159,15 +163,15 @@ class Windows {
             hideWindowless: f.showWindowlessApps == .hide,
             hideFullscreen: f.showFullscreenWindows == .hide,
             hideMinimized: f.showMinimizedWindows == .hide,
-            onlyVisibleSpaces: f.spacesToShow == .visible,
-            onlyNonVisibleSpaces: f.spacesToShow == .nonVisible,
-            onlyPreferredScreen: f.screensToShow == .showingAltTab,
+            onlyVisibleSpaces: scope.visibleOnly,
+            onlyNonVisibleSpaces: scope.nonVisibleOnly,
+            onlyPreferredScreen: scope.screenOnly,
             separateTabs: f.groupTabs == .separateWindows,
             frontmostPid: Applications.frontmostPid,
-            visibleSpaceIds: Spaces.visibleSpaces,
+            visibleSpaceIds: scope.spaceIds,
             exceptions: f.exceptions,
-            activeProjectMembers: Projects.activeMembers,
-            isOnPreferredScreen: window.isOnScreen(NSScreen.preferred))
+            activeProjectMembers: members,
+            isOnPreferredScreen: window.isOnScreen(members == nil ? NSScreen.preferred : NSScreen.main ?? NSScreen.preferred))
     }
 
     /// selection + hover methods (all operate on `SwitcherSession.current`)

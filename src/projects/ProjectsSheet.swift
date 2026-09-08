@@ -4,12 +4,15 @@ final class ProjectsSheet: SheetWindow {
     private static let title = NSLocalizedString("Projects switcher", comment: "")
     private static let enable = NSLocalizedString("Enable Projects", comment: "")
     private static let followDesktop = NSLocalizedString("Switch active Project when switching Desktops", comment: "")
+    private static let scope = NSLocalizedString("Show from active Project", comment: "")
+    private static let allLocations = NSLocalizedString("All Spaces/Screens", comment: "")
+    private static let currentLocation = NSLocalizedString("Current Space/Screen", comment: "")
     private static let hold = NSLocalizedString("Hold", comment: "")
     private static let next = NSLocalizedString("Select next project", comment: "")
     private static let previous = NSLocalizedString("Select previous project", comment: "")
     private static let style = NSLocalizedString("On release", comment: "")
     private static let preset = NSLocalizedString("Use ⌘ / ⌥ / ⌃ layout", comment: "")
-    static let searchableStrings = [title, enable, followDesktop, hold, next, previous, style, preset] + ShortcutStylePreference.allCases.map { $0.localizedString }
+    static let searchableStrings = [title, enable, scope, allLocations, currentLocation, followDesktop, hold, next, previous, style, preset] + ShortcutStylePreference.allCases.map { $0.localizedString }
     private var groups: NSStackView?
     private var warning: NSTextField?
     private var warningRow: TableGroupView.RowInfo?
@@ -42,6 +45,11 @@ final class ProjectsSheet: SheetWindow {
         toggle.action = #selector(toggleEnabled(_:))
         _ = table.addRow(TableGroupView.Row(leftTitle: Self.enable, rightViews: [toggle]))
         if Projects.isEnabled {
+            let scope = NSPopUpButton()
+            scope.addItems(withTitles: [Self.allLocations, Self.currentLocation])
+            scope.selectItem(at: Preferences.projectsCurrentSpaceOnly ? 1 : 0)
+            scope.onAction = { control in Preferences.set("projectsCurrentSpaceOnly", (control as! NSPopUpButton).indexOfSelectedItem == 1 ? "true" : "false") }
+            _ = table.addRow(TableGroupView.Row(leftTitle: Self.scope, rightViews: [scope]))
             let follow = Switch(Preferences.projectsFollowDesktop)
             follow.onAction = { control in Preferences.set("projectsFollowDesktop", (control as! NSButton).state == .on ? "true" : "false") }
             _ = table.addRow(TableGroupView.Row(leftTitle: Self.followDesktop, rightViews: [follow]))

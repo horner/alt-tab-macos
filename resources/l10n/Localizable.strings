@@ -104,6 +104,9 @@
 "All Spaces" = "All Spaces";
 
 /* No comment provided by engineer. */
+"All Spaces/Screens" = "All Spaces/Screens";
+
+/* No comment provided by engineer. */
 "Allowed" = "Allowed";
 
 /* No comment provided by engineer. */
@@ -279,6 +282,9 @@
 
 /* No comment provided by engineer. */
 "Create GitHub issue" = "Create GitHub issue";
+
+/* No comment provided by engineer. */
+"Current Space/Screen" = "Current Space/Screen";
 
 /* No comment provided by engineer. */
 "Cursor follows focus" = "Cursor follows focus";
@@ -822,6 +828,9 @@
 
 /* No comment provided by engineer. */
 "Show details (for support)" = "Show details (for support)";
+
+/* No comment provided by engineer. */
+"Show from active Project" = "Show from active Project";
 
 /* No comment provided by engineer. */
 "Show fullscreen spaces" = "Show fullscreen spaces";
