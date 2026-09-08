@@ -4,6 +4,7 @@ final class ProjectsMenu: NSObject {
     private static var desktopItem: NSMenuItem!
     private static var projectsItem: NSMenuItem!
     private static weak var focusedWindow: Window?
+    private static var unassignedItem: NSMenuItem!
     private static var activeItem: NSMenuItem!
     private static var addFocusedItem: NSMenuItem!
     private static var addVisibleItem: NSMenuItem!
@@ -14,11 +15,11 @@ final class ProjectsMenu: NSObject {
     private static var navigationId = UUID()
 
     private final class WindowSelection: NSObject {
-        let projectId: String
+        let projectId: String?
         weak var window: Window?
 
-        init(_ project: Project, _ window: Window) {
-            projectId = project.id
+        init(_ project: Project?, _ window: Window) {
+            projectId = project?.id
             self.window = window
         }
     }
@@ -32,6 +33,9 @@ final class ProjectsMenu: NSObject {
         addFocusedItem = item("", #selector(addWindow))
         addVisibleItem = item("", #selector(addVisibleWindows))
         [activeItem!, addFocusedItem!, addVisibleItem!].forEach { $0.isHidden = !Projects.isEnabled; menu.addItem($0) }
+        unassignedItem = item(NSLocalizedString("Windows without a Project", comment: ""), nil)
+        unassignedItem.isHidden = !Projects.isEnabled
+        menu.addItem(unassignedItem)
         menu.addItem(desktopItem)
         menu.addItem(projectsItem)
     }
@@ -44,6 +48,11 @@ final class ProjectsMenu: NSObject {
         desktopUuid = Projects.spaces.first { $0.isCurrent }?.uuid
         visibleWindows = Windows.list.filter { isVisibleOnDesktop($0) }
         refreshActiveItems()
+        unassignedItem.isHidden = !Projects.isEnabled
+        let unassigned = NSMenu()
+        unassigned.autoenablesItems = false
+        addWindows(of: nil, to: unassigned)
+        unassignedItem.submenu = unassigned
         desktopItem.isEnabled = currentDesktop != nil
         projectsItem.isHidden = !Projects.isEnabled
         guard Projects.isEnabled, let submenu = projectsItem.submenu else { return }
@@ -149,8 +158,12 @@ final class ProjectsMenu: NSObject {
         return menu
     }
 
-    private static func addWindows(of project: Project, to menu: NSMenu) {
-        let windows = Windows.list.filter { !$0.isWindowlessApp && !$0.isPhantom && !$0.isTabbed && project.members.contains($0.tracked.id) }
+    private static func addWindows(of project: Project?, to menu: NSMenu) {
+        let assigned = project == nil ? Set(Projects.list.filter { $0.isCustom }.flatMap { $0.members }) : []
+        let windows = Windows.list.filter { window in
+            !window.isWindowlessApp && !window.isPhantom && !window.isTabbed
+                && (project.map { $0.members.contains(window.tracked.id) } ?? !assigned.contains(window.tracked.id))
+        }
             .sorted { $0.lastFocusOrder < $1.lastFocusOrder }
         for window in windows {
             let title = ProjectNameResolver.normalized(window.title) ?? window.application.localizedName ?? ""
@@ -181,8 +194,16 @@ final class ProjectsMenu: NSObject {
     @objc private static func selectWindow(_ sender: NSMenuItem) {
         cancelNavigation()
         guard Projects.isEnabled, let selection = sender.representedObject as? WindowSelection,
-              let window = selection.window, Windows.list.contains(where: { $0 === window }),
-              let project = Projects.byId[selection.projectId], project.members.contains(window.tracked.id) else { return }
+              let window = selection.window, Windows.list.contains(where: { $0 === window }) else { return }
+        guard let projectId = selection.projectId else {
+            let id = navigationId
+            DispatchQueue.main.async {
+                guard navigationId == id, Projects.isEnabled, Windows.list.contains(where: { $0 === window }) else { return }
+                window.focus()
+            }
+            return
+        }
+        guard let project = Projects.byId[projectId], project.members.contains(window.tracked.id) else { return }
         Projects.active = project
         let id = navigationId
         // Focus waits until menu tracking ends so its dismissal reaches the screen before IPC.

@@ -34,7 +34,7 @@ These captures show actual Debug app UI, with no mock content or image edits.
 
 **Phase 3 menu addition — requested behavior**
 
-The annotated capture below shows the menu before this addition. The updated menu names the active Project and offers **Add this Window to Active Project** and **Add All Visible Windows to Active Project**. Under **Projects**, choose **New Project…** for an empty collection or **New Project from All Visible Windows…** to capture the current Desktop and activate the new Project after saving its name. Covered windows are included; minimized windows, hidden apps, other Desktops, and inactive tabs are excluded. This is a one-time capture; automatic membership remains outside phase 3.
+The annotated capture below shows the menu before this addition. The updated menu names the active Project and offers **Add this Window to Active Project** and **Add All Visible Windows to Active Project**. Under **Projects**, choose **New Project…** for an empty collection or **New Project from All Visible Windows…** to capture the current Desktop and activate the new Project after saving its name. Covered windows are included; minimized windows, hidden apps, other Desktops, and inactive tabs are excluded. This action is a one-time capture. Desktop linking, documented below, adds the subsequently requested automatic membership.
 
 ![User-annotated menu before the phase 3 addition](screenshots/m3-menu-request.png)
 
@@ -77,3 +77,9 @@ This capture uses the production AppKit dialog with isolated sample data (“Res
 ![Desktop naming dialog with an existing Project selected](screenshots/m3-desktop-project-link.jpg)
 
 Desktop switches keep your active Project by default. In **Settings → Controls → Projects switcher**, enable **Switch active Project when switching Desktops** to select the destination Desktop’s linked Project automatically (or normal Desktop scope when unlinked). The setting is off by default; linked window membership works independently.
+
+**Windows without a Project** in the menu bar lists windows from all Desktops that belong to no custom Project. Choose a title to focus that window. Hidden and minimized windows are included, so they remain reachable.
+
+The rebuilt Debug app confirms Desktop following is off by default.
+
+![Projects settings with Desktop following disabled](screenshots/m3-desktop-follow-setting.jpg)
