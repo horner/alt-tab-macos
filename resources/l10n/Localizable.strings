@@ -4,6 +4,9 @@
 /* No comment provided by engineer. */
 "%@ — last seen %@" = "%1$@ — last seen %2$@";
 
+/* Historical browser window and last seen age */
+"%@ — Reopen (%@)" = "%1$@ — Reopen (%2$@)";
+
 /* Project restoration notice */
 "%d restored on a different Desktop" = "%d restored on a different Desktop";
 
@@ -274,6 +277,9 @@
 /* LetsMove replacement alert */
 "Could not move to Applications folder" = "Could not move to Applications folder";
 
+/* Project history error */
+"Could not reopen browser history" = "Could not reopen browser history";
+
 /* No comment provided by engineer. */
 "Couldn't deactivate that machine" = "Couldn't deactivate that machine";
 
@@ -531,6 +537,9 @@
 
 /* No comment provided by engineer. */
 "macOS reserves ⌘⌥⎋, ⌘⌥⇧⎋, and ⌘⌥⇧⌃⎋ for Force Quit and they cannot be unbound. AltTab cannot use them.\n\nYour change would assign one of these to: %@." = "macOS reserves ⌘⌥⎋, ⌘⌥⇧⎋, and ⌘⌥⇧⌃⎋ for Force Quit and they cannot be unbound. AltTab cannot use them.\n\nYour change would assign one of these to: %@.";
+
+/* Project history error */
+"Make sure the original browser is installed and try again." = "Make sure the original browser is installed and try again.";
 
 /* No comment provided by engineer. */
 "Manage activations, view receipts, etc" = "Manage activations, view receipts, etc";
