@@ -2,9 +2,10 @@ import Cocoa
 import Carbon.HIToolbox.Events
 
 extension SpaceItem: GridTileItem {
-    /// Named AppKit images are available on every supported macOS version.
+    /// The fallback AppKit images are available on every supported macOS version.
     var icon: NSImage? {
-        NSImage(named: isFullscreen ? NSImage.enterFullScreenTemplateName : NSImage.computerName)
+        if let previewIcon { return previewIcon }
+        return NSImage(named: isFullscreen ? NSImage.enterFullScreenTemplateName : NSImage.computerName)
     }
 }
 

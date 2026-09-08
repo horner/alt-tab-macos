@@ -10,11 +10,23 @@ class SpaceItem {
     let desktopNumber: Int
     let isCurrent: Bool
     private let fallbackLabel: String
+    private(set) weak var previewWindow: Window?
+    private(set) var previewIcon: NSImage?
     var label: String {
-        guard let project = Projects.byId["desktop-\(uuid)"],
-              let name = ProjectNameResolver.normalized(project.name) ?? ProjectNameResolver.normalized(project.autoName),
-              name != fallbackLabel else { return fallbackLabel }
-        return "\(fallbackLabel) · \(name)"
+        guard let window = previewWindow else {
+            let project = Projects.byId["desktop-\(uuid)"]
+            return ProjectNameResolver.normalized(project?.name) ?? ProjectNameResolver.normalized(project?.autoName) ?? fallbackLabel
+        }
+        let app = ProjectNameResolver.normalized(window.application.localizedName)
+        let title = ProjectNameResolver.normalized(window.title)
+        guard app != title else { return app ?? fallbackLabel }
+        return [app, title].compactMap { $0 }.joined(separator: " - ")
+    }
+    var subtitle: String? {
+        let desktop = desktopNumber == 0 ? NSLocalizedString("Fullscreen", comment: "Spaces switcher tile label")
+            : String(format: NSLocalizedString("Desktop %d", comment: "Spaces switcher tile label"), desktopNumber)
+        guard let name = ProjectNameResolver.normalized(Projects.byId["desktop-\(uuid)"]?.name), name != label else { return desktop }
+        return "\(desktop) · \(name)"
     }
 
     init(spaceId: CGSSpaceID, uuid: String, desktopNumber: Int, isCurrent: Bool, label: String) {
@@ -23,6 +35,8 @@ class SpaceItem {
         self.desktopNumber = desktopNumber
         self.isCurrent = isCurrent
         fallbackLabel = label
+        previewWindow = mostRecentlyFocusedWindow()
+        previewIcon = previewWindow?.icon.map { NSImage(cgImage: $0, size: .zero) }
     }
 
     var isFullscreen: Bool { desktopNumber == 0 }
@@ -55,7 +69,7 @@ class SpaceItem {
 
     private func mostRecentlyFocusedWindow() -> Window? {
         Windows.list
-            .filter { $0.spaceIds.contains(spaceId) && !$0.isWindowlessApp && !$0.isMinimized && !$0.isHidden }
+            .filter { $0.spaceIds.contains(spaceId) && !$0.isWindowlessApp && !$0.isMinimized && !$0.isHidden && !$0.isPhantom && !$0.isTabbed }
             .min { $0.lastFocusOrder < $1.lastFocusOrder }
     }
 

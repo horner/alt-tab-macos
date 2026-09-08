@@ -43,3 +43,9 @@ The annotated capture below shows the menu before this addition. The updated men
 Tiles now show their Desktop number alongside the saved name. User names take priority over automatic app names; unnamed Desktops retain their original labels. The live capture confirms the saved Desktop 2 name survives relaunch and appears without clipping.
 
 ![Spaces switcher showing saved Desktop names](screenshots/m3-named-desktops.jpg)
+
+**Window details above the Desktop label**
+
+The current layout uses the most recently focused eligible window's app icon and **app - window title** on the first line. A smaller second line shows **Desktop N** and any distinct explicit Desktop name. Long titles truncate within the grid; their full text remains in the tooltip and accessibility label. Empty Desktops keep a name and desktop-icon fallback.
+
+![Spaces tiles with window titles and smaller Desktop subtitles](screenshots/m3-window-title-subtitles.jpg)
