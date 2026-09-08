@@ -186,6 +186,7 @@ final class ProjectsMenu: NSObject {
         if let active {
             menu.addItem(.separator())
             addWindows(of: active, to: menu)
+            addHistory(of: active, to: menu)
         }
         let others = item(NSLocalizedString("Other Projects", comment: ""), nil)
         let projects = NSMenu()
@@ -199,6 +200,7 @@ final class ProjectsMenu: NSObject {
             windows.addItem(select)
             windows.addItem(.separator())
             addWindows(of: project, to: windows)
+            addHistory(of: project, to: windows)
             entry.submenu = windows
             projects.addItem(entry)
         }
@@ -229,6 +231,44 @@ final class ProjectsMenu: NSObject {
             empty.isEnabled = false
             menu.addItem(empty)
         }
+    }
+
+    private static func addHistory(of project: Project, to menu: NSMenu) {
+        let parent = item(NSLocalizedString("History", comment: "Project window history"), nil)
+        let history = NSMenu()
+        history.autoenablesItems = false
+        let grouped = Dictionary(grouping: project.windowHistory, by: { $0.bundleIdentifier + "\u{0}" + $0.title })
+        let entries = grouped.values.compactMap { $0.max { ($0.lastSeenAt ?? .distantPast) < ($1.lastSeenAt ?? .distantPast) } }
+            .sorted { ($0.lastSeenAt ?? .distantPast) > ($1.lastSeenAt ?? .distantPast) }
+        for pattern in entries {
+            let live = Windows.list.first { project.members.contains($0.tracked.id) && $0.application.bundleIdentifier == pattern.bundleIdentifier && $0.title == pattern.title }
+            let age = live == nil ? historyAge(pattern.lastSeenAt) : NSLocalizedString("Open now", comment: "Project window history")
+            let title = pattern.title.count > 80 ? String(pattern.title.prefix(77)) + "…" : pattern.title
+            let entry = item("\(title) — \(age)", live == nil ? nil : #selector(selectWindow))
+            entry.isEnabled = live != nil
+            entry.toolTip = "\(pattern.title)\n\(pattern.bundleIdentifier)" + (pattern.lastSeenAt.map { "\n\($0)" } ?? "")
+            if let live { entry.representedObject = WindowSelection(project, live) }
+            history.addItem(entry)
+        }
+        if entries.isEmpty {
+            let empty = item(NSLocalizedString("No window history yet", comment: "Project window history"), nil)
+            empty.isEnabled = false
+            history.addItem(empty)
+        }
+        parent.submenu = history
+        menu.addItem(.separator())
+        menu.addItem(parent)
+    }
+
+    private static func historyAge(_ date: Date?) -> String {
+        guard let date else { return NSLocalizedString("Last seen unknown", comment: "Project window history") }
+        let elapsed = max(0, Date().timeIntervalSince(date))
+        guard elapsed >= 60 else { return NSLocalizedString("Just now", comment: "Project window history") }
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.day, .hour, .minute]
+        formatter.maximumUnitCount = 1
+        formatter.unitsStyle = .abbreviated
+        return String(format: NSLocalizedString("Last seen %@ ago", comment: "Project window history"), formatter.string(from: elapsed) ?? "")
     }
 
     @objc private static func selectDesktop() {

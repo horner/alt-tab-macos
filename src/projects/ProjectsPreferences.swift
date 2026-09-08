@@ -26,11 +26,13 @@ struct ProjectEntry: Codable {
     var iconFileName: String?
     var members: [ProjectWindowIdentity]
     var excludedMembers: [ProjectWindowIdentity]
+    var windowHistory = [ProjectWindowPattern]()
     var memberPatterns = [ProjectWindowPattern]()
     var excludedPatterns = [ProjectWindowPattern]()
     var linkedProjectId: String?
 
-    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = [], memberPatterns: [ProjectWindowPattern] = [], excludedPatterns: [ProjectWindowPattern] = []) {
+    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = [], memberPatterns: [ProjectWindowPattern] = [], excludedPatterns: [ProjectWindowPattern] = [], windowHistory: [ProjectWindowPattern] = []) {
+        self.windowHistory = windowHistory
         self.memberPatterns = memberPatterns
         self.excludedPatterns = excludedPatterns
         self.id = id
@@ -48,6 +50,7 @@ struct ProjectEntry: Codable {
     /// Optional or newly added fields must not make CachedUserDefaults reset the entire collection.
     init(from decoder: Decoder) throws {
         let c = try? decoder.container(keyedBy: CodingKeys.self)
+        windowHistory = (try? c?.decode([ProjectWindowPattern].self, forKey: .windowHistory)) ?? []
         memberPatterns = (try? c?.decode([ProjectWindowPattern].self, forKey: .memberPatterns)) ?? []
         excludedPatterns = (try? c?.decode([ProjectWindowPattern].self, forKey: .excludedPatterns)) ?? []
         spaceUuid = try? c?.decode(String.self, forKey: .spaceUuid)

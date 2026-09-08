@@ -4,6 +4,11 @@ struct ProjectWindowPattern: Codable, Equatable {
     let bundleIdentifier: String
     let title: String
     var spaceUuid: String? = nil
+    var lastSeenAt: Date? = nil
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.bundleIdentifier == rhs.bundleIdentifier && lhs.title == rhs.title && lhs.spaceUuid == rhs.spaceUuid
+    }
 }
 
 enum ProjectReattachResolver {
