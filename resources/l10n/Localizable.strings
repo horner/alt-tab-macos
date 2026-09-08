@@ -88,6 +88,9 @@
 /* No comment provided by engineer. */
 "All apps" = "All apps";
 
+/* Window switcher context; current Desktop */
+"All Desktops · %@" = "All Desktops · %@";
+
 /* No comment provided by engineer. */
 "All screens" = "All screens";
 
@@ -300,6 +303,9 @@
 
 /* Projects submenu */
 "Delete Project" = "Delete Project";
+
+/* No comment provided by engineer. */
+"Desktop" = "Desktop";
 
 /* Spaces switcher tile label */
 "Desktop %d" = "Desktop %d";
@@ -586,6 +592,9 @@
 /* No comment provided by engineer. */
 "Ordering & Grouping" = "Ordering & Grouping";
 
+/* Window switcher context */
+"Other Desktops" = "Other Desktops";
+
 /* No comment provided by engineer. */
 "Other Projects" = "Other Projects";
 
@@ -633,6 +642,9 @@
 
 /* Unnamed custom Project */
 "Project %d" = "Project %d";
+
+/* Window switcher context */
+"Project: %@" = "Project: %@";
 
 /* Projects menu */
 "Projects" = "Projects";
@@ -987,6 +999,9 @@
 
 /* No comment provided by engineer. */
 "Vim keys already assigned to other actions:\n%@" = "Vim keys already assigned to other actions:\n%@";
+
+/* Window switcher context; current Desktop */
+"Visible Desktops · %@" = "Visible Desktops · %@";
 
 /* No comment provided by engineer. */
 "Visible Spaces" = "Visible Spaces";

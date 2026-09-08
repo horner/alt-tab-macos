@@ -40,6 +40,8 @@ From [AGENTS.md](AGENTS.md):
 
 ### Upstream touch budget
 
+User-approved main-switcher addition: `src/switcher/main-window/TilesView.swift` may add only context-header attachment, sizing and positioning hooks; header logic stays in `src/projects/`.
+
 User-approved documentation addition: `docs/projects/` contains phase screenshots and captions only.
 
 The complete list of upstream files this plan may edit, and how. Anything not here is off-limits without asking.
@@ -207,7 +209,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** in progress (13 of 14 tasks); main-switcher header awaits touch-budget approval
+**Status:** implementation complete (14 of 14 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -267,7 +269,9 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 > Note: Debug build and all 1,207 tests passed. Actual menu source passed native fixture checks for the named bulk-add destination, enabled active submenu, Project/Desktop selection, exact member focus, one-shot cross-Space restoration, and no effect on subsequent Space changes. Main app was rebuilt/restarted before implementation and will be restarted with this change. Live menu screenshot remains pending.
 
-- [!] 3.14 — User requests the main window switcher show the active Desktop/Project context. Proposed narrow addition: a header/layout hook in `src/switcher/main-window/TilesView.swift`, with context-label logic in `src/projects/`. TilesView.swift is outside the approved upstream touch budget; no edit made, awaiting user approval. Label must describe the actual window filter scope rather than imply one Desktop when all Spaces are shown.
+- [x] 3.14 — User requests the main window switcher show the active Desktop/Project context. Proposed narrow addition: a header/layout hook in `src/switcher/main-window/TilesView.swift`, with context-label logic in `src/projects/`. User approved this narrow TilesView.swift addition. Label must describe the actual window filter scope rather than imply one Desktop when all Spaces are shown.
+
+> Note: Header implementation builds successfully. The approved TilesView.swift diff is limited to header space, minimum readable width, header attachment, and search-field positioning. Label code remains in src/projects/ProjectContextHeader.swift. Live header screenshot and final combined regression checks follow the requested menu/Space-label refinements.
 
 ### Milestone 4 — Active-Project lifecycle: pinning and auto-capture
 

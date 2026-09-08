@@ -477,7 +477,7 @@ class TilesView {
 
     private static func resolveAutoSize(_ widthMax: CGFloat) {
         let searchReservedHeight: CGFloat = searchMode == .off ? 0 : searchBarHeight() + 10
-        let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight)
+        let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight - ProjectContextHeader.height)
         for size in [AppearanceSizePreference.large, .medium, .small] {
             Appearance.applySize(size)
             Self.updateCachedSizes()
@@ -599,14 +599,14 @@ class TilesView {
         let searchBarHeight = searchBarHeight()
         let searchBottomPadding = CGFloat(10)
         let searchReservedHeight = searchMode == .off ? 0 : searchBarHeight + searchBottomPadding
-        let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight)
+        let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight - ProjectContextHeader.height)
         let minSearchWidth = min(widthMax, 320)
         let minWidth = min(widthMax, 320)
-        TilesView.thumbnailsWidth = max(min(maxX, widthMax), searchMode == .off ? (maxX == 0 ? minWidth : 0) : minWidth)
+        TilesView.thumbnailsWidth = max(min(maxX, widthMax), minWidth)
         TilesView.thumbnailsHeight = min(maxY, heightMax)
         let appIconsBottomViewportPadding = appIconsBottomViewportPadding(maxY, heightMax, labelHeight)
         let frameWidth = TilesView.thumbnailsWidth + Appearance.windowPadding * 2
-        var frameHeight = TilesView.thumbnailsHeight + Appearance.windowPadding * 2 + searchReservedHeight
+        var frameHeight = TilesView.thumbnailsHeight + Appearance.windowPadding * 2 + searchReservedHeight + ProjectContextHeader.height
         let originX = Appearance.windowPadding
         var originY = Appearance.windowPadding
         if Preferences.effectiveAppearanceStyle(SwitcherSession.activeShortcutIndex) == .appIcons {
@@ -619,6 +619,7 @@ class TilesView {
         if host !== contentView {
             host.frame = CGRect(origin: .zero, size: NSSize(width: frameWidth, height: frameHeight))
         }
+        ProjectContextHeader.layout(in: host, width: frameWidth, top: frameHeight - Appearance.windowPadding)
         let scrollHeight = max(0, min(maxY, heightMax) - appIconsBottomViewportPadding * 2)
         scrollView.frame.size = NSSize(width: TilesView.thumbnailsWidth, height: scrollHeight)
         scrollView.frame.origin = CGPoint(x: originX, y: originY + appIconsBottomViewportPadding * 2)
@@ -630,7 +631,7 @@ class TilesView {
             let searchWidth = minSearchWidth
             searchField.frame.size = NSSize(width: searchWidth, height: searchBarHeight)
             let searchX = originX + (TilesView.thumbnailsWidth - searchWidth) * 0.5
-            searchField.frame.origin = CGPoint(x: searchX, y: frameHeight - Appearance.windowPadding - searchBarHeight)
+            searchField.frame.origin = CGPoint(x: searchX, y: frameHeight - Appearance.windowPadding - searchBarHeight - ProjectContextHeader.height)
             searchField.layoutSubtreeIfNeeded()
         } else if searchField.superview != nil {
             searchField.removeFromSuperview()
