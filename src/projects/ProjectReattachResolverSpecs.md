@@ -27,3 +27,6 @@ Restored assignments produce a non-activating notice, grouped over one second; i
 - **testDesktopSeparatesIdenticalTitlesInDifferentProjects** — Desktop UUID selects the correct Project among identical title matches.
 - **testUnknownDesktopAndConflictingDesktopHistoryDoNotGuess** — ambiguous or unrelated Desktop history cannot claim a window.
 - **testLegacyPatternWithoutDesktopStillDecodes** — old persisted patterns remain readable.
+
+- **testLastSeenDoesNotChangeMatchingIdentity** — updating observation time does not duplicate an assignment or break matching.
+- **testLastSeenTimestampSurvivesEncoding** — history observation times persist across restarts.

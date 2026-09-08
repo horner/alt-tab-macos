@@ -129,3 +129,9 @@ The first reboot recovery imported patterns from the pre-reboot snapshot and eve
 ![Artipod windows recovered after reboot using saved app and title evidence](screenshots/m8-recovered-artipod.jpg)
 
 Restoration displays a brief, non-activating notice grouped over one second, listing the Projects and window counts. A separate line reports windows recaptured on a different Desktop. This restores assignments without moving the windows between Desktops.
+
+**Project window history**
+
+Open the active Project’s menu → **History**, or **Other Projects → Project → History**. Each remembered title shows **Open now** or how long ago AltTab last observed it. Open entries can be selected to focus the window; historical entries are read-only, with the full title, app identifier, and timestamp in their tooltip. Duplicate title observations are grouped using their latest timestamp.
+
+History survives app closure and explicit moves/removals. It is separate from restoration rules, so a past entry does not automatically rejoin a Project it was removed from. Older observations without a timestamp show **Last seen unknown**. The initial recovery history uses timestamps from the saved event log where available.

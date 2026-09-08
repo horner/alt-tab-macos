@@ -89,4 +89,18 @@ final class ProjectReattachResolverTests: XCTestCase {
         XCTAssertNil(try JSONDecoder().decode(ProjectWindowPattern.self, from: json).spaceUuid)
     }
 
+    func testLastSeenDoesNotChangeMatchingIdentity() {
+        let earlier = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", spaceUuid: "case", lastSeenAt: Date(timeIntervalSince1970: 100))
+        let later = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", spaceUuid: "case", lastSeenAt: Date(timeIntervalSince1970: 200))
+        XCTAssertEqual(earlier, later)
+        XCTAssertEqual(ProjectReattachResolver.owners(of: later, assignments: ["case": [earlier]]), ["case"])
+    }
+
+    func testLastSeenTimestampSurvivesEncoding() throws {
+        let seen = Date(timeIntervalSince1970: 100)
+        let saved = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", lastSeenAt: seen)
+        let decoded = try JSONDecoder().decode(ProjectWindowPattern.self, from: JSONEncoder().encode(saved))
+        XCTAssertEqual(decoded.lastSeenAt, seen)
+    }
+
 }

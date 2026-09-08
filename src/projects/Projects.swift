@@ -17,6 +17,7 @@ final class Project {
     var autoName: String? { didSet { if autoName != oldValue { Projects.save() } } }
     var members = Set<String>()
     var memberIdentities = [ProjectWindowIdentity]()
+    var windowHistory = [ProjectWindowPattern]()
     var memberPatterns = [ProjectWindowPattern]()
     var excludedPatterns = [ProjectWindowPattern]()
     var excludedMembers = [ProjectWindowIdentity]()
@@ -185,8 +186,9 @@ enum Projects {
             project.excludedWindowIds.subtract(ids)
             if project.isCustom {
                 for window in windows where project.members.contains(window.tracked.id) {
-                    if let pattern = pattern(for: window), !pattern.title.isEmpty, !project.memberPatterns.contains(pattern) {
-                        project.memberPatterns.append(pattern)
+                    if let pattern = pattern(for: window), !pattern.title.isEmpty {
+                        recordPattern(pattern, in: &project.memberPatterns)
+                        recordPattern(pattern, in: &project.windowHistory)
                         changed = true
                     }
                 }
@@ -314,14 +316,24 @@ enum Projects {
         guard let bundle = window.application.bundleIdentifier, !bundle.isEmpty else { return nil }
         let space = spaces.first { window.spaceIds.contains($0.spaceId) }
         let title = window.title == window.application.localizedName ? "" : window.title
-        return ProjectWindowPattern(bundleIdentifier: bundle, title: title, spaceUuid: space?.uuid)
+        return ProjectWindowPattern(bundleIdentifier: bundle, title: title, spaceUuid: space?.uuid, lastSeenAt: Date())
     }
 
     @discardableResult
     private static func rememberPattern(_ windowId: String, in project: Project) -> Bool {
-        guard let pattern = pattern(for: windowId), !pattern.title.isEmpty, !project.memberPatterns.contains(pattern) else { return false }
-        project.memberPatterns.append(pattern)
-        return true
+        guard let pattern = pattern(for: windowId), !pattern.title.isEmpty else { return false }
+        let inserted = !project.memberPatterns.contains(pattern)
+        recordPattern(pattern, in: &project.memberPatterns)
+        recordPattern(pattern, in: &project.windowHistory)
+        return inserted
+    }
+
+    private static func recordPattern(_ pattern: ProjectWindowPattern, in history: inout [ProjectWindowPattern]) {
+        if let index = history.firstIndex(of: pattern) {
+            if (pattern.lastSeenAt ?? .distantPast) > (history[index].lastSeenAt ?? .distantPast) { history[index] = pattern }
+        } else {
+            history.append(pattern)
+        }
     }
 
     private static func insertMember(_ windowId: String, into project: Project) -> Bool {
@@ -336,6 +348,7 @@ enum Projects {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
         Logger.debug { "projects explicit remove project=\(project.id) window=\(windowId) wasMember=\(project.members.contains(windowId))" }
         if let pattern = pattern(for: windowId) {
+            recordPattern(pattern, in: &project.windowHistory)
             project.memberPatterns.removeAll { $0.bundleIdentifier == pattern.bundleIdentifier && $0.title == pattern.title }
             if !project.excludedPatterns.contains(pattern) { project.excludedPatterns.append(pattern) }
         }
@@ -361,6 +374,8 @@ enum Projects {
                 continue
             }
             let project = Project(id: entry.id, kind: kind, homeSpaceUuid: entry.homeSpaceUuid)
+            project.windowHistory = entry.windowHistory
+            for pattern in entry.memberPatterns { recordPattern(pattern, in: &project.windowHistory) }
             project.memberPatterns = entry.memberPatterns
             project.excludedPatterns = entry.excludedPatterns
             project.memberIdentities = entry.members
@@ -384,7 +399,7 @@ enum Projects {
             return ProjectEntry(id: project.id, kind: project.isCustom ? "custom" : "desktop", spaceUuid: uuid,
                 homeSpaceUuid: project.homeSpaceUuid, name: project.name, autoName: project.autoName,
                 iconFileName: iconFileNames[project.id], members: project.memberIdentities, linkedProjectId: project.linkedProjectId, excludedMembers: project.excludedMembers,
-                memberPatterns: project.memberPatterns, excludedPatterns: project.excludedPatterns)
+                memberPatterns: project.memberPatterns, excludedPatterns: project.excludedPatterns, windowHistory: project.windowHistory)
         }
         Preferences.set("projects", entries + retainedEntries, false)
     }

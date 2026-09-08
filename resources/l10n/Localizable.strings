@@ -4,6 +4,9 @@
 /* No comment provided by engineer. */
 "%@ — last seen %@" = "%1$@ — last seen %2$@";
 
+/* Project restoration notice */
+"%d restored on a different Desktop" = "%d restored on a different Desktop";
+
 /* No comment provided by engineer. */
 "%d selected window(s) already belong to: %@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships." = "%1$d selected window(s) already belong to: %2$@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships.";
 
@@ -460,6 +463,9 @@
 /* No comment provided by engineer. */
 "Hide/Show app" = "Hide/Show app";
 
+/* Project window history */
+"History" = "History";
+
 /* No comment provided by engineer. */
 "Hold" = "Hold";
 
@@ -487,6 +493,9 @@
 /* No comment provided by engineer. */
 "Invalid license key." = "Invalid license key.";
 
+/* Project window history */
+"Just now" = "Just now";
+
 /* Project membership action */
 "Keep in Both" = "Keep in Both";
 
@@ -498,6 +507,12 @@
 
 /* No comment provided by engineer. */
 "Large" = "Large";
+
+/* Project window history */
+"Last seen %@ ago" = "Last seen %@ ago";
+
+/* Project window history */
+"Last seen unknown" = "Last seen unknown";
 
 /* No comment provided by engineer. */
 "Later" = "Later";
@@ -598,6 +613,9 @@
 /* No comment provided by engineer. */
 "No Window" = "No Window";
 
+/* Project window history */
+"No window history yet" = "No window history yet";
+
 /* No comment provided by engineer. */
 "Non-active apps" = "Non-active apps";
 
@@ -624,6 +642,9 @@
 
 /* No comment provided by engineer. */
 "Open Accessibility Settings…" = "Open Accessibility Settings…";
+
+/* Project window history */
+"Open now" = "Open now";
 
 /* No comment provided by engineer. */
 "Open Screen Recording Settings…" = "Open Screen Recording Settings…";
@@ -741,6 +762,9 @@
 
 /* No comment provided by engineer. */
 "Restart Now" = "Restart Now";
+
+/* Project restoration notice */
+"Restored Project assignments" = "Restored Project assignments";
 
 /* Project name prompt */
 "Save" = "Save";
