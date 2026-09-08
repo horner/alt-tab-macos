@@ -2,7 +2,106 @@ import Cocoa
 
 enum ProjectContextHeader {
     private static let label = NSTextField(labelWithString: "")
-    static var height: CGFloat { Appearance.fontHeight + Appearance.intraCellPadding }
+    private static let strip = NSView()
+    private static let allButton = NSButton(title: NSLocalizedString("All Projects", comment: ""), target: nil, action: nil)
+    private static var buttons = [NSButton]()
+    private static var projectIds = [String]()
+    private static let popover = NSPopover()
+    private static var titleHeight: CGFloat { Appearance.fontHeight + Appearance.intraCellPadding }
+    static var height: CGFloat { titleHeight + (Projects.isEnabled ? 30 : 0) }
+
+    static func handleNumberKey(_ event: NSEvent?) -> Bool {
+        guard Projects.isEnabled, SwitcherSession.isActive, !TilesView.isSearchEditing,
+              let event, event.type == .keyDown,
+              let index = ProjectNumberResolver.index(keyCode: event.keyCode), projectIds.indices.contains(index) else { return false }
+        if event.isARepeat { return true }
+        select(projectIds[index])
+        return true
+    }
+
+    private static func select(_ id: String) {
+        guard Projects.isEnabled, SwitcherSession.isActive, let project = Projects.byId[id] else { return }
+        popover.close()
+        Projects.active = project
+        Logger.debug { "projects header select project=\(id)" }
+        DispatchQueue.main.async {
+            guard SwitcherSession.isActive, Projects.active === project else { return }
+            App.refreshOpenUiImmediatelyAfterExternalEvent([])
+        }
+    }
+
+    private static func makeButton(_ index: Int, _ id: String) -> NSButton {
+        let button = NSButton(title: "", target: nil, action: nil)
+        button.controlSize = .small
+        button.bezelStyle = .rounded
+        button.font = NSFont.systemFont(ofSize: 11)
+        button.lineBreakMode = .byTruncatingTail
+        button.onAction = { _ in select(id) }
+        return button
+    }
+
+    private static func update(_ button: NSButton, _ index: Int, _ id: String) {
+        guard let project = Projects.byId[id] else { return }
+        button.title = "\(index)–\(project.resolvedName)"
+        button.toolTip = button.title
+        button.setAccessibilityLabel(button.title)
+        button.bezelColor = project === Projects.active ? .controlAccentColor : nil
+    }
+
+    private static func layoutStrip(in host: NSView, width: CGFloat, top: CGFloat) {
+        guard Projects.isEnabled else { strip.removeFromSuperview(); popover.close(); return }
+        let desktop = Projects.spaces.first { $0.isCurrent }.map { Projects.forSpace(uuid: $0.uuid).id }
+        let ids = (desktop.map { [$0] } ?? []) + Projects.list.filter { $0.isCustom }.map { $0.id }
+        if ids != projectIds {
+            buttons.forEach { $0.removeFromSuperview() }
+            projectIds = ids
+            buttons = ids.enumerated().map { makeButton($0.offset, $0.element) }
+            buttons.forEach { strip.addSubview($0) }
+        }
+        if strip.superview !== host { host.addSubview(strip) }
+        strip.frame = NSRect(x: Appearance.windowPadding, y: top - height, width: max(0, width - Appearance.windowPadding * 2), height: 26)
+        allButton.controlSize = .small
+        allButton.bezelStyle = .rounded
+        allButton.font = NSFont.systemFont(ofSize: 11)
+        allButton.onAction = { _ in showAll() }
+        if allButton.superview !== strip { strip.addSubview(allButton) }
+        allButton.frame = NSRect(x: max(0, strip.bounds.width - 92), y: 0, width: 92, height: 24)
+        var x: CGFloat = 0
+        for (index, button) in buttons.enumerated() {
+            update(button, index, projectIds[index])
+            let buttonWidth = min(112, max(58, button.intrinsicContentSize.width))
+            button.isHidden = x + buttonWidth > allButton.frame.minX - 4
+            button.frame = NSRect(x: x, y: 0, width: buttonWidth, height: 24)
+            x += buttonWidth + 4
+        }
+    }
+
+    private static func showAll() {
+        guard Projects.isEnabled, SwitcherSession.isActive else { return }
+        if popover.isShown { popover.close(); return }
+        SwitcherSession.current?.forceDoNothingOnRelease = true
+        let columns = min(4, max(1, projectIds.count))
+        let rows = (projectIds.count + columns - 1) / columns
+        let view = NSView(frame: NSRect(x: 0, y: 0, width: columns * 150 + 16, height: rows * 44 + 16))
+        for (index, id) in projectIds.enumerated() {
+            let button = makeButton(index, id)
+            update(button, index, id)
+            button.image = NSImage(named: Projects.byId[id]?.isCustom == true ? NSImage.folderName : NSImage.computerName)
+            button.imagePosition = .imageLeft
+            button.imageScaling = .scaleProportionallyDown
+            button.frame = NSRect(x: 8 + (index % columns) * 150, y: 8 + (rows - 1 - index / columns) * 44, width: 144, height: 38)
+            view.addSubview(button)
+        }
+        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: view.frame.width, height: min(320, view.frame.height)))
+        scroll.documentView = view
+        scroll.hasVerticalScroller = view.frame.height > 320
+        scroll.drawsBackground = false
+        let controller = NSViewController()
+        controller.view = scroll
+        popover.contentViewController = controller
+        popover.behavior = .transient
+        popover.show(relativeTo: NSRect(x: strip.bounds.midX, y: 0, width: 1, height: 24), of: strip, preferredEdge: .minY)
+    }
 
     static func layout(in host: NSView, width: CGFloat, top: CGFloat) {
         let title = contextTitle()
@@ -13,8 +112,9 @@ enum ProjectContextHeader {
         label.lineBreakMode = .byTruncatingTail
         label.alignment = .center
         if label.superview !== host { host.addSubview(label) }
-        label.frame = NSRect(x: Appearance.windowPadding, y: top - height,
-            width: max(0, width - Appearance.windowPadding * 2), height: height)
+        label.frame = NSRect(x: Appearance.windowPadding, y: top - titleHeight,
+            width: max(0, width - Appearance.windowPadding * 2), height: titleHeight)
+        layoutStrip(in: host, width: width, top: top)
     }
 
     private static func contextTitle() -> String {

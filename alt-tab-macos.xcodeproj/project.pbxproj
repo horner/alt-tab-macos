@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2CB4EB8C077F22F9B8FFB4C3 /* ProjectNumberResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBDED8E316B1D410102D2B13 /* ProjectNumberResolverTests.swift */; };
+		B925DEB8A4B7C56143BB48E2 /* ProjectNumberResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042592CF691DADF3A74C4D94 /* ProjectNumberResolver.swift */; };
+		FF2DA61DD07D066D842D62D7 /* ProjectNumberResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042592CF691DADF3A74C4D94 /* ProjectNumberResolver.swift */; };
 		1493871A2B19BB5CFC92D710 /* ProjectAssignmentPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5402B70341EFA09C1A60A8 /* ProjectAssignmentPrompt.swift */; };
 		955F7A2710354BA37833F429 /* ProjectScopeResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FABE6A21AE7A60A48247F0 /* ProjectScopeResolverTests.swift */; };
 		28C00DB310875CF632C20C97 /* ProjectScopeResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BA23959EA3B96BFDFA0D858 /* ProjectScopeResolver.swift */; };
@@ -482,6 +485,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B6CE23E8D65FA5D38FCC040F /* ProjectNumberResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectNumberResolverSpecs.md; sourceTree = "<group>"; };
+		EBDED8E316B1D410102D2B13 /* ProjectNumberResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNumberResolverTests.swift; sourceTree = "<group>"; };
+		042592CF691DADF3A74C4D94 /* ProjectNumberResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNumberResolver.swift; sourceTree = "<group>"; };
 		0E5402B70341EFA09C1A60A8 /* ProjectAssignmentPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectAssignmentPrompt.swift; sourceTree = "<group>"; };
 		0D27AD36FA0CA6330ED23032 /* ProjectScopeResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectScopeResolverSpecs.md; sourceTree = "<group>"; };
 		D7FABE6A21AE7A60A48247F0 /* ProjectScopeResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectScopeResolverTests.swift; sourceTree = "<group>"; };
@@ -980,6 +986,9 @@
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
+				B6CE23E8D65FA5D38FCC040F /* ProjectNumberResolverSpecs.md */,
+				EBDED8E316B1D410102D2B13 /* ProjectNumberResolverTests.swift */,
+				042592CF691DADF3A74C4D94 /* ProjectNumberResolver.swift */,
 				0E5402B70341EFA09C1A60A8 /* ProjectAssignmentPrompt.swift */,
 				0D27AD36FA0CA6330ED23032 /* ProjectScopeResolverSpecs.md */,
 				D7FABE6A21AE7A60A48247F0 /* ProjectScopeResolverTests.swift */,
@@ -2208,6 +2217,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2CB4EB8C077F22F9B8FFB4C3 /* ProjectNumberResolverTests.swift in Sources */,
+				B925DEB8A4B7C56143BB48E2 /* ProjectNumberResolver.swift in Sources */,
 				955F7A2710354BA37833F429 /* ProjectScopeResolverTests.swift in Sources */,
 				28C00DB310875CF632C20C97 /* ProjectScopeResolver.swift in Sources */,
 				606381ECA7EE2A7E6C126FA9 /* ProjectWindowIdentityTests.swift in Sources */,
@@ -2358,6 +2369,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FF2DA61DD07D066D842D62D7 /* ProjectNumberResolver.swift in Sources */,
 				1493871A2B19BB5CFC92D710 /* ProjectAssignmentPrompt.swift in Sources */,
 				1E7DA000C3C7F58F6E0DD54B /* ProjectScopeResolver.swift in Sources */,
 				190272315DA213F731C6A360 /* DesktopNamePrompt.swift in Sources */,

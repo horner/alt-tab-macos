@@ -283,3 +283,7 @@ enum ShortcutStylePreference: CaseIterable {
 class ModifierFlags {
     static var current: NSEvent.ModifierFlags = []
 }
+
+enum ProjectContextHeader {
+    static func handleNumberKey(_ event: NSEvent?) -> Bool { false }
+}
