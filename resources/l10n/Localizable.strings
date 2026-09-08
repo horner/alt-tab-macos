@@ -280,6 +280,9 @@
 /* No comment provided by engineer. */
 "Customize more…" = "Customize more…";
 
+/* Compact Desktop number */
+"D:%d" = "D:%d";
+
 /* No comment provided by engineer. */
 "Dark" = "Dark";
 

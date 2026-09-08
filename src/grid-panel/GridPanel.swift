@@ -4,12 +4,14 @@ import Carbon.HIToolbox.Events
 protocol GridTileItem {
     var label: String { get }
     var subtitle: String? { get }
+    var maximumTileWidth: CGFloat? { get }
     var icon: NSImage? { get }
     var isCurrent: Bool { get }
 }
 
 extension GridTileItem {
     var subtitle: String? { nil }
+    var maximumTileWidth: CGFloat? { nil }
 }
 
 class GridTileView: NSView {
@@ -31,9 +33,10 @@ class GridTileView: NSView {
             return sizingLabel.cell?.cellSize.width ?? 0
         }.max() ?? 0
         let hasSubtitle = items.contains { $0.subtitle != nil }
+        let maximumWidth = items.compactMap { $0.maximumTileWidth }.min()
         let width = max((icon * 1.6).rounded(), (widestLabel + pad * 4).rounded(.up))
         let extraHeight = hasSubtitle ? subtitleFont.pointSize + pad : 0
-        return NSSize(width: hasSubtitle ? min(width, 380, NSScreen.preferred.frame.width * 0.9 - Appearance.windowPadding * 2) : width,
+        return NSSize(width: maximumWidth.map { min(width, $0, NSScreen.preferred.frame.width * 0.9 - Appearance.windowPadding * 2) } ?? width,
             height: (icon + Appearance.fontHeight + pad * 3 + extraHeight).rounded())
     }
 
