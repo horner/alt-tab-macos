@@ -89,3 +89,5 @@ Project diagnostics use the existing debug logger. Open the Debug window before 
 Newly created windows (for example Chrome **⌘N**) join the active custom Project automatically while Projects is enabled. Existing windows rediscovered during startup or tracking refresh do not. A linked Desktop can also add the window to its own Project. Diagnostic entries identify this path as `source=window-created`.
 
 Use the top-level **Add active window to → Project** menu to assign the focused window directly to any custom Project, including when no Project is active. The current Project selection is preserved.
+
+**Gather active Project’s windows here** moves that Project’s ordinary windows to the current Desktop. Fullscreen windows are skipped; hidden/minimized states are preserved. A result dialog reports moved, already present, skipped and unconfirmed/failed counts; the debug log includes each window ID. This explicit action uses private SkyLight APIs, with the macOS 14.5+ compatibility path documented in [Hammerspoon](https://github.com/Hammerspoon/hammerspoon/blob/master/extensions/spaces/libspaces.m).

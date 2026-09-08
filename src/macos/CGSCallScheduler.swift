@@ -1,6 +1,6 @@
 import Cocoa
 
-/// Off-main scheduler for blocking WindowServer / SkyLight reads (`CGS*`, `CGWindowList*`). Sibling of
+/// Off-main scheduler for blocking WindowServer / SkyLight calls (`CGS*`, `CGWindowList*`). Sibling of
 /// `AXCallScheduler` (Accessibility) and `ProcessCallScheduler` (process & sysctl) — the three front doors
 /// for blocking SDK calls.
 ///
@@ -16,6 +16,38 @@ class CGSCallScheduler {
     // snapshot + per-window state queries (moved off the AX pools, B4). 4-wide so a show's Space + discovery
     // + phantom reads can overlap; still bounded — see BackgroundWork's thread-count budget.
     private static let queue = LabeledOperationQueue("cgsCall", .userInitiated, 4)
+
+    // A compatibility workspace ID is temporarily attached to the destination Space on macOS 14.5+.
+    // Serialize these mutations so two gathers cannot reset each other's temporary ID.
+    private static let moveQueue = DispatchQueue(label: "cgsMove", qos: .userInitiated)
+
+    static func gatherWindows(_ wids: [CGWindowID], to destination: CGSSpaceID, thenMain: @escaping ([CGWindowID: String]) -> Void) {
+        moveQueue.async {
+            var results = [CGWindowID: String]()
+            for wid in wids {
+                results[wid] = moveWindow(wid, to: destination)
+            }
+            DispatchQueue.main.async { thenMain(results) }
+        }
+    }
+
+    private static func moveWindow(_ wid: CGWindowID, to destination: CGSSpaceID) -> String {
+        guard SLSSpaceGetType(CGS_CONNECTION, destination) == 0 else { return "invalid-destination" }
+        guard let sources = rawWindowSpaces(wid), !sources.isEmpty else { return "unavailable" }
+        if sources.contains(destination) { return "already-here" }
+        guard sources.allSatisfy({ SLSSpaceGetType(CGS_CONNECTION, $0) == 0 }) else { return "skipped-fullscreen" }
+        if #available(macOS 14.5, *) {
+            // Hammerspoon's moveWindowToSpace uses this compatibility path from macOS 14.5 onward.
+            let workspace: Int32 = 0x79616265
+            guard SLSSpaceSetCompatID(CGS_CONNECTION, destination, workspace) == .success else { return "failed-prepare" }
+            defer { _ = SLSSpaceSetCompatID(CGS_CONNECTION, destination, 0) }
+            var window = wid
+            guard SLSSetWindowListWorkspace(CGS_CONNECTION, &window, 1, workspace) == .success else { return "failed-move" }
+        } else {
+            SLSMoveWindowsToManagedSpace(CGS_CONNECTION, [wid] as CFArray, destination)
+        }
+        return rawWindowSpaces(wid)?.contains(destination) == true ? "moved" : "not-confirmed"
+    }
 
     #if DEBUG
     // read-only handle for the "Live queue graph" sampler (DebugMenu); keeps `queue` private otherwise
