@@ -408,6 +408,7 @@ User explicitly authorized this milestone after the reboot test. Milestones 4–
 
 - [x] 8.7 — Remove Gather after the user-authorized single-window test failed. The cross-process compatibility sequence continued past prepare and returned prepare=1066163, move=1006, reset=1066163; immediate and settled Space queries both stayed on the source Desktop. No Project windows were moved. Removed the menu/action, movement scheduler, and four gather-only SkyLight declarations. Debug build passes; app restarted.
 - [x] 8.8 — Capture Safari/Chrome active-tab document URLs off-main at discovery, title refresh, and menu opening. Persist URLs with history, prefer URL matching before title/Desktop fallback, and preserve explicit move/removal exclusions across title changes. Show URLs below History titles. Debug build and 1,246 tests pass; restarted app saved 15 Chrome and 7 Safari URL observations. Reboot verification remains pending.
+- [x] 8.9 — Show browser URLs below titles in regular Project/unassigned window menus as well as History. Mark existing active-window membership with checkmarks in assignment menus and the direct active-Project action. Debug build passes. Live History accessibility inspection confirms URL rows; screenshot capture was unavailable for the open status menu.
 
 **Verification:**
 1. Build and tests pass; `audit-specs-tests` clean for `ProjectReattachResolver`.

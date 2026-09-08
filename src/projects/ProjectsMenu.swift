@@ -106,6 +106,9 @@ final class ProjectsMenu: NSObject {
             let child = item(project.resolvedName, action)
             child.representedObject = project.id
             child.isEnabled = enabled
+            if action == #selector(addWindow), let window = focusedWindow {
+                child.state = project.members.contains(window.tracked.id) ? .on : .off
+            }
             submenu.addItem(child)
         }
         parent.submenu = submenu
@@ -140,6 +143,7 @@ final class ProjectsMenu: NSObject {
         for entry in [activeItem!, addFocusedItem!, addVisibleItem!] { entry.isHidden = !Projects.isEnabled }
         addFocusedItem.representedObject = active?.id
         addVisibleItem.representedObject = active?.id
+        addFocusedItem.state = focusedWindow.map { active?.members.contains($0.tracked.id) == true } == true ? .on : .off
         addFocusedItem.isEnabled = active != nil && focusedWindow != nil
         addVisibleItem.isEnabled = active != nil && !visibleWindows.isEmpty
     }
@@ -192,6 +196,7 @@ final class ProjectsMenu: NSObject {
             entry.representedObject = WindowSelection(project, window)
             if let icon = window.icon { entry.image = NSImage(cgImage: icon, size: NSSize(width: 16, height: 16)) }
             menu.addItem(entry)
+            addURL(ProjectBrowserURLs.url(for: window), to: menu)
         }
         if windows.isEmpty {
             let empty = item(NSLocalizedString("No Open Windows", comment: ""), nil)
@@ -216,13 +221,7 @@ final class ProjectsMenu: NSObject {
             entry.toolTip = "\(pattern.title)\n\(pattern.bundleIdentifier)" + (pattern.lastSeenAt.map { "\n\($0)" } ?? "")
             if let live { entry.representedObject = WindowSelection(project, live) }
             history.addItem(entry)
-            if let url = pattern.url {
-                let address = item(url.count > 100 ? String(url.prefix(97)) + "…" : url, nil)
-                address.isEnabled = false
-                address.indentationLevel = 1
-                address.toolTip = url
-                history.addItem(address)
-            }
+            addURL(pattern.url, to: history)
         }
         if entries.isEmpty {
             let empty = item(NSLocalizedString("No window history yet", comment: "Project window history"), nil)
@@ -232,6 +231,15 @@ final class ProjectsMenu: NSObject {
         parent.submenu = history
         menu.addItem(.separator())
         menu.addItem(parent)
+    }
+
+    private static func addURL(_ url: String?, to menu: NSMenu) {
+        guard let url else { return }
+        let address = item(url.count > 100 ? String(url.prefix(97)) + "…" : url, nil)
+        address.isEnabled = false
+        address.indentationLevel = 1
+        address.toolTip = url
+        menu.addItem(address)
     }
 
     private static func historyAge(_ date: Date?) -> String {
