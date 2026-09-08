@@ -7,6 +7,7 @@ enum ProjectContextHeader {
     private static var buttons = [NSButton]()
     private static var projectIds = [String]()
     private static let popover = NSPopover()
+    private static weak var pressedButton: NSButton?
     private static var titleHeight: CGFloat { Appearance.fontHeight + Appearance.intraCellPadding }
     static var height: CGFloat { titleHeight + (Projects.isEnabled ? 30 : 0) }
 
@@ -17,6 +18,50 @@ enum ProjectContextHeader {
         if event.isARepeat { return true }
         select(projectIds[index])
         return true
+    }
+
+    static func isPointerInsidePopover(at location: CGPoint) -> Bool {
+        guard popover.isShown, let view = popover.contentViewController?.view, let window = view.window else { return false }
+        return view.visibleRect.contains(view.convert(window.convertPoint(fromScreen: cocoaPoint(location)), from: nil))
+    }
+
+    static func handleMouseButton(down: Bool, at location: CGPoint) -> Bool {
+        guard Projects.isEnabled, SwitcherSession.isActive else { return false }
+        let target = buttonUnderPointer(at: location)
+        if down {
+            guard let target else { return false }
+            pressedButton = target
+            target.highlight(true)
+            return true
+        }
+        guard let pressed = pressedButton else { return false }
+        pressedButton = nil
+        pressed.highlight(false)
+        guard target === pressed else { return true }
+        // Mouse events are intercepted by the switcher's tap. Dispatch the action after the tap returns.
+        DispatchQueue.main.async {
+            guard Projects.isEnabled, SwitcherSession.isActive else { return }
+            Logger.debug { "projects header pointer click button=\(pressed.title)" }
+            pressed.performClick(nil)
+        }
+        return true
+    }
+
+    private static func cocoaPoint(_ location: CGPoint) -> NSPoint {
+        NSPoint(x: location.x, y: (NSScreen.screens.first?.frame.maxY ?? 0) - location.y)
+    }
+
+    private static func buttonUnderPointer(at location: CGPoint) -> NSButton? {
+        let candidates: [NSButton]
+        if isPointerInsidePopover(at: location) {
+            candidates = (popover.contentViewController?.view as? NSScrollView)?.documentView?.subviews.compactMap { $0 as? NSButton } ?? []
+        } else {
+            candidates = buttons + [allButton]
+        }
+        return candidates.first { button in
+            guard button.isEnabled, !button.isHiddenOrHasHiddenAncestor, let window = button.window, window.isVisible else { return false }
+            return button.visibleRect.contains(button.convert(window.convertPoint(fromScreen: cocoaPoint(location)), from: nil))
+        }
     }
 
     private static func select(_ id: String) {
@@ -42,7 +87,7 @@ enum ProjectContextHeader {
 
     private static func update(_ button: NSButton, _ index: Int, _ id: String) {
         guard let project = Projects.byId[id] else { return }
-        button.title = "\(index)–\(project.resolvedName)"
+        button.title = ProjectNumberResolver.label(index: index).map { "\($0)–\(project.resolvedName)" } ?? project.resolvedName
         button.toolTip = button.title
         button.setAccessibilityLabel(button.title)
         button.bezelColor = project === Projects.active ? .controlAccentColor : nil

@@ -40,6 +40,8 @@ From [AGENTS.md](AGENTS.md):
 
 ### Upstream touch budget
 
+User approved task 3.27: `src/events/CursorEvents.swift` may route left-button events for the Project header/grid before the existing tile handling; no other cursor behavior changes.
+
 User approved task 3.26: add a guarded Project-number routing call in `KeyboardEventsTestable.swift` and its test-target stub in `Mocks.swift`. Header controls remain inside `src/projects/` using existing TilesView layout hooks.
 
 User approved task 3.24: expand `Windows.swift` filtering hook to resolve active-Project Space/screen scope; keep the existing `WindowFilterResolver` implementation and tests unchanged.
@@ -215,7 +217,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (26 of 26 tasks); live verification pending
+**Status:** implementation complete (27 of 27 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -297,6 +299,8 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.24 — Active-Project location filtering defaults to All Spaces/Screens, overriding ordinary Space/screen settings. Optional Current Space/Screen mode uses the current Space and main screen. Other window filters and normal Desktop filtering remain intact. Files: new `ProjectScopeResolver` triad, Projects preferences/sheet, approved `Windows.swift` hook, registration, strings, docs and plan. Validation: Debug build and 1,212 tests pass; live dropdown persistence verified for both choices and restored to All; inline screenshot saved. Existing WindowFilterResolver implementation/tests unchanged.
 - [x] 3.25 — User-requested conflict confirmation for single-window and all-visible add actions: Move is the default, Keep in Both explicitly shares, Cancel changes no memberships. One batch prompt lists conflicting Projects. Explicit moves suppress automatic re-add to source Projects via persisted process-qualified exclusions; explicit adds clear exclusions. Files: `src/projects/`, project registration, generated strings, docs and plan. Validation: production-source fixtures cover move, copy, cancel, no-conflict bypass, stale windows and linked recapture across process restarts; native prompt inspected with sample data. Debug build and 1,212 tests pass; rebuilt app restarted with event logging.
 - [x] 3.26 — Compact numbered Project strip in the open window switcher: 0 selects normal Desktop filtering; custom Projects follow in creation order. Clicks and digits 0–9 update the open switcher; All Projects opens a small scrollable grid for every Project. Search editing keeps digits as text. Files: `ProjectContextHeader.swift`, new `ProjectNumberResolver` triad, the approved keyboard hook/stub, registration, strings, docs and plan. Validation: Debug build and 1,215 tests pass; live digit selection, grid click selection, and numeric search input verified; centered grid/strip screenshots saved inline. App restarted and Focus-on-release restored after UI checks.
+- [x] 3.27 — User-requested numbering correction: 1–9 then 0, later entries named and click-only. Route real left-button gestures through Project controls, matching down/up targets and using event coordinates; pass popover background events to AppKit. Files: Project header/number resolver triad, approved CursorEvents hook, docs and plan. Validation: Debug build and 1,216 tests pass; live strip/grid selection, click-only Project selection, press/release cancellation, and digit 0/1 selection verified. Updated screenshot saved inline in docs. App rebuilt/restarted and Focus-on-release restored.
+
 
 
 
