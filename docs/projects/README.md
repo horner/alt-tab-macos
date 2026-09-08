@@ -83,3 +83,5 @@ Desktop switches keep your active Project by default. In **Settings → Controls
 The rebuilt Debug app confirms Desktop following is off by default.
 
 ![Projects settings with Desktop following disabled](screenshots/m3-desktop-follow-setting.jpg)
+
+Project diagnostics use the existing debug logger. Open the Debug window before reproducing an issue, then use **Copy all**. Search for `projects ` to see menu requests/completions, target IDs, membership counts, identity restoration and removals. A `focus requested` entry records dispatch, not confirmed OS focus. Debug output can also be captured by launching the app executable with `--logs=debug` and redirecting its output to a file.

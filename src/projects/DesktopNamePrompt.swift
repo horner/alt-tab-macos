@@ -35,7 +35,9 @@ enum DesktopNamePrompt {
         alert.addButton(withTitle: NSLocalizedString("Save", comment: "Project name prompt"))
         alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "")).keyEquivalent = "\u{1b}"
         NSApp.activate(ignoringOtherApps: true)
-        guard alert.runModal() == .alertFirstButtonReturn, Projects.byId[desktop.id] === desktop else { return }
+        let response = alert.runModal()
+        Logger.debug { "projects name prompt response=\(response.rawValue)" }
+        guard response == .alertFirstButtonReturn, Projects.byId[desktop.id] === desktop else { return }
         desktop.name = ProjectNameResolver.normalized(field.stringValue)
         guard link.state == .on else { Projects.link(desktop, to: nil); return }
         Preferences.set("projectsEnabled", "true")

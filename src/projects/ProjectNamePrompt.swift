@@ -20,7 +20,9 @@ enum ProjectNamePrompt {
         alert.addButton(withTitle: NSLocalizedString("Save", comment: "Project name prompt"))
         alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "")).keyEquivalent = "\u{1b}"
         NSApp.activate(ignoringOtherApps: true)
-        guard alert.runModal() == .alertFirstButtonReturn else { return false }
+        let response = alert.runModal()
+        Logger.debug { "projects name prompt response=\(response.rawValue)" }
+        guard response == .alertFirstButtonReturn else { return false }
         project.name = ProjectNameResolver.normalized(field.stringValue)
         return true
     }

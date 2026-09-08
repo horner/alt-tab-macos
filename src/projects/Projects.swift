@@ -36,6 +36,7 @@ enum Projects {
     static var active: Project? {
         didSet {
             guard !isLoading, active?.id != oldValue?.id else { return }
+            Logger.debug { "projects active previous=\(oldValue?.id ?? "none") next=\(active?.id ?? "none")" }
             let id = active?.id ?? ""
             DispatchQueue.main.async {
                 guard (active?.id ?? "") == id else { return }
@@ -53,6 +54,7 @@ enum Projects {
 
     static func startObservingSpaceChanges() {
         guard spaceObserver == nil else { return }
+        Logger.debug { "projects startup enabled=\(isEnabled)" }
         let savedActiveId = UserDefaults.standard.string(forKey: "projectsActiveId")
         load()
         refreshSpaces()
@@ -94,6 +96,7 @@ enum Projects {
     static func windowAdded(_ window: Window) {
         DispatchQueue.main.async { [weak window] in
             guard let window, !window.isWindowlessApp, Windows.list.contains(where: { $0 === window }) else { return }
+            Logger.debug { "projects discovered window=\(window.tracked.id) spaces=\(window.spaceIds) phantom=\(window.isPhantom) active=\(active?.id ?? "none")" }
             restoreMembership(window)
             for space in spaces where window.spaceIds.contains(space.spaceId) {
                 let desktop = forSpace(uuid: space.uuid)
@@ -117,8 +120,12 @@ enum Projects {
                 windowIdentities[identity.windowId] = identity
                 var changed = false
                 for project in list where project.isCustom {
-                    if project.memberIdentities.contains(identity) { project.members.insert(identity.windowId) }
+                    if project.memberIdentities.contains(identity) {
+                        project.members.insert(identity.windowId)
+                        Logger.debug { "projects restored project=\(project.id) window=\(identity.windowId) pid=\(identity.pid)" }
+                    }
                     if project.members.contains(identity.windowId), !project.memberIdentities.contains(identity) {
+                        Logger.debug { "projects identity saved project=\(project.id) window=\(identity.windowId)" }
                         project.memberIdentities.append(identity)
                         changed = true
                     }
@@ -134,11 +141,14 @@ enum Projects {
 
     static func windowsRemoved(_ windows: [Window]) {
         let ids = Set(windows.map { $0.tracked.id })
+        Logger.debug { "projects tracking removal windows=\(ids.sorted())" }
         ids.forEach { windowIdentities.removeValue(forKey: $0) }
         var changed = false
         let spaceIds = Set(windows.filter { !$0.isWindowlessApp }.flatMap { $0.spaceIds })
         for project in list {
             if project.isCustom {
+                let removed = project.members.intersection(ids)
+                Logger.debug { "projects tracking removal project=\(project.id) removed=\(removed.sorted()) before=\(project.members.count)" }
                 let hadMember = !project.members.isDisjoint(with: ids)
                 project.members.subtract(ids)
                 let count = project.memberIdentities.count
@@ -177,6 +187,7 @@ enum Projects {
                   !list.contains(where: { $0 !== desktop && $0.linkedProjectId == project.id }) else { return false }
         }
         if project == nil, desktop.linkedProjectId == nil { return true }
+        Logger.debug { "projects link desktop=\(desktop.id) previous=\(desktop.linkedProjectId ?? "none") next=\(project?.id ?? "none")" }
         desktop.linkedProjectId = project?.id
         if let project { captureDesktopWindows(desktop, into: project) }
         if spaces.contains(where: { $0.isCurrent && $0.uuid == desktop.homeSpaceUuid }) { active = project ?? desktop }
@@ -197,6 +208,7 @@ enum Projects {
         guard let project = byId[id], project.isCustom else { return }
         for desktop in list where desktop.linkedProjectId == id { desktop.linkedProjectId = nil }
         if active === project { active = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) } }
+        Logger.debug { "projects delete project=\(id) members=\(project.members.sorted())" }
         byId.removeValue(forKey: id)
         list.removeAll { $0.id == id }
         iconFileNames.removeValue(forKey: id)
@@ -210,12 +222,14 @@ enum Projects {
 
     private static func insertMember(_ windowId: String, into project: Project) -> Bool {
         guard project.members.insert(windowId).inserted else { return false }
+        Logger.debug { "projects member added project=\(project.id) window=\(windowId) count=\(project.members.count) identityReady=\(windowIdentities[windowId] != nil)" }
         if let identity = windowIdentities[windowId], !project.memberIdentities.contains(identity) { project.memberIdentities.append(identity) }
         return true
     }
 
     static func remove(windowId: String, from project: Project) {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
+        Logger.debug { "projects explicit remove project=\(project.id) window=\(windowId) wasMember=\(project.members.contains(windowId))" }
         project.members.remove(windowId)
         project.memberIdentities.removeAll { $0.windowId == windowId }
         save()
@@ -259,6 +273,7 @@ enum Projects {
 
     @discardableResult
     private static func insert(_ project: Project) -> Project {
+        Logger.debug { "projects register project=\(project.id) name=\(project.name ?? "unnamed") custom=\(project.isCustom) savedMembers=\(project.memberIdentities.count)" }
         list.append(project)
         byId[project.id] = project
         save()
