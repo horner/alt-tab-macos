@@ -272,6 +272,9 @@
 "Crash reports policy" = "Crash reports policy";
 
 /* No comment provided by engineer. */
+"Create a new Project" = "Create a new Project";
+
+/* No comment provided by engineer. */
 "Create GitHub issue" = "Create GitHub issue";
 
 /* No comment provided by engineer. */
@@ -483,6 +486,12 @@
 
 /* No comment provided by engineer. */
 "Light" = "Light";
+
+/* No comment provided by engineer. */
+"Link this Desktop to a Project" = "Link this Desktop to a Project";
+
+/* No comment provided by engineer. */
+"Linking enables Projects and includes existing and future windows on this Desktop." = "Linking enables Projects and includes existing and future windows on this Desktop.";
 
 /* No comment provided by engineer. */
 "Machine %@" = "Machine %@";

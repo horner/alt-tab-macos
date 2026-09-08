@@ -96,7 +96,7 @@ final class ProjectsMenu: NSObject {
 
     @objc private static func nameDesktop() {
         guard let project = currentDesktop else { return }
-        ProjectNamePrompt.present(project, title: NSLocalizedString("Name this Desktop…", comment: "Desktop menu action"))
+        DesktopNamePrompt.present(project)
     }
 
     private static func refreshActiveItems() {

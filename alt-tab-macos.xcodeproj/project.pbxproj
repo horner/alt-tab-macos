@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		190272315DA213F731C6A360 /* DesktopNamePrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36EA6F3869CC6CC5301FF7F8 /* DesktopNamePrompt.swift */; };
 		73906B6EFF87F043B2BC481C /* ProjectContextHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 519A5DCF5D3320EDCF02D0F7 /* ProjectContextHeader.swift */; };
 		606381ECA7EE2A7E6C126FA9 /* ProjectWindowIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D5CF5FD9024F6D476232A09 /* ProjectWindowIdentityTests.swift */; };
 		C51F2DF8F60AC7918EAC82E9 /* ProjectWindowIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F40877DFE37654518A34A4 /* ProjectWindowIdentity.swift */; };
@@ -477,6 +478,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		36EA6F3869CC6CC5301FF7F8 /* DesktopNamePrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopNamePrompt.swift; sourceTree = "<group>"; };
 		519A5DCF5D3320EDCF02D0F7 /* ProjectContextHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectContextHeader.swift; sourceTree = "<group>"; };
 		B0EE8D63F8E0D664E1AFB7CC /* ProjectWindowIdentitySpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectWindowIdentitySpecs.md; sourceTree = "<group>"; };
 		4D5CF5FD9024F6D476232A09 /* ProjectWindowIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWindowIdentityTests.swift; sourceTree = "<group>"; };
@@ -970,6 +972,7 @@
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
+				36EA6F3869CC6CC5301FF7F8 /* DesktopNamePrompt.swift */,
 				519A5DCF5D3320EDCF02D0F7 /* ProjectContextHeader.swift */,
 				B0EE8D63F8E0D664E1AFB7CC /* ProjectWindowIdentitySpecs.md */,
 				4D5CF5FD9024F6D476232A09 /* ProjectWindowIdentityTests.swift */,
@@ -2341,6 +2344,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				190272315DA213F731C6A360 /* DesktopNamePrompt.swift in Sources */,
 				73906B6EFF87F043B2BC481C /* ProjectContextHeader.swift in Sources */,
 				AF38ABD97250933AAA511A9D /* ProjectWindowIdentity.swift in Sources */,
 				D942EE6C91EC9EABAC196472 /* ProjectsSheet.swift in Sources */,

@@ -67,3 +67,11 @@ The main window switcher now shows its Project or Desktop scope above the window
 Named Desktop tiles put the explicit name first, with smaller `D:N - window title` below. Unnamed tiles show just `D:N - window title`. Desktop 3 shows the shared `cloud (-zsh)` title.
 
 ![Desktop names above compact window details](screenshots/m3-desktop-name-first.jpg)
+
+**Link a Desktop to a Project**
+
+In **Name this Desktop…**, check **Link this Desktop to a Project**. Choose **Create a new Project** to use the Desktop name, or choose an existing Project. Each Desktop can link to one Project, and each Project to one Desktop. Linking enables Projects and includes existing and future windows on that Desktop, including hidden or minimized windows. You can still manually add windows from other Desktops. Unchecking the box removes the link and keeps the memberships. Links and memberships survive AltTab restarts.
+
+This capture uses the production AppKit dialog with isolated sample data (“Research” and “Casework”); it does not modify your Desktops or Projects.
+
+![Desktop naming dialog with an existing Project selected](screenshots/m3-desktop-project-link.jpg)
