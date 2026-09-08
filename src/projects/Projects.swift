@@ -17,6 +17,8 @@ final class Project {
     var autoName: String? { didSet { if autoName != oldValue { Projects.save() } } }
     var members = Set<String>()
     var memberIdentities = [ProjectWindowIdentity]()
+    var memberPatterns = [ProjectWindowPattern]()
+    var excludedPatterns = [ProjectWindowPattern]()
     var excludedMembers = [ProjectWindowIdentity]()
     var excludedWindowIds = Set<String>()
     var linkedProjectId: String?
@@ -237,6 +239,7 @@ enum Projects {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
         let wasExcluded = project.excludedWindowIds.remove(windowId) != nil || project.excludedMembers.contains { $0.windowId == windowId }
         project.excludedMembers.removeAll { $0.windowId == windowId }
+        if let pattern = pattern(for: windowId) { project.excludedPatterns.removeAll { $0 == pattern } }
         let inserted = insertMember(windowId, into: project)
         if inserted || wasExcluded { save() }
     }
@@ -265,8 +268,23 @@ enum Projects {
         Logger.debug { "projects assignment target=\(project.id) move=\(move) windows=\(liveIds.sorted())" }
     }
 
+    private static func pattern(for windowId: String) -> ProjectWindowPattern? {
+        guard let window = Windows.list.first(where: { $0.tracked.id == windowId }),
+              let bundle = window.application.bundleIdentifier, !bundle.isEmpty,
+              !window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return ProjectWindowPattern(bundleIdentifier: bundle, title: window.title)
+    }
+
+    @discardableResult
+    private static func rememberPattern(_ windowId: String, in project: Project) -> Bool {
+        guard let pattern = pattern(for: windowId), !project.memberPatterns.contains(pattern) else { return false }
+        project.memberPatterns.append(pattern)
+        return true
+    }
+
     private static func insertMember(_ windowId: String, into project: Project) -> Bool {
-        guard project.members.insert(windowId).inserted else { return false }
+        let remembered = rememberPattern(windowId, in: project)
+        guard project.members.insert(windowId).inserted else { return remembered }
         Logger.debug { "projects member added project=\(project.id) window=\(windowId) count=\(project.members.count) identityReady=\(windowIdentities[windowId] != nil)" }
         if let identity = windowIdentities[windowId], !project.memberIdentities.contains(identity) { project.memberIdentities.append(identity) }
         return true
@@ -275,6 +293,10 @@ enum Projects {
     static func remove(windowId: String, from project: Project) {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
         Logger.debug { "projects explicit remove project=\(project.id) window=\(windowId) wasMember=\(project.members.contains(windowId))" }
+        if let pattern = pattern(for: windowId) {
+            project.memberPatterns.removeAll { $0 == pattern }
+            if !project.excludedPatterns.contains(pattern) { project.excludedPatterns.append(pattern) }
+        }
         project.excludedWindowIds.insert(windowId)
         if let identity = windowIdentities[windowId], !project.excludedMembers.contains(identity) { project.excludedMembers.append(identity) }
         project.members.remove(windowId)
@@ -297,6 +319,8 @@ enum Projects {
                 continue
             }
             let project = Project(id: entry.id, kind: kind, homeSpaceUuid: entry.homeSpaceUuid)
+            project.memberPatterns = entry.memberPatterns
+            project.excludedPatterns = entry.excludedPatterns
             project.memberIdentities = entry.members
             project.excludedMembers = entry.excludedMembers
             project.linkedProjectId = entry.linkedProjectId
@@ -309,12 +333,16 @@ enum Projects {
 
     static func save() {
         guard !isLoading else { return }
+        for project in list where project.isCustom {
+            for id in project.members { _ = rememberPattern(id, in: project) }
+        }
         let entries = list.map { project -> ProjectEntry in
             let uuid: String?
             if case .desktop(let spaceUuid) = project.kind { uuid = spaceUuid } else { uuid = nil }
             return ProjectEntry(id: project.id, kind: project.isCustom ? "custom" : "desktop", spaceUuid: uuid,
                 homeSpaceUuid: project.homeSpaceUuid, name: project.name, autoName: project.autoName,
-                iconFileName: iconFileNames[project.id], members: project.memberIdentities, linkedProjectId: project.linkedProjectId, excludedMembers: project.excludedMembers)
+                iconFileName: iconFileNames[project.id], members: project.memberIdentities, linkedProjectId: project.linkedProjectId, excludedMembers: project.excludedMembers,
+                memberPatterns: project.memberPatterns, excludedPatterns: project.excludedPatterns)
         }
         Preferences.set("projects", entries + retainedEntries, false)
     }

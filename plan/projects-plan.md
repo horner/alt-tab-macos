@@ -394,7 +394,7 @@ User explicitly authorized this milestone after the reboot test. Milestones 4–
 **Status:** not started
 
 - [x] 8.1 — Add member patterns (bundle identifier plus window title) to `ProjectEntry`, keeping the permissive decoder so stored Projects without patterns still load. Files: `src/projects/ProjectsPreferences.swift`
-- [ ] 8.2 — Save patterns on every membership change, *depends on 8.1*. Files: `src/projects/Projects.swift`
+- [x] 8.2 — Save exact app/title patterns on membership changes and saves; explicit removals persist exclusions, while tracking removal retains durable patterns, *depends on 8.1*. Files: `src/projects/Projects.swift`
 - [ ] 8.3 — Re-attach inside `Projects.windowAdded(_:)` (no new upstream edit), *depends on 8.1*: match the window against stored patterns with bundle-id prefix and literal title substring exactly as `ExceptionMatcher` does, and add it to each matching Project. Pure kernel with triad: exact re-attach; same app, different title, no match; a title that changed after saving; two Projects claiming one window; a pattern whose app is not running. Files: `src/projects/ProjectReattachResolver.swift`, `src/projects/ProjectReattachResolverSpecs.md`, `src/projects/ProjectReattachResolverTests.swift`, `src/projects/Projects.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
 **Verification:**
