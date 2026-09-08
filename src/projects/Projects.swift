@@ -147,7 +147,9 @@ enum Projects {
                         changed = true
                     }
                     let patternExcluded = pattern(for: identity.windowId).map { project.excludedPatterns.contains($0) } ?? false
-                    if !patternExcluded, project.memberIdentities.contains(identity) || (savedOwners.count == 1 && savedOwners.contains(project.id)) {
+                    if ProjectReattachResolver.shouldRestore(hasLiveIdentity: project.memberIdentities.contains(identity),
+                        identityExcluded: project.excludedMembers.contains(identity) || project.excludedWindowIds.contains(identity.windowId),
+                        patternExcluded: patternExcluded, isUniquePatternOwner: savedOwners.count == 1 && savedOwners.contains(project.id)) {
                         project.members.insert(identity.windowId)
                         Logger.debug { "projects restored project=\(project.id) window=\(identity.windowId) pid=\(identity.pid)" }
                     }
