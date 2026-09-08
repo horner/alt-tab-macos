@@ -86,7 +86,7 @@ The rebuilt Debug app confirms Desktop following is off by default.
 
 Project diagnostics use the existing debug logger. Open the Debug window before reproducing an issue, then use **Copy all**. Search for `projects ` to see menu requests/completions, target IDs, membership counts, identity restoration and removals. A `focus requested` entry records dispatch, not confirmed OS focus. Debug output can also be captured by launching the app executable with `--logs=debug` and redirecting its output to a file.
 
-Newly created windows (for example Chrome **⌘N**) join the active custom Project automatically while Projects is enabled. Existing windows rediscovered during startup or tracking refresh do not. A linked Desktop can also add the window to its own Project. Diagnostic entries identify this path as `source=window-created`.
+Newly created windows (for example Chrome **⌘N**) on the current Desktop join the active custom Project while Projects is enabled, after the owning app’s first 30 seconds. Saved assignments and linked Desktop assignments take priority; automatic capture does not add an already assigned window to another Project. Existing windows rediscovered during startup or tracking refresh do not join the active Project. Diagnostic entries identify this path as `source=window-created`.
 
 Use the top-level **Add active window to → Project** menu to assign the focused window directly to any custom Project, including when no Project is active. The current Project selection is preserved.
 
@@ -117,3 +117,13 @@ The numbered strip now follows keyboard order **1–9, then 0**. Later entries s
 ![Corrected 1–9, 0 Project buttons, followed by click-only Projects](screenshots/m3-project-pointer-numbering.jpg)
 
 A physical Lilly click exposed a hit-area bug: AppKit reported the whole panel as the first button’s visible region. Hit areas now intersect that region with each button’s bounds, so a click selects the button under the pointer. The regression tests include the captured Lilly coordinates and scrolled grid clipping.
+
+**Restoring assignments after app restarts and reboot**
+
+Membership now stores exact app identifiers and window titles as well as live window identities. A reopened window with one matching Project rejoins it before automatic assignment runs. Closing an app retains these patterns. Explicit removal records an exclusion that also survives reboot.
+
+Changed titles do not match automatically. Identical app/title pairs claimed by multiple Projects require a manual assignment; this avoids choosing the wrong Project. During an app’s first 30 seconds, new windows do not join the active Project, including manually created windows in that interval. Linked Desktop capture still works and respects saved assignments.
+
+The first reboot recovery imported patterns from the pre-reboot snapshot and event log. This capture shows two reopened terminal windows restored to artipod. Some windows were not reopened, had changed titles, or had conflicting assignments. A second reboot verification of the new code remains pending.
+
+![Artipod windows recovered after reboot using saved app and title evidence](screenshots/m8-recovered-artipod.jpg)
