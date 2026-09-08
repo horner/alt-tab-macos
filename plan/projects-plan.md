@@ -209,7 +209,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (17 of 17 tasks); live verification pending
+**Status:** implementation complete (18 of 18 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -282,6 +282,8 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 > Note: Debug build and all 1,207 tests passed. Focused label checks and live captures verify explicit-name priority, smaller details, unnamed single-line tiles, and the main window context header. Screenshots embedded in docs/projects/README.md; temporary window-release Hold setting restored to Focus.
 
 - [x] 3.17 — User-requested Desktop-to-Project linking in “Name this Desktop…”: checkbox and new/existing Project picker, persistent one-to-one links, automatic membership for existing and future windows on linked Desktops (explicitly approved), and linked Project selection when entering its Desktop. Manual cross-Desktop members remain allowed. Unlinking retains memberships; deleting a Project clears links. Files stay in `src/projects/`, project registration, generated strings and docs. General unlinked-Project M4 lifecycle remains separate. Validation: Debug build; separate-process registry smoke checks for persistence, existing/future membership, unique links, unlink retention and deletion cleanup; production dialog inspected in an isolated AppKit fixture with inline documentation screenshot.
+- [x] 3.18 — User-requested default: Desktop changes preserve the active custom Project. Optional “Switch active Project when switching Desktops” setting defaults off; when enabled, a Desktop selects its linked Project or normal Desktop scope. Linked membership capture is independent of this setting. Files: `src/projects/Projects.swift`, `ProjectsPreferences.swift`, `ProjectsSheet.swift`, generated strings and docs.
+
 
 ### Milestone 4 — Active-Project lifecycle: pinning and auto-capture
 
