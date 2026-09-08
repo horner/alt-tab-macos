@@ -207,7 +207,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (10 of 10 tasks); live verification pending
+**Status:** implementation complete (11 of 11 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -254,6 +254,10 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.10 — User-requested phase 3 layout: Spaces tiles show the most recently focused eligible window's app and title on line one with its app icon; smaller line two shows Desktop N and an explicit Desktop name when distinct. Empty Desktops retain a name/fallback and desktop icon. Bound long titles and expose full text in tooltip/accessibility. Files: `src/spaces/SpacesList.swift`, `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, docs screenshots/captions. M4 remains untouched.
 
 > Note: Debug build and all 1,203 tests pass; protected tests are unchanged. Focused source checks cover app/title composition, duplicate/missing names, MRU eligibility, empty Desktops, and saved-name subtitles. Live screenshot confirms app icons, title-first layout, smaller Desktop labels, and bounded long titles; embedded in docs/projects/README.md.
+
+- [x] 3.11 — User-requested AltTab restart persistence: save explicit live window identities per Project and restore memberships as those windows are rediscovered; preserve the selected custom Project at startup. Match WindowServer ID, PID, and process launch time without title heuristics. Read LaunchServices off-main. Older Project entries load with no saved members. This does not implement M8 app-relaunch/reboot matching or M4 lifecycle behavior. Files: `src/projects/Projects.swift`, `src/projects/ProjectsPreferences.swift`, `src/projects/ProjectWindowIdentity.swift`, its tests/spec, project registration.
+
+> Note: Debug build and all 1,207 tests pass; the identity triad has four matching scenarios, and protected tests are unchanged. A separate-process harness using the actual registry and entry source verifies save/restart restoration, selected Project restoration, PID-reuse rejection, explicit removal, and closed-window pruning. Active selection writes defer until after visible UI work. Prior builds did not save member mappings: previously lost mappings require re-adding windows once. Live end-to-end menu verification remains pending; this change has no new visual state to capture.
 
 ### Milestone 4 — Active-Project lifecycle: pinning and auto-capture
 

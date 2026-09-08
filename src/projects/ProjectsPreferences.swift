@@ -22,8 +22,9 @@ struct ProjectEntry: Codable {
     var name: String?
     var autoName: String?
     var iconFileName: String?
+    var members: [ProjectWindowIdentity]
 
-    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil) {
+    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = []) {
         self.id = id
         self.kind = kind
         self.spaceUuid = spaceUuid
@@ -31,6 +32,7 @@ struct ProjectEntry: Codable {
         self.name = name
         self.autoName = autoName
         self.iconFileName = iconFileName
+        self.members = members
     }
 
     /// Optional or newly added fields must not make CachedUserDefaults reset the entire collection.
@@ -43,5 +45,6 @@ struct ProjectEntry: Codable {
         name = try? c?.decode(String.self, forKey: .name)
         autoName = try? c?.decode(String.self, forKey: .autoName)
         iconFileName = try? c?.decode(String.self, forKey: .iconFileName)
+        members = (try? c?.decode([ProjectWindowIdentity].self, forKey: .members)) ?? []
     }
 }
