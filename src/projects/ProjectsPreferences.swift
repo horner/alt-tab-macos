@@ -26,9 +26,13 @@ struct ProjectEntry: Codable {
     var iconFileName: String?
     var members: [ProjectWindowIdentity]
     var excludedMembers: [ProjectWindowIdentity]
+    var memberPatterns = [ProjectWindowPattern]()
+    var excludedPatterns = [ProjectWindowPattern]()
     var linkedProjectId: String?
 
-    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = []) {
+    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = [], memberPatterns: [ProjectWindowPattern] = [], excludedPatterns: [ProjectWindowPattern] = []) {
+        self.memberPatterns = memberPatterns
+        self.excludedPatterns = excludedPatterns
         self.id = id
         self.kind = kind
         self.spaceUuid = spaceUuid
@@ -44,6 +48,8 @@ struct ProjectEntry: Codable {
     /// Optional or newly added fields must not make CachedUserDefaults reset the entire collection.
     init(from decoder: Decoder) throws {
         let c = try? decoder.container(keyedBy: CodingKeys.self)
+        memberPatterns = (try? c?.decode([ProjectWindowPattern].self, forKey: .memberPatterns)) ?? []
+        excludedPatterns = (try? c?.decode([ProjectWindowPattern].self, forKey: .excludedPatterns)) ?? []
         spaceUuid = try? c?.decode(String.self, forKey: .spaceUuid)
         id = (try? c?.decode(String.self, forKey: .id)) ?? spaceUuid.map { "desktop-\($0)" } ?? UUID().uuidString
         kind = (try? c?.decode(String.self, forKey: .kind)) ?? (spaceUuid == nil ? "custom" : "desktop")
@@ -55,4 +61,9 @@ struct ProjectEntry: Codable {
         excludedMembers = (try? c?.decode([ProjectWindowIdentity].self, forKey: .excludedMembers)) ?? []
         linkedProjectId = try? c?.decode(String.self, forKey: .linkedProjectId)
     }
+}
+
+struct ProjectWindowPattern: Codable, Equatable {
+    let bundleIdentifier: String
+    let title: String
 }
