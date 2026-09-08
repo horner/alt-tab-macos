@@ -131,7 +131,7 @@ Restoration displays a brief, non-activating notice grouped over one second, lis
 
 **Project window history**
 
-Open the active Project’s menu → **History**, or **Other Projects → Project → History**. Each remembered title shows **Open now** or how long ago AltTab last observed it. Open entries can be selected to focus the window; historical entries are read-only, with the full title, app identifier, and timestamp in their tooltip. Duplicate title observations are grouped using their latest timestamp.
+Open the active Project’s menu → **History**, or **Other Projects → Project → History**. Each remembered title shows **Open now** or how long ago AltTab last observed it. Open entries can be selected to focus the window. Past Safari/Chrome entries with a saved URL show **Reopen**: click the title or its URL to open it in the original browser. Entries without a usable web URL remain read-only. Tooltips show the full title, app identifier, and timestamp. Duplicate title observations are grouped using their latest timestamp.
 
 History survives app closure and explicit moves/removals. It is separate from restoration rules, so a past entry does not automatically rejoin a Project it was removed from. Older observations without a timestamp show **Last seen unknown**. The initial recovery history uses timestamps from the saved event log where available.
 
@@ -148,3 +148,5 @@ Capture covers the active tab of each window, not every background tab. If the b
 **Assignment checkmarks**
 
 In **Add active window to → Project**, a checkmark identifies each Project that already contains the focused window. The direct **Add active window to: Project** action shows the same membership state. Checked entries remain selectable; the marker reports window membership, not which Project is active.
+
+Reopening uses the browser’s normal URL-opening behavior, so it may open a tab in an existing window. It does not recreate the original tab collection, browser profile, or Desktop, and does not reassign an existing window from another Project. New windows use the usual Project recovery rules. If the original browser cannot open the address, AltTab displays an error.

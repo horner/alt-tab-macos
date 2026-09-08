@@ -25,6 +25,12 @@ final class ProjectsMenu: NSObject {
         }
     }
 
+    private final class HistorySelection: NSObject {
+        let pattern: ProjectWindowPattern
+
+        init(_ pattern: ProjectWindowPattern) { self.pattern = pattern }
+    }
+
     static func install(in menu: NSMenu) {
         desktopItem = item(NSLocalizedString("Name this Desktop…", comment: "Desktop menu action"), #selector(nameDesktop))
         projectsItem = item(NSLocalizedString("Projects", comment: "Projects menu"), nil)
@@ -216,12 +222,15 @@ final class ProjectsMenu: NSObject {
             let live = Windows.list.first { project.members.contains($0.tracked.id) && $0.application.bundleIdentifier == pattern.bundleIdentifier && $0.title == pattern.title && (pattern.url == nil || ProjectBrowserURLs.url(for: $0) == pattern.url) }
             let age = live == nil ? historyAge(pattern.lastSeenAt) : NSLocalizedString("Open now", comment: "Project window history")
             let title = pattern.title.count > 80 ? String(pattern.title.prefix(77)) + "…" : pattern.title
-            let entry = item("\(title) — \(age)", live == nil ? nil : #selector(selectWindow))
-            entry.isEnabled = live != nil
+            let canReopen = ProjectBrowserURLResolver.supports(pattern.bundleIdentifier) && ProjectBrowserURLResolver.normalized(pattern.url) != nil
+            let label = live == nil && canReopen ? String(format: NSLocalizedString("%@ — Reopen (%@)", comment: "Historical browser window and last seen age"), title.isEmpty ? pattern.url! : title, age) : "\(title) — \(age)"
+            let entry = item(label, live != nil ? #selector(selectWindow) : canReopen ? #selector(reopenHistory) : nil)
+            entry.isEnabled = live != nil || canReopen
             entry.toolTip = "\(pattern.title)\n\(pattern.bundleIdentifier)" + (pattern.lastSeenAt.map { "\n\($0)" } ?? "")
             if let live { entry.representedObject = WindowSelection(project, live) }
+            else if canReopen { entry.representedObject = HistorySelection(pattern) }
             history.addItem(entry)
-            addURL(pattern.url, to: history)
+            addURL(pattern.url, to: history, selection: live == nil && canReopen ? HistorySelection(pattern) : nil)
         }
         if entries.isEmpty {
             let empty = item(NSLocalizedString("No window history yet", comment: "Project window history"), nil)
@@ -233,13 +242,34 @@ final class ProjectsMenu: NSObject {
         menu.addItem(parent)
     }
 
-    private static func addURL(_ url: String?, to menu: NSMenu) {
+    private static func addURL(_ url: String?, to menu: NSMenu, selection: HistorySelection? = nil) {
         guard let url else { return }
-        let address = item(url.count > 100 ? String(url.prefix(97)) + "…" : url, nil)
-        address.isEnabled = false
+        let address = item(url.count > 100 ? String(url.prefix(97)) + "…" : url, selection == nil ? nil : #selector(reopenHistory))
+        address.isEnabled = selection != nil
+        address.representedObject = selection
         address.indentationLevel = 1
         address.toolTip = url
         menu.addItem(address)
+    }
+
+    @objc private static func reopenHistory(_ sender: NSMenuItem) {
+        guard Projects.isEnabled, let selection = sender.representedObject as? HistorySelection,
+              ProjectBrowserURLResolver.supports(selection.pattern.bundleIdentifier),
+              let normalized = ProjectBrowserURLResolver.normalized(selection.pattern.url), let url = URL(string: normalized) else { return }
+        logMenu("reopenHistory", "requested", sender)
+        let bundle = selection.pattern.bundleIdentifier
+        DispatchQueue.global(qos: .userInitiated).async {
+            let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle)
+            let opened = app.flatMap { try? NSWorkspace.shared.open([url], withApplicationAt: $0, options: [], configuration: [:]) } != nil
+            DispatchQueue.main.async {
+                Logger.debug { "projects menu action=reopenHistory phase=completed browser=\(bundle) opened=\(opened)" }
+                guard !opened else { return }
+                let alert = NSAlert()
+                alert.messageText = NSLocalizedString("Could not reopen browser history", comment: "Project history error")
+                alert.informativeText = NSLocalizedString("Make sure the original browser is installed and try again.", comment: "Project history error")
+                alert.runModal()
+            }
+        }
     }
 
     private static func historyAge(_ date: Date?) -> String {
