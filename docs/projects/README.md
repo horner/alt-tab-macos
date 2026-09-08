@@ -49,3 +49,7 @@ Tiles now show their Desktop number alongside the saved name. User names take pr
 The current layout uses the most recently focused eligible window's app icon and **app - window title** on the first line. A smaller second line shows **Desktop N** and any distinct explicit Desktop name. Long titles truncate within the grid; their full text remains in the tooltip and accessibility label. Empty Desktops keep a name and desktop-icon fallback.
 
 ![Spaces tiles with window titles and smaller Desktop subtitles](screenshots/m3-window-title-subtitles.jpg)
+
+**Title-only refinement**
+
+The primary line now contains only the window title. The app name appears with Desktop N in the smaller second line, beside any distinct custom Desktop name. The preceding screenshot documents the earlier app-and-title layout; a screenshot of this refinement is pending.
