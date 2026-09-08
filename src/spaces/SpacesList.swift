@@ -17,16 +17,14 @@ class SpaceItem {
             let project = Projects.byId["desktop-\(uuid)"]
             return ProjectNameResolver.normalized(project?.name) ?? ProjectNameResolver.normalized(project?.autoName) ?? fallbackLabel
         }
-        let app = ProjectNameResolver.normalized(window.application.localizedName)
-        let title = ProjectNameResolver.normalized(window.title)
-        guard app != title else { return app ?? fallbackLabel }
-        return [app, title].compactMap { $0 }.joined(separator: " - ")
+        return ProjectNameResolver.normalized(window.title) ?? ProjectNameResolver.normalized(window.application.localizedName) ?? fallbackLabel
     }
     var subtitle: String? {
         let desktop = desktopNumber == 0 ? NSLocalizedString("Fullscreen", comment: "Spaces switcher tile label")
             : String(format: NSLocalizedString("Desktop %d", comment: "Spaces switcher tile label"), desktopNumber)
-        guard let name = ProjectNameResolver.normalized(Projects.byId["desktop-\(uuid)"]?.name), name != label else { return desktop }
-        return "\(desktop) · \(name)"
+        let app = ProjectNameResolver.normalized(previewWindow?.application.localizedName)
+        let name = ProjectNameResolver.normalized(Projects.byId["desktop-\(uuid)"]?.name)
+        return [desktop, app, name == label || name == app ? nil : name].compactMap { $0 }.joined(separator: " · ")
     }
 
     init(spaceId: CGSSpaceID, uuid: String, desktopNumber: Int, isCurrent: Bool, label: String) {

@@ -207,7 +207,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (11 of 11 tasks); live verification pending
+**Status:** implementation complete (12 of 12 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -258,6 +258,10 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.11 — User-requested AltTab restart persistence: save explicit live window identities per Project and restore memberships as those windows are rediscovered; preserve the selected custom Project at startup. Match WindowServer ID, PID, and process launch time without title heuristics. Read LaunchServices off-main. Older Project entries load with no saved members. This does not implement M8 app-relaunch/reboot matching or M4 lifecycle behavior. Files: `src/projects/Projects.swift`, `src/projects/ProjectsPreferences.swift`, `src/projects/ProjectWindowIdentity.swift`, its tests/spec, project registration.
 
 > Note: Debug build and all 1,207 tests pass; the identity triad has four matching scenarios, and protected tests are unchanged. A separate-process harness using the actual registry and entry source verifies save/restart restoration, selected Project restoration, PID-reuse rejection, explicit removal, and closed-window pruning. Active selection writes defer until after visible UI work. Prior builds did not save member mappings: previously lost mappings require re-adding windows once. Live end-to-end menu verification remains pending; this change has no new visual state to capture.
+
+- [x] 3.12 — User-requested label refinement: show only the window title on the primary Spaces tile line; move the app name beside Desktop N in the smaller subtitle, retaining distinct explicit Desktop names. Investigate the Desktop 3 Cloud/zsh mismatch without changing upstream title discovery outside the approved budget. Files: `src/spaces/SpacesList.swift`, docs screenshots/captions.
+
+> Note: Debug build and focused title/subtitle checks pass. User confirmed the normal window switcher also shows only -zsh: the missing Cloud text is already absent from the shared Window.title value. Spaces formatting now uses title-only primary text and app/desktop secondary text. The shared title-ingestion path lives in src/switcher/state/Window.swift and Applications.swift, outside the current edit budget; no edits were made there. Further title-ingestion diagnosis/fixes require narrowly scoped user approval. No new live screenshot yet.
 
 ### Milestone 4 — Active-Project lifecycle: pinning and auto-capture
 
