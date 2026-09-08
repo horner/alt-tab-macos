@@ -7,9 +7,6 @@
 /* Historical browser window and last seen age */
 "%@ — Reopen (%@)" = "%1$@ — Reopen (%2$@)";
 
-/* Project restoration notice */
-"%d restored on a different Desktop" = "%d restored on a different Desktop";
-
 /* No comment provided by engineer. */
 "%d selected window(s) already belong to: %@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships." = "%1$d selected window(s) already belong to: %2$@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships.";
 
@@ -1179,3 +1176,6 @@
 
 /* No comment provided by engineer. */
 "YOUR USAGE SO FAR" = "YOUR USAGE SO FAR";
+
+/* Restored window destination Project */
+"→ %@ (different Desktop)" = "→ %@ (different Desktop)";
