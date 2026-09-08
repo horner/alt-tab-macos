@@ -58,6 +58,9 @@
 /* No comment provided by engineer. */
 "Add a running app" = "Add a running app";
 
+/* Projects submenu */
+"Add active window to" = "Add active window to";
+
 /* No comment provided by engineer. */
 "Add active window to: %@" = "Add active window to: %@";
 

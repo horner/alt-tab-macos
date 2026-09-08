@@ -87,3 +87,5 @@ The rebuilt Debug app confirms Desktop following is off by default.
 Project diagnostics use the existing debug logger. Open the Debug window before reproducing an issue, then use **Copy all**. Search for `projects ` to see menu requests/completions, target IDs, membership counts, identity restoration and removals. A `focus requested` entry records dispatch, not confirmed OS focus. Debug output can also be captured by launching the app executable with `--logs=debug` and redirecting its output to a file.
 
 Newly created windows (for example Chrome **⌘N**) join the active custom Project automatically while Projects is enabled. Existing windows rediscovered during startup or tracking refresh do not. A linked Desktop can also add the window to its own Project. Diagnostic entries identify this path as `source=window-created`.
+
+Use the top-level **Add active window to → Project** menu to assign the focused window directly to any custom Project, including when no Project is active. The current Project selection is preserved.
