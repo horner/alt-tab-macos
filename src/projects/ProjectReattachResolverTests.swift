@@ -103,4 +103,38 @@ final class ProjectReattachResolverTests: XCTestCase {
         XCTAssertEqual(decoded.lastSeenAt, seen)
     }
 
+    func testURLRestoresProjectDespiteSignInTitleChange() {
+        let saved = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", url: "https://example.com/work")
+        let reopened = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", url: "https://example.com/work")
+        let other = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in")
+        XCTAssertEqual(ProjectReattachResolver.owners(of: reopened, assignments: ["work": [saved], "other": [other]]), ["work"])
+    }
+
+    func testDifferentKnownURLsDoNotMatchOnlyByTitle() {
+        let saved = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", url: "https://example.com/work")
+        let reopened = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", url: "https://example.com/personal")
+        XCTAssertTrue(ProjectReattachResolver.owners(of: reopened, assignments: ["work": [saved]]).isEmpty)
+    }
+
+    func testSharedURLUsesDesktopToResolveProject() {
+        let first = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Old", spaceUuid: "a", url: "https://example.com/login")
+        let second = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Old", spaceUuid: "b", url: "https://example.com/login")
+        let reopened = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "b", url: "https://example.com/login")
+        XCTAssertEqual(ProjectReattachResolver.owners(of: reopened, assignments: ["a": [first], "b": [second]]), ["b"])
+    }
+
+    func testURLSurvivesEncodingAndOlderHistoryStillLoads() throws {
+        let saved = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", url: "https://example.com/work")
+        XCTAssertEqual(try JSONDecoder().decode(ProjectWindowPattern.self, from: JSONEncoder().encode(saved)).url, saved.url)
+        XCTAssertNil(try JSONDecoder().decode(ProjectWindowPattern.self, from: Data(#"{"bundleIdentifier":"Chrome","title":"Work"}"#.utf8)).url)
+    }
+
+    func testObservationMatchesChangedTitleByURLWithoutConflatingDifferentURLs() {
+        let saved = ProjectWindowPattern(bundleIdentifier: "com.apple.Safari", title: "Work", url: "https://example.com/work")
+        XCTAssertTrue(ProjectReattachResolver.matchesObservation(saved, ProjectWindowPattern(bundleIdentifier: "com.apple.Safari", title: "Sign in", url: saved.url)))
+        XCTAssertFalse(ProjectReattachResolver.matchesObservation(saved, ProjectWindowPattern(bundleIdentifier: "com.apple.Safari", title: "Work", url: "https://example.com/other")))
+        XCTAssertTrue(ProjectReattachResolver.matchesObservation(saved, ProjectWindowPattern(bundleIdentifier: "com.apple.Safari", title: "Work")))
+        XCTAssertFalse(ProjectReattachResolver.matchesObservation(saved, ProjectWindowPattern(bundleIdentifier: "com.google.Chrome", title: "Work", url: saved.url)))
+    }
+
 }

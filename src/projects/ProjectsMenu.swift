@@ -50,6 +50,7 @@ final class ProjectsMenu: NSObject {
         }
         desktopUuid = Projects.spaces.first { $0.isCurrent }?.uuid
         visibleWindows = Windows.list.filter { isVisibleOnDesktop($0) }
+        Windows.list.forEach { ProjectBrowserURLs.refresh($0) }
         refreshActiveItems()
         addProjects(to: menu, title: addToProjectItem.title, action: #selector(addWindow), enabled: focusedWindow != nil, parent: addToProjectItem)
         addToProjectItem.isHidden = !Projects.isEnabled
@@ -203,11 +204,11 @@ final class ProjectsMenu: NSObject {
         let parent = item(NSLocalizedString("History", comment: "Project window history"), nil)
         let history = NSMenu()
         history.autoenablesItems = false
-        let grouped = Dictionary(grouping: project.windowHistory, by: { $0.bundleIdentifier + "\u{0}" + $0.title })
+        let grouped = Dictionary(grouping: project.windowHistory, by: { $0.bundleIdentifier + "\u{0}" + $0.title + "\u{0}" + ($0.url ?? "") })
         let entries = grouped.values.compactMap { $0.max { ($0.lastSeenAt ?? .distantPast) < ($1.lastSeenAt ?? .distantPast) } }
             .sorted { ($0.lastSeenAt ?? .distantPast) > ($1.lastSeenAt ?? .distantPast) }
         for pattern in entries {
-            let live = Windows.list.first { project.members.contains($0.tracked.id) && $0.application.bundleIdentifier == pattern.bundleIdentifier && $0.title == pattern.title }
+            let live = Windows.list.first { project.members.contains($0.tracked.id) && $0.application.bundleIdentifier == pattern.bundleIdentifier && $0.title == pattern.title && (pattern.url == nil || ProjectBrowserURLs.url(for: $0) == pattern.url) }
             let age = live == nil ? historyAge(pattern.lastSeenAt) : NSLocalizedString("Open now", comment: "Project window history")
             let title = pattern.title.count > 80 ? String(pattern.title.prefix(77)) + "…" : pattern.title
             let entry = item("\(title) — \(age)", live == nil ? nil : #selector(selectWindow))
@@ -215,6 +216,13 @@ final class ProjectsMenu: NSObject {
             entry.toolTip = "\(pattern.title)\n\(pattern.bundleIdentifier)" + (pattern.lastSeenAt.map { "\n\($0)" } ?? "")
             if let live { entry.representedObject = WindowSelection(project, live) }
             history.addItem(entry)
+            if let url = pattern.url {
+                let address = item(url.count > 100 ? String(url.prefix(97)) + "…" : url, nil)
+                address.isEnabled = false
+                address.indentationLevel = 1
+                address.toolTip = url
+                history.addItem(address)
+            }
         }
         if entries.isEmpty {
             let empty = item(NSLocalizedString("No window history yet", comment: "Project window history"), nil)

@@ -921,6 +921,7 @@ class Applications {
     /// Shares the "wid-N-generic" dedup/throttle key so it never double-reads a window the discovery pass
     /// just refreshed. Runs for every tracked window on each show.
     static func refreshWindowTitleAndTabs(_ axWindow: AXUIElement, _ wid: CGWindowID, _ app: Application, _ reconcileTabs: Bool = true) {
+        ProjectBrowserURLs.refresh(wid: wid)
         // Snapshotted HERE, on main, at issue time. Recording the version the answer lands against instead
         // would mark a window up to date with a window set that changed while its read was in flight.
         let appWindowSetVersionAtRead = Windows.appWindowSetVersion[app.pid] ?? 0
@@ -1001,6 +1002,7 @@ class Applications {
     /// swallow it): the title is the one fact whose update RATE the observed app chooses, and a window
     /// tracking a build log or a progress bar renames itself continuously.
     static func applyObservedTitle(wid: CGWindowID, title: String?) {
+        ProjectBrowserURLs.refresh(wid: wid)
         windowAttributesThrottler.throttleOrProceed(key: "\(wid)-title") {
             guard let window = Windows.byWindowId[wid] else { return }
             let newTitle = window.bestEffortTitle(title)
