@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		606381ECA7EE2A7E6C126FA9 /* ProjectWindowIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D5CF5FD9024F6D476232A09 /* ProjectWindowIdentityTests.swift */; };
+		C51F2DF8F60AC7918EAC82E9 /* ProjectWindowIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F40877DFE37654518A34A4 /* ProjectWindowIdentity.swift */; };
+		AF38ABD97250933AAA511A9D /* ProjectWindowIdentity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F40877DFE37654518A34A4 /* ProjectWindowIdentity.swift */; };
 		D942EE6C91EC9EABAC196472 /* ProjectsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3901B8785EDFDB0F22108C8E /* ProjectsSheet.swift */; };
 		2F629E580F888BF0BF65BD7C /* ProjectsPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3184D81303B4B7FB86ABCC9E /* ProjectsPanel.swift */; };
 		0252784946083707BFBF6BD4 /* ProjectSwitcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0BC79C62F49CD271374BA85D /* ProjectSwitcher.swift */; };
@@ -458,6 +461,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B0EE8D63F8E0D664E1AFB7CC /* ProjectWindowIdentitySpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectWindowIdentitySpecs.md; sourceTree = "<group>"; };
+		4D5CF5FD9024F6D476232A09 /* ProjectWindowIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWindowIdentityTests.swift; sourceTree = "<group>"; };
+		A2F40877DFE37654518A34A4 /* ProjectWindowIdentity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWindowIdentity.swift; sourceTree = "<group>"; };
 		3901B8785EDFDB0F22108C8E /* ProjectsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsSheet.swift; sourceTree = "<group>"; };
 		3184D81303B4B7FB86ABCC9E /* ProjectsPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsPanel.swift; sourceTree = "<group>"; };
 		0BC79C62F49CD271374BA85D /* ProjectSwitcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSwitcher.swift; sourceTree = "<group>"; };
@@ -937,6 +943,9 @@
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
+				B0EE8D63F8E0D664E1AFB7CC /* ProjectWindowIdentitySpecs.md */,
+				4D5CF5FD9024F6D476232A09 /* ProjectWindowIdentityTests.swift */,
+				A2F40877DFE37654518A34A4 /* ProjectWindowIdentity.swift */,
 				3901B8785EDFDB0F22108C8E /* ProjectsSheet.swift */,
 				3184D81303B4B7FB86ABCC9E /* ProjectsPanel.swift */,
 				0BC79C62F49CD271374BA85D /* ProjectSwitcher.swift */,
@@ -2146,6 +2155,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				606381ECA7EE2A7E6C126FA9 /* ProjectWindowIdentityTests.swift in Sources */,
+				C51F2DF8F60AC7918EAC82E9 /* ProjectWindowIdentity.swift in Sources */,
 				8CEAB3DE253F0BFD5CDAAE8C /* ProjectsOrderResolverTests.swift in Sources */,
 				547464810E4F5939D45AA43B /* ProjectsOrderResolver.swift in Sources */,
 				6AEBEDA9547721AF3C46DBEC /* ProjectNameResolverTests.swift in Sources */,
@@ -2282,6 +2293,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF38ABD97250933AAA511A9D /* ProjectWindowIdentity.swift in Sources */,
 				D942EE6C91EC9EABAC196472 /* ProjectsSheet.swift in Sources */,
 				2F629E580F888BF0BF65BD7C /* ProjectsPanel.swift in Sources */,
 				0252784946083707BFBF6BD4 /* ProjectSwitcher.swift in Sources */,
