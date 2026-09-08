@@ -73,6 +73,15 @@ final class ProjectsMenu: NSObject {
         addProjects(to: submenu, title: NSLocalizedString("Delete Project", comment: "Projects submenu"), action: #selector(deleteProject))
     }
 
+    private static func logMenu(_ action: String, _ phase: String, _ sender: NSMenuItem? = nil) {
+        Logger.debug {
+            let target = sender?.representedObject as? String ?? (sender?.representedObject as? WindowSelection)?.projectId ?? "none"
+            let window = (sender?.representedObject as? WindowSelection)?.window?.tracked.id ?? focusedWindow?.tracked.id ?? "none"
+            let counts = Projects.list.filter { $0.isCustom }.map { "\($0.id):\($0.members.count)" }.joined(separator: ",")
+            return "projects menu action=\(action) phase=\(phase) enabled=\(Projects.isEnabled) target=\(target) active=\(Projects.active?.id ?? "none") window=\(window) visible=\(visibleWindows.map { $0.tracked.id }) counts=[\(counts)]"
+        }
+    }
+
     @objc static func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
         if menuItem === addFocusedItem || menuItem === addVisibleItem { return Projects.isEnabled && menuItem.representedObject != nil && menuItem.isEnabled }
         return menuItem.isEnabled
@@ -104,6 +113,8 @@ final class ProjectsMenu: NSObject {
     }
 
     @objc private static func nameDesktop() {
+        logMenu("nameDesktop", "requested")
+        defer { logMenu("nameDesktop", "finished") }
         guard let project = currentDesktop else { return }
         DesktopNamePrompt.present(project)
     }
@@ -180,18 +191,24 @@ final class ProjectsMenu: NSObject {
     }
 
     @objc private static func selectDesktop() {
+        logMenu("selectDesktop", "requested")
+        defer { logMenu("selectDesktop", "finished") }
         cancelNavigation()
         guard Projects.isEnabled else { return }
         Projects.active = currentDesktop
     }
 
     @objc private static func selectProject(_ sender: NSMenuItem) {
+        logMenu("selectProject", "requested", sender)
+        defer { logMenu("selectProject", "finished", sender) }
         cancelNavigation()
         guard Projects.isEnabled, let id = sender.representedObject as? String, let project = Projects.byId[id] else { return }
         Projects.active = project
     }
 
     @objc private static func selectWindow(_ sender: NSMenuItem) {
+        logMenu("selectWindow", "requested", sender)
+        defer { logMenu("selectWindow", "finished", sender) }
         cancelNavigation()
         guard Projects.isEnabled, let selection = sender.representedObject as? WindowSelection,
               let window = selection.window, Windows.list.contains(where: { $0 === window }) else { return }
@@ -199,6 +216,7 @@ final class ProjectsMenu: NSObject {
             let id = navigationId
             DispatchQueue.main.async {
                 guard navigationId == id, Projects.isEnabled, Windows.list.contains(where: { $0 === window }) else { return }
+                Logger.debug { "projects focus requested window=\(window.tracked.id) source=unassigned-menu" }
                 window.focus()
             }
             return
@@ -210,6 +228,7 @@ final class ProjectsMenu: NSObject {
         DispatchQueue.main.async {
             guard navigationId == id, Projects.isEnabled, Projects.active === project,
                   Windows.list.contains(where: { $0 === window }), project.members.contains(window.tracked.id) else { return }
+            Logger.debug { "projects focus requested window=\(window.tracked.id) project=\(project.id)" }
             preserveMenuSelection(project, window, id)
             window.focus()
         }
@@ -254,15 +273,21 @@ final class ProjectsMenu: NSObject {
     }
 
     @objc private static func createEmptyProject() {
+        logMenu("createEmptyProject", "requested")
+        defer { logMenu("createEmptyProject", "finished") }
         createNamedProject(with: [], title: NSLocalizedString("New Project…", comment: ""))
     }
 
     @objc private static func createVisibleProject() {
+        logMenu("createVisibleProject", "requested")
+        defer { logMenu("createVisibleProject", "finished") }
         createNamedProject(with: visibleWindows.filter { isVisibleOnDesktop($0) },
             title: NSLocalizedString("New Project from All Visible Windows…", comment: ""))
     }
 
     @objc private static func createProject() {
+        logMenu("createProject", "requested")
+        defer { logMenu("createProject", "finished") }
         guard let window = focusedWindow else { return }
         createNamedProject(with: [window], title: NSLocalizedString("New Project from this Window…", comment: "Projects menu action"))
     }
@@ -280,6 +305,8 @@ final class ProjectsMenu: NSObject {
     }
 
     @objc private static func addVisibleWindows(_ sender: NSMenuItem) {
+        logMenu("addVisibleWindows", "requested", sender)
+        defer { logMenu("addVisibleWindows", "finished", sender) }
         guard Projects.isEnabled, let id = sender.representedObject as? String, let project = Projects.byId[id] else { return }
         for window in visibleWindows where Windows.list.contains(where: { $0 === window }) && isVisibleOnDesktop(window) {
             Projects.add(windowId: window.tracked.id, to: project)
@@ -287,17 +314,23 @@ final class ProjectsMenu: NSObject {
     }
 
     @objc private static func addWindow(_ sender: NSMenuItem) {
+        logMenu("addWindow", "requested", sender)
+        defer { logMenu("addWindow", "finished", sender) }
         guard Projects.isEnabled, let window = focusedWindow, Windows.list.contains(where: { $0 === window }),
               let id = sender.representedObject as? String, let project = Projects.byId[id] else { return }
         Projects.add(windowId: window.tracked.id, to: project)
     }
 
     @objc private static func renameProject(_ sender: NSMenuItem) {
+        logMenu("renameProject", "requested", sender)
+        defer { logMenu("renameProject", "finished", sender) }
         guard Projects.isEnabled, let id = sender.representedObject as? String, let project = Projects.byId[id] else { return }
         ProjectNamePrompt.present(project, title: NSLocalizedString("Rename Project", comment: "Projects submenu"))
     }
 
     @objc private static func deleteProject(_ sender: NSMenuItem) {
+        logMenu("deleteProject", "requested", sender)
+        defer { logMenu("deleteProject", "finished", sender) }
         guard Projects.isEnabled, let id = sender.representedObject as? String else { return }
         Projects.delete(id: id)
     }
