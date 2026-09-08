@@ -146,11 +146,17 @@ enum Projects {
                         project.excludedMembers.append(identity)
                         changed = true
                     }
-                    let patternExcluded = pattern(for: identity.windowId).map { project.excludedPatterns.contains($0) } ?? false
+                    let candidate = pattern(for: identity.windowId)
+                    let patternExcluded = candidate.map { pattern in project.excludedPatterns.contains { $0.bundleIdentifier == pattern.bundleIdentifier && $0.title == pattern.title && ($0.spaceUuid == nil || pattern.spaceUuid == nil || $0.spaceUuid == pattern.spaceUuid) } } ?? false
                     if ProjectReattachResolver.shouldRestore(hasLiveIdentity: project.memberIdentities.contains(identity),
                         identityExcluded: project.excludedMembers.contains(identity) || project.excludedWindowIds.contains(identity.windowId),
                         patternExcluded: patternExcluded, isUniquePatternOwner: savedOwners.count == 1 && savedOwners.contains(project.id)) {
-                        project.members.insert(identity.windowId)
+                        let inserted = project.members.insert(identity.windowId).inserted
+                        if isEnabled, inserted, !project.memberIdentities.contains(identity), let candidate {
+                            let origins = Set(project.memberPatterns.filter { $0.bundleIdentifier == candidate.bundleIdentifier && $0.title == candidate.title }.compactMap { $0.spaceUuid })
+                            let elsewhere = candidate.spaceUuid.map { !origins.isEmpty && !origins.contains($0) } ?? false
+                            ProjectRestoreNotice.record(windowId: identity.windowId, projectName: project.resolvedName, differentDesktop: elsewhere)
+                        }
                         Logger.debug { "projects restored project=\(project.id) window=\(identity.windowId) pid=\(identity.pid)" }
                     }
                     if project.members.contains(identity.windowId), !project.memberIdentities.contains(identity) {
@@ -178,6 +184,12 @@ enum Projects {
         for project in list {
             project.excludedWindowIds.subtract(ids)
             if project.isCustom {
+                for window in windows where project.members.contains(window.tracked.id) {
+                    if let pattern = pattern(for: window), !pattern.title.isEmpty, !project.memberPatterns.contains(pattern) {
+                        project.memberPatterns.append(pattern)
+                        changed = true
+                    }
+                }
                 let removed = project.members.intersection(ids)
                 Logger.debug { "projects tracking removal project=\(project.id) removed=\(removed.sorted()) before=\(project.members.count)" }
                 let hadMember = !project.members.isDisjoint(with: ids)
@@ -250,13 +262,13 @@ enum Projects {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
         let wasExcluded = project.excludedWindowIds.remove(windowId) != nil || project.excludedMembers.contains { $0.windowId == windowId }
         project.excludedMembers.removeAll { $0.windowId == windowId }
-        if let pattern = pattern(for: windowId) { project.excludedPatterns.removeAll { $0 == pattern } }
+        if let pattern = pattern(for: windowId) { project.excludedPatterns.removeAll { $0.bundleIdentifier == pattern.bundleIdentifier && $0.title == pattern.title } }
         let inserted = insertMember(windowId, into: project)
         if inserted || wasExcluded { save() }
     }
 
     private static func isExcluded(_ windowId: String, from project: Project) -> Bool {
-        if let pattern = pattern(for: windowId), project.excludedPatterns.contains(pattern) { return true }
+        if let pattern = pattern(for: windowId), project.excludedPatterns.contains(where: { $0.bundleIdentifier == pattern.bundleIdentifier && $0.title == pattern.title && ($0.spaceUuid == nil || pattern.spaceUuid == nil || $0.spaceUuid == pattern.spaceUuid) }) { return true }
         if project.excludedWindowIds.contains(windowId) { return true }
         if let identity = windowIdentities[windowId] { return project.excludedMembers.contains(identity) }
         // Defer auto-capture until launch-time identity validation can distinguish a reused window ID.
@@ -266,7 +278,7 @@ enum Projects {
     private static func owners(of windowId: String) -> Set<String> {
         guard let pattern = pattern(for: windowId) else { return [] }
         return ProjectReattachResolver.owners(of: pattern, assignments: Dictionary(uniqueKeysWithValues:
-            list.filter { $0.isCustom }.map { ($0.id, $0.memberPatterns.filter { !$0.title.isEmpty }) }))
+            list.filter { $0.isCustom }.map { ($0.id, $0.memberPatterns) }))
     }
 
     private static func permitsAutomaticAssignment(_ windowId: String, to project: Project) -> Bool {
@@ -294,15 +306,20 @@ enum Projects {
     }
 
     private static func pattern(for windowId: String) -> ProjectWindowPattern? {
-        guard let window = Windows.list.first(where: { $0.tracked.id == windowId }),
-              let bundle = window.application.bundleIdentifier, !bundle.isEmpty, window.title != window.application.localizedName,
-              !window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        return ProjectWindowPattern(bundleIdentifier: bundle, title: window.title)
+        guard let window = Windows.list.first(where: { $0.tracked.id == windowId }) else { return nil }
+        return pattern(for: window)
+    }
+
+    private static func pattern(for window: Window) -> ProjectWindowPattern? {
+        guard let bundle = window.application.bundleIdentifier, !bundle.isEmpty else { return nil }
+        let space = spaces.first { window.spaceIds.contains($0.spaceId) }
+        let title = window.title == window.application.localizedName ? "" : window.title
+        return ProjectWindowPattern(bundleIdentifier: bundle, title: title, spaceUuid: space?.uuid)
     }
 
     @discardableResult
     private static func rememberPattern(_ windowId: String, in project: Project) -> Bool {
-        guard let pattern = pattern(for: windowId), !project.memberPatterns.contains(pattern) else { return false }
+        guard let pattern = pattern(for: windowId), !pattern.title.isEmpty, !project.memberPatterns.contains(pattern) else { return false }
         project.memberPatterns.append(pattern)
         return true
     }
@@ -319,7 +336,7 @@ enum Projects {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
         Logger.debug { "projects explicit remove project=\(project.id) window=\(windowId) wasMember=\(project.members.contains(windowId))" }
         if let pattern = pattern(for: windowId) {
-            project.memberPatterns.removeAll { $0 == pattern }
+            project.memberPatterns.removeAll { $0.bundleIdentifier == pattern.bundleIdentifier && $0.title == pattern.title }
             if !project.excludedPatterns.contains(pattern) { project.excludedPatterns.append(pattern) }
         }
         project.excludedWindowIds.insert(windowId)

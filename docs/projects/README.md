@@ -122,8 +122,10 @@ A physical Lilly click exposed a hit-area bug: AppKit reported the whole panel a
 
 Membership now stores exact app identifiers and window titles as well as live window identities. A reopened window with one matching Project rejoins it before automatic assignment runs. Closing an app retains these patterns. Explicit removal records an exclusion that also survives reboot.
 
-Changed titles do not match automatically. Identical app/title pairs claimed by multiple Projects require a manual assignment; this avoids choosing the wrong Project. During an app’s first 30 seconds, new windows do not join the active Project, including manually created windows in that interval. Linked Desktop capture still works and respects saved assignments.
+History also records stable Desktop UUIDs. When a title changes, one matching app/Desktop history can restore its Project. Desktop context distinguishes identical titles in different Projects; conflicting history still requires a manual assignment. During an app’s first 30 seconds, new windows do not join the active Project, including manually created windows in that interval. Linked Desktop capture still works and respects saved assignments.
 
 The first reboot recovery imported patterns from the pre-reboot snapshot and event log. This capture shows two reopened terminal windows restored to artipod. Some windows were not reopened, had changed titles, or had conflicting assignments. A second reboot verification of the new code remains pending.
 
 ![Artipod windows recovered after reboot using saved app and title evidence](screenshots/m8-recovered-artipod.jpg)
+
+Restoration displays a brief, non-activating notice grouped over one second, listing the Projects and window counts. A separate line reports windows recaptured on a different Desktop. This restores assignments without moving the windows between Desktops.
