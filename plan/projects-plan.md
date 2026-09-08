@@ -404,6 +404,8 @@ User explicitly authorized this milestone after the reboot test. Milestones 4–
 
 - [x] 8.6 — User-requested Project History submenu with past titles, Open now/relative last-seen labels, and click-to-focus for live entries. Separate persisted history survives explicit moves without becoming a restoration rule. Observation timestamps do not affect matching identity. Files: Projects model/preferences/menu, resolver model/tests/specs, generated strings, docs and plan. Validation: Debug build and 1,236 tests pass; 17 resolver scenarios match their tests. Imported 85 older history entries with timestamps from the pre-reboot event log. App restarted; live menu appearance awaits user confirmation.
 
+- [x] 8.7 — Remove Gather after the user-authorized single-window test failed. The cross-process compatibility sequence continued past prepare and returned prepare=1066163, move=1006, reset=1066163; immediate and settled Space queries both stayed on the source Desktop. No Project windows were moved. Removed the menu/action, movement scheduler, and four gather-only SkyLight declarations. Debug build passes; app restarted.
+
 **Verification:**
 1. Build and tests pass; `audit-specs-tests` clean for `ProjectReattachResolver`.
 2. Build Research from a Safari and a Terminal window; quit and relaunch AltTab — both still listed.
