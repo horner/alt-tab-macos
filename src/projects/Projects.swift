@@ -105,25 +105,30 @@ enum Projects {
         DispatchQueue.main.async { [weak window] in
             guard let window, !window.isWindowlessApp, Windows.list.contains(where: { $0 === window }) else { return }
             Logger.debug { "projects discovered window=\(window.tracked.id) spaces=\(window.spaceIds) phantom=\(window.isPhantom) active=\(active?.id ?? "none")" }
-            restoreMembership(window)
-            if !window.isPhantom, let project = creationProject, project.isCustom {
-                Logger.debug { "projects auto-add source=window-created project=\(project.id) window=\(window.tracked.id)" }
-                addAutomatically(windowId: window.tracked.id, to: project)
-            } else {
-                Logger.debug { "projects auto-add skipped window=\(window.tracked.id) new=\(isNew) target=\(creationProject?.id ?? "none") phantom=\(window.isPhantom)" }
-            }
-            for space in spaces where window.spaceIds.contains(space.spaceId) {
-                let desktop = forSpace(uuid: space.uuid)
-                claimName(window.application.localizedName, for: desktop)
-                if isEnabled, !window.isPhantom, let project = linkedProject(for: desktop) { addAutomatically(windowId: window.tracked.id, to: project) }
-            }
-            if isEnabled, let project = active, project.isCustom {
-                claimName(window.application.localizedName, for: project)
+            restoreMembership(window) { applicationAge in
+                for space in spaces where window.spaceIds.contains(space.spaceId) {
+                    let desktop = forSpace(uuid: space.uuid)
+                    claimName(window.application.localizedName, for: desktop)
+                    if isEnabled, !window.isPhantom, let project = linkedProject(for: desktop) { addAutomatically(windowId: window.tracked.id, to: project) }
+                }
+                let savedOwners = owners(of: window.tracked.id)
+                let onCurrentDesktop = window.spaceIds.contains(Spaces.currentSpaceId)
+                if !window.isPhantom, pattern(for: window.tracked.id) != nil, let project = creationProject, project.isCustom,
+                   ProjectReattachResolver.allowsActiveAssignment(isNew: isNew, applicationAge: applicationAge,
+                       onCurrentDesktop: onCurrentDesktop, hasSavedOwner: !savedOwners.isEmpty || list.contains { $0.members.contains(window.tracked.id) }) {
+                    Logger.debug { "projects auto-add source=window-created project=\(project.id) window=\(window.tracked.id)" }
+                    addAutomatically(windowId: window.tracked.id, to: project)
+                } else {
+                    Logger.debug { "projects auto-add skipped window=\(window.tracked.id) new=\(isNew) target=\(creationProject?.id ?? "none") phantom=\(window.isPhantom)" }
+                }
+                if isEnabled, let project = active, project.isCustom {
+                    claimName(window.application.localizedName, for: project)
+                }
             }
         }
     }
 
-    private static func restoreMembership(_ window: Window) {
+    private static func restoreMembership(_ window: Window, completion: ((TimeInterval) -> Void)? = nil) {
         guard !window.isWindowlessApp else { return }
         let application = window.application.runningApplication
         DispatchQueue.global(qos: .utility).async { [weak window] in
@@ -132,6 +137,8 @@ enum Projects {
                 guard let window, let launchDate, Windows.list.contains(where: { $0 === window }) else { return }
                 let identity = ProjectWindowIdentity(windowId: window.tracked.id, pid: window.application.pid, processLaunchedAt: launchDate)
                 windowIdentities[identity.windowId] = identity
+                let savedOwners = owners(of: identity.windowId)
+                if savedOwners.count > 1 { Logger.debug { "projects restoration ambiguous window=\(identity.windowId) projects=\(savedOwners.sorted())" } }
                 var changed = false
                 for project in list where project.isCustom {
                     if project.excludedMembers.contains(identity) { project.excludedWindowIds.insert(identity.windowId) }
@@ -139,7 +146,8 @@ enum Projects {
                         project.excludedMembers.append(identity)
                         changed = true
                     }
-                    if project.memberIdentities.contains(identity) {
+                    let patternExcluded = pattern(for: identity.windowId).map { project.excludedPatterns.contains($0) } ?? false
+                    if !patternExcluded, project.memberIdentities.contains(identity) || (savedOwners.count == 1 && savedOwners.contains(project.id)) {
                         project.members.insert(identity.windowId)
                         Logger.debug { "projects restored project=\(project.id) window=\(identity.windowId) pid=\(identity.pid)" }
                     }
@@ -150,6 +158,7 @@ enum Projects {
                     }
                 }
                 if changed { save() }
+                completion?(Date().timeIntervalSince(launchDate))
             }
         }
     }
@@ -219,7 +228,7 @@ enum Projects {
         guard let space = spaces.first(where: { $0.uuid == desktop.homeSpaceUuid }) else { return }
         var changed = false
         for window in Windows.list where !window.isWindowlessApp && !window.isPhantom && window.spaceIds.contains(space.spaceId) {
-            if !isExcluded(window.tracked.id, from: project), insertMember(window.tracked.id, into: project) { changed = true }
+            if permitsAutomaticAssignment(window.tracked.id, to: project), insertMember(window.tracked.id, into: project) { changed = true }
         }
         if changed { save() }
     }
@@ -245,14 +254,28 @@ enum Projects {
     }
 
     private static func isExcluded(_ windowId: String, from project: Project) -> Bool {
+        if let pattern = pattern(for: windowId), project.excludedPatterns.contains(pattern) { return true }
         if project.excludedWindowIds.contains(windowId) { return true }
         if let identity = windowIdentities[windowId] { return project.excludedMembers.contains(identity) }
         // Defer auto-capture until launch-time identity validation can distinguish a reused window ID.
         return project.excludedMembers.contains { $0.windowId == windowId }
     }
 
+    private static func owners(of windowId: String) -> Set<String> {
+        guard let pattern = pattern(for: windowId) else { return [] }
+        return ProjectReattachResolver.owners(of: pattern, assignments: Dictionary(uniqueKeysWithValues:
+            list.filter { $0.isCustom }.map { ($0.id, $0.memberPatterns.filter { !$0.title.isEmpty }) }))
+    }
+
+    private static func permitsAutomaticAssignment(_ windowId: String, to project: Project) -> Bool {
+        guard !isExcluded(windowId, from: project) else { return false }
+        let savedOwners = owners(of: windowId)
+        guard savedOwners.isEmpty || savedOwners == [project.id] else { return false }
+        return !list.contains { $0.isCustom && $0 !== project && $0.members.contains(windowId) }
+    }
+
     private static func addAutomatically(windowId: String, to project: Project) {
-        guard isEnabled, project.isCustom, byId[project.id] === project, !isExcluded(windowId, from: project) else { return }
+        guard isEnabled, project.isCustom, byId[project.id] === project, permitsAutomaticAssignment(windowId, to: project) else { return }
         if insertMember(windowId, into: project) { save() }
     }
 
@@ -270,7 +293,7 @@ enum Projects {
 
     private static func pattern(for windowId: String) -> ProjectWindowPattern? {
         guard let window = Windows.list.first(where: { $0.tracked.id == windowId }),
-              let bundle = window.application.bundleIdentifier, !bundle.isEmpty,
+              let bundle = window.application.bundleIdentifier, !bundle.isEmpty, window.title != window.application.localizedName,
               !window.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
         return ProjectWindowPattern(bundleIdentifier: bundle, title: window.title)
     }

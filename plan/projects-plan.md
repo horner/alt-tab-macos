@@ -391,11 +391,12 @@ User explicitly authorized this milestone after the reboot test. Milestones 4–
 
 **Objective:** A custom Project's members survive quitting AltTab, the member apps quitting, and a reboot.
 **Commit:** per task
-**Status:** not started
+**Status:** implementation complete; second reboot verification pending
 
 - [x] 8.1 — Add member patterns (bundle identifier plus window title) to `ProjectEntry`, keeping the permissive decoder so stored Projects without patterns still load. Files: `src/projects/ProjectsPreferences.swift`
 - [x] 8.2 — Save exact app/title patterns on membership changes and saves; explicit removals persist exclusions, while tracking removal retains durable patterns, *depends on 8.1*. Files: `src/projects/Projects.swift`
-- [ ] 8.3 — Re-attach inside `Projects.windowAdded(_:)` (no new upstream edit), *depends on 8.1*: match the window against stored patterns with bundle-id prefix and literal title substring exactly as `ExceptionMatcher` does, and add it to each matching Project. Pure kernel with triad: exact re-attach; same app, different title, no match; a title that changed after saving; two Projects claiming one window; a pattern whose app is not running. Files: `src/projects/ProjectReattachResolver.swift`, `src/projects/ProjectReattachResolverSpecs.md`, `src/projects/ProjectReattachResolverTests.swift`, `src/projects/Projects.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
+- [x] 8.3 — Restore unique exact bundle/title matches before automatic assignment. Ambiguous matches stay unassigned automatically; saved/live ownership prevents linked capture from adding a second Project. Active-Project auto-add requires a new window on the current Desktop and an app age of at least 30 seconds. Added ProjectReattachResolver triad, registration, docs and screenshot. Validation: Debug build and 1,227 tests pass; all eight resolver tests have matching specs. Live recovery shows reopened artipod windows; snapshot/log patterns imported with a backup, and user-approved preference for Chevron-Case/cloud/artipod applied only to recovery conflicts. No pre-existing WindowFilterResolver tests changed. Owning-app restart and a second reboot remain manual verification items.
+
 
 **Verification:**
 1. Build and tests pass; `audit-specs-tests` clean for `ProjectReattachResolver`.

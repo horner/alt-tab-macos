@@ -62,8 +62,3 @@ struct ProjectEntry: Codable {
         linkedProjectId = try? c?.decode(String.self, forKey: .linkedProjectId)
     }
 }
-
-struct ProjectWindowPattern: Codable, Equatable {
-    let bundleIdentifier: String
-    let title: String
-}
