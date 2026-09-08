@@ -400,6 +400,8 @@ User explicitly authorized this milestone after the reboot test. Milestones 4–
 
 - [x] 8.4 — Preserve distinct live assignments for identically titled windows: exact identity membership takes precedence over a broad title exclusion, and identity exclusions block all restoration paths. Two regression scenarios added; Debug build and 1,229 tests pass. User authorized moving 11 Chrome windows by saved Desktop mapping, plus two clear changed-title matches; three Welcome and two -zsh windows are explicitly left alone.
 
+- [x] 8.5 — User-requested app/Desktop history and grouped recapture notice. Persist observed Desktop UUIDs, retain the last cached title on removal, prefer exact app/title then unique same-app/Desktop history, and distinguish duplicate titles by Desktop. A non-activating notice groups restored assignments and marks different-Desktop recaptures. Files: Projects, reattach resolver triad, ProjectRestoreNotice, registration, docs and plan. Validation: Debug build and 1,234 tests pass; live history restored two artipod windows and one cloud window and emitted a grouped notice. All 13 approved cleanup moves now restore exclusively to their intended Projects.
+
 **Verification:**
 1. Build and tests pass; `audit-specs-tests` clean for `ProjectReattachResolver`.
 2. Build Research from a Safari and a Terminal window; quit and relaunch AltTab — both still listed.

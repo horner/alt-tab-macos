@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8E26AFE3A4FD4C31B58C61F9 /* ProjectRestoreNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9346C0507359497FBCE3C401 /* ProjectRestoreNotice.swift */; };
 		2CB4EB8C077F22F9B8FFB4C3 /* ProjectNumberResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBDED8E316B1D410102D2B13 /* ProjectNumberResolverTests.swift */; };
 		A76F4A91062F4232A4AB9EA3 /* ProjectReattachResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B43B885FAEC4C3FB7562B9E /* ProjectReattachResolverTests.swift */; };
 		803541EE640B4F25B1F54232 /* ProjectPointerResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A84684408104C8E96D93018 /* ProjectPointerResolverTests.swift */; };
@@ -491,6 +492,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		9346C0507359497FBCE3C401 /* ProjectRestoreNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRestoreNotice.swift; sourceTree = "<group>"; };
 		B6CE23E8D65FA5D38FCC040F /* ProjectNumberResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectNumberResolverSpecs.md; sourceTree = "<group>"; };
 		7FE52BF58194408B9027D7E2 /* ProjectReattachResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectReattachResolverSpecs.md; sourceTree = "<group>"; };
 		64297D6BAF3642A6BD7A35BD /* ProjectPointerResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectPointerResolverSpecs.md; sourceTree = "<group>"; };
@@ -1005,6 +1007,7 @@
 				5B43B885FAEC4C3FB7562B9E /* ProjectReattachResolverTests.swift */,
 				6A84684408104C8E96D93018 /* ProjectPointerResolverTests.swift */,
 				042592CF691DADF3A74C4D94 /* ProjectNumberResolver.swift */,
+				9346C0507359497FBCE3C401 /* ProjectRestoreNotice.swift */,
 				5177FF6CB3FF421EBCBBD690 /* ProjectReattachResolver.swift */,
 				3B61859814C94A7F8E415E5C /* ProjectPointerResolver.swift */,
 				0E5402B70341EFA09C1A60A8 /* ProjectAssignmentPrompt.swift */,
@@ -2392,6 +2395,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FF2DA61DD07D066D842D62D7 /* ProjectNumberResolver.swift in Sources */,
+				8E26AFE3A4FD4C31B58C61F9 /* ProjectRestoreNotice.swift in Sources */,
 				1215F118C5DA40A797540D34 /* ProjectReattachResolver.swift in Sources */,
 				4FB0642692F342D5A8413D3E /* ProjectPointerResolver.swift in Sources */,
 				1493871A2B19BB5CFC92D710 /* ProjectAssignmentPrompt.swift in Sources */,

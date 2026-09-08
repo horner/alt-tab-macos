@@ -58,4 +58,35 @@ final class ProjectReattachResolverTests: XCTestCase {
             patternExcluded: false, isUniquePatternOwner: false))
     }
 
+    func testChangedTitleRestoresFromUniqueAppDesktopHistory() {
+        let saved = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", spaceUuid: "desktop-case")
+        let reopened = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "desktop-case")
+        XCTAssertEqual(ProjectReattachResolver.owners(of: reopened, assignments: ["case": [saved]]), ["case"])
+    }
+
+    func testExactTitleRestoresEvenOnAnotherDesktop() {
+        let saved = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", spaceUuid: "desktop-case")
+        let reopened = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", spaceUuid: "desktop-other")
+        XCTAssertEqual(ProjectReattachResolver.owners(of: reopened, assignments: ["case": [saved]]), ["case"])
+    }
+
+    func testDesktopSeparatesIdenticalTitlesInDifferentProjects() {
+        let caseWindow = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "desktop-case")
+        let cloudWindow = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "desktop-cloud")
+        XCTAssertEqual(ProjectReattachResolver.owners(of: cloudWindow, assignments: ["case": [caseWindow], "cloud": [cloudWindow]]), ["cloud"])
+    }
+
+    func testUnknownDesktopAndConflictingDesktopHistoryDoNotGuess() {
+        let saved = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", spaceUuid: "desktop-case")
+        let elsewhere = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "desktop-other")
+        XCTAssertTrue(ProjectReattachResolver.owners(of: elsewhere, assignments: ["case": [saved]]).isEmpty)
+        let sameSpace = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "desktop-case")
+        XCTAssertEqual(ProjectReattachResolver.owners(of: sameSpace, assignments: ["case": [saved], "cloud": [saved]]).count, 2)
+    }
+
+    func testLegacyPatternWithoutDesktopStillDecodes() throws {
+        let json = Data(#"{"bundleIdentifier":"Chrome","title":"Work"}"#.utf8)
+        XCTAssertNil(try JSONDecoder().decode(ProjectWindowPattern.self, from: json).spaceUuid)
+    }
+
 }

@@ -1,13 +1,12 @@
 # ProjectReattachResolver
 
-Saved assignments use exact bundle identifiers and literal window titles. Tracking removal retains patterns.
-A unique owning Project restores a reopened window; conflicting Projects remain unassigned automatically.
-Explicit exclusions survive reboot. Linked Desktop capture cannot override a saved or live owner.
-Titles that change do not match an earlier pattern; membership saves remember titles of live members.
-No app polling or title-substring guessing is used. Discovery supplies the current cached title.
+History stores app identifiers, observed titles, and stable Desktop UUIDs. Closing a tracked window preserves its latest cached title and Desktop, while saves retain earlier observed patterns.
+Exact app/title matches take priority, including on another Desktop. Desktop context separates identical titles; when no title matches, one Project in the same app/Desktop history can recover a changed title. Conflicting history stays unassigned automatically. Patterns without a Desktop remain compatible.
+Explicit exclusions survive reboot. Known live identity membership takes priority over a broad title exclusion; an explicit identity exclusion always blocks restoration. Linked Desktop capture cannot override a saved or live owner.
 New windows can join the active Project only on the current Desktop, with no saved/live owner,
 and at least 30 seconds after the owning app launches. This conservative startup grace also skips
 manually created windows in those first 30 seconds; linked Desktop assignment still applies.
+Restored assignments produce a non-activating notice, grouped over one second; it reports Projects/counts and recaptures on a different Desktop. It does not move windows between Desktops.
 
 ## Test scenarios
 
@@ -22,3 +21,9 @@ manually created windows in those first 30 seconds; linked Desktop assignment st
 
 - **testMovingOneOfTwoIdenticallyTitledWindowsPreservesTheirSeparateAssignments** — live identity membership outranks a broad title exclusion, while an explicit identity exclusion always blocks restoration, including stale membership.
 - **testNewIdentityRequiresUniqueUnexcludedPattern** — a newly launched window needs one unexcluded pattern owner.
+
+- **testChangedTitleRestoresFromUniqueAppDesktopHistory** — a login/error title can rejoin its original Project on the same Desktop.
+- **testExactTitleRestoresEvenOnAnotherDesktop** — an exact match recaptures a window on a different Desktop.
+- **testDesktopSeparatesIdenticalTitlesInDifferentProjects** — Desktop UUID selects the correct Project among identical title matches.
+- **testUnknownDesktopAndConflictingDesktopHistoryDoNotGuess** — ambiguous or unrelated Desktop history cannot claim a window.
+- **testLegacyPatternWithoutDesktopStillDecodes** — old persisted patterns remain readable.
