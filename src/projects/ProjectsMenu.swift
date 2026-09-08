@@ -6,6 +6,7 @@ final class ProjectsMenu: NSObject {
     private static weak var focusedWindow: Window?
     private static var unassignedItem: NSMenuItem!
     private static var activeItem: NSMenuItem!
+    private static var addToProjectItem: NSMenuItem!
     private static var addFocusedItem: NSMenuItem!
     private static var addVisibleItem: NSMenuItem!
     private static var desktopUuid: String?
@@ -33,6 +34,8 @@ final class ProjectsMenu: NSObject {
         addFocusedItem = item("", #selector(addWindow))
         addVisibleItem = item("", #selector(addVisibleWindows))
         [activeItem!, addFocusedItem!, addVisibleItem!].forEach { $0.isHidden = !Projects.isEnabled; menu.addItem($0) }
+        addToProjectItem = addProjects(to: menu, title: NSLocalizedString("Add active window to", comment: "Projects submenu"), action: #selector(addWindow))
+        addToProjectItem.isHidden = !Projects.isEnabled
         unassignedItem = item(NSLocalizedString("Windows without a Project", comment: ""), nil)
         unassignedItem.isHidden = !Projects.isEnabled
         menu.addItem(unassignedItem)
@@ -48,6 +51,8 @@ final class ProjectsMenu: NSObject {
         desktopUuid = Projects.spaces.first { $0.isCurrent }?.uuid
         visibleWindows = Windows.list.filter { isVisibleOnDesktop($0) }
         refreshActiveItems()
+        addProjects(to: menu, title: addToProjectItem.title, action: #selector(addWindow), enabled: focusedWindow != nil, parent: addToProjectItem)
+        addToProjectItem.isHidden = !Projects.isEnabled
         unassignedItem.isHidden = !Projects.isEnabled
         let unassigned = NSMenu()
         unassigned.autoenablesItems = false
@@ -91,8 +96,9 @@ final class ProjectsMenu: NSObject {
         Projects.spaces.first { $0.isCurrent }.map { Projects.forSpace(uuid: $0.uuid) }
     }
 
-    private static func addProjects(to menu: NSMenu, title: String, action: Selector, enabled: Bool = true) {
-        let parent = item(title, nil)
+    @discardableResult
+    private static func addProjects(to menu: NSMenu, title: String, action: Selector, enabled: Bool = true, parent: NSMenuItem? = nil) -> NSMenuItem {
+        let parent = parent ?? item(title, nil)
         let submenu = NSMenu()
         submenu.autoenablesItems = false
         for project in Projects.list where project.isCustom {
@@ -103,7 +109,8 @@ final class ProjectsMenu: NSObject {
         }
         parent.submenu = submenu
         parent.isEnabled = enabled && !submenu.items.isEmpty
-        menu.addItem(parent)
+        if parent.menu == nil { menu.addItem(parent) }
+        return parent
     }
 
     private static func item(_ title: String, _ action: Selector?) -> NSMenuItem {

@@ -209,7 +209,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (21 of 21 tasks); live verification pending
+**Status:** implementation complete (22 of 22 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -286,6 +286,8 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.19 — User-requested “Windows without a Project” menu lists live destinations across all Desktops that belong to no custom Project. Entries show window titles and icons, sorted by recent focus; selecting one focuses it. Hidden/minimized windows remain reachable; windowless apps, phantoms and inactive tabs are excluded. Files: `src/projects/ProjectsMenu.swift`, generated strings and docs. Validation: Debug build, 1,207 tests with zero failures, production-menu source smoke checks for unassigned filtering, ordering, focus, closed-window guards and empty state. Rebuilt app restarted; live settings screenshot confirms Desktop following defaults off.
 - [x] 3.20 — User-requested Project event logging: menu request/completion snapshots, prompt responses, membership additions/removals/restoration, active selection, links and focus requests through the existing debug logger. IDs and counts identify state changes; focus requests are not reported as confirmed focus. Files: `src/projects/`, docs and plan.
 - [x] 3.21 — User-requested new-window membership: genuine WindowServer-created windows join the custom Project active at discovery, including Chrome Cmd+N. Capture the existing creation marker synchronously before the reducer consumes it; defer membership until discovery completes. Startup discovery and re-admission are excluded. Linked Desktop membership remains independent. Files: `src/projects/Projects.swift`, docs and plan; no additional upstream seam. Validation: Debug build and 1,207 tests pass; production-source checks cover creation-marker consumption, original active target, startup/rediscovery exclusion, disabled Projects and identity persistence. Menu smoke checks pass with request/completion logs.
+- [x] 3.22 — User-requested top-level “Add active window to” submenu lists custom Projects and uses the existing logged single-window membership action. Available without an active Project; disabled without a focused window or any custom Projects. Files: `src/projects/ProjectsMenu.swift`, generated strings, docs and plan.
+
 
 
 
