@@ -40,6 +40,8 @@ From [AGENTS.md](AGENTS.md):
 
 ### Upstream touch budget
 
+User approved task 3.23: `src/macos/CGSCallScheduler.swift` may add serialized off-main Project window gathering; `src/macos/api-wrappers/SkyLight.framework.swift` may add its four private API declarations.
+
 User-approved main-switcher addition: `src/switcher/main-window/TilesView.swift` may add only context-header attachment, sizing and positioning hooks; header logic stays in `src/projects/`.
 
 User-approved documentation addition: `docs/projects/` contains phase screenshots and captions only.
@@ -209,7 +211,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (22 of 22 tasks); live verification pending
+**Status:** implementation complete (23 of 23 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -287,6 +289,8 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.20 — User-requested Project event logging: menu request/completion snapshots, prompt responses, membership additions/removals/restoration, active selection, links and focus requests through the existing debug logger. IDs and counts identify state changes; focus requests are not reported as confirmed focus. Files: `src/projects/`, docs and plan.
 - [x] 3.21 — User-requested new-window membership: genuine WindowServer-created windows join the custom Project active at discovery, including Chrome Cmd+N. Capture the existing creation marker synchronously before the reducer consumes it; defer membership until discovery completes. Startup discovery and re-admission are excluded. Linked Desktop membership remains independent. Files: `src/projects/Projects.swift`, docs and plan; no additional upstream seam. Validation: Debug build and 1,207 tests pass; production-source checks cover creation-marker consumption, original active target, startup/rediscovery exclusion, disabled Projects and identity persistence. Menu smoke checks pass with request/completion logs.
 - [x] 3.22 — User-requested top-level “Add active window to” submenu lists custom Projects and uses the existing logged single-window membership action. Available without an active Project; disabled without a focused window or any custom Projects. Files: `src/projects/ProjectsMenu.swift`, generated strings, docs and plan.
+- [x] 3.23 — Explicit user-approved gather action moves the active custom Project’s ordinary windows onto the current Desktop, skips fullscreen windows, verifies resulting membership and reports counts plus per-window debug outcomes. A serialized scheduler lane prevents overlapping compatibility-ID mutations. Files: `ProjectsMenu.swift`, the two approved upstream files, generated strings, docs and plan. Validation: Debug build and 1,207 tests pass; production scheduler source fixture covers confirmed move, already-here, fullscreen, missing-window, failed-move and compatibility-ID cleanup; menu fixture checks custom-Project gating. Actual cross-Desktop movement remains pending live verification.
+
 
 
 
@@ -402,7 +406,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 - **Renaming or changing the Spaces switcher.** It keeps its name, shortcuts, preference keys and behaviour; it gains only the shared panel and richer tile content.
 - **Any new screen-capture API.** Tiles and pinned pictures reuse `Window.thumbnail`. A display-capture path for Desktops was rejected: the WindowServer does not render off-screen Spaces, and capture bursts wedged `replayd` in #5861.
-- **Moving windows between macOS Spaces.** A Project is a view over windows, not a mover of them. `SLSMoveWindowsToManagedSpace` stays unused.
+- **Automatic window movement remains out of scope.** User-approved task 3.23 adds only the explicit active-Project gather command.
 - **Changing any existing default or behaviour with Projects disabled.** A user who never flips the switch must not be able to tell this feature shipped, beyond the optional "Name this Desktop…" item and Desktop tile thumbnails.
 - **Nested Projects, per-display Projects, and rules-based auto-membership** ("all Slack windows are always in Work"). Milestone 8's patterns make this easy later; do not add it now.
 - **Editing any upstream file not in the touch budget.**

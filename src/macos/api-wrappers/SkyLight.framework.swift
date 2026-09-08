@@ -360,3 +360,13 @@ func SLSWindowIteratorGetBounds(_ iterator: CFTypeRef) -> CGRect {
 
 @_silgen_name("SLSWindowIteratorCopyTitle")
 func SLSWindowIteratorCopyTitle(_ iterator: CFTypeRef) -> Unmanaged<CFString>?
+
+// Space movement ABI follows Hammerspoon extensions/spaces/private.h.
+@_silgen_name("SLSSpaceGetType")
+func SLSSpaceGetType(_ cid: CGSConnectionID, _ sid: CGSSpaceID) -> Int32
+@_silgen_name("SLSSpaceSetCompatID")
+func SLSSpaceSetCompatID(_ cid: CGSConnectionID, _ sid: CGSSpaceID, _ workspace: Int32) -> CGError
+@_silgen_name("SLSSetWindowListWorkspace")
+func SLSSetWindowListWorkspace(_ cid: CGSConnectionID, _ windows: UnsafeMutablePointer<CGWindowID>, _ count: Int32, _ workspace: Int32) -> CGError
+@_silgen_name("SLSMoveWindowsToManagedSpace")
+func SLSMoveWindowsToManagedSpace(_ cid: CGSConnectionID, _ windows: CFArray, _ sid: CGSSpaceID)
