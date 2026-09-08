@@ -29,7 +29,7 @@ final class ProjectsMenu: NSObject {
         projectsItem.submenu = NSMenu()
         projectsItem.isHidden = !Projects.isEnabled
         activeItem = item("", nil)
-        addFocusedItem = item(NSLocalizedString("Add this Window to Active Project", comment: ""), #selector(addWindow))
+        addFocusedItem = item("", #selector(addWindow))
         addVisibleItem = item("", #selector(addVisibleWindows))
         [activeItem!, addFocusedItem!, addVisibleItem!].forEach { $0.isHidden = !Projects.isEnabled; menu.addItem($0) }
         menu.addItem(desktopItem)
@@ -105,6 +105,8 @@ final class ProjectsMenu: NSObject {
             ?? NSLocalizedString("No Active Project", comment: "")
         activeItem.isEnabled = true
         activeItem.submenu = makeActiveMenu(active)
+        addFocusedItem.title = active.map { String(format: NSLocalizedString("Add active window to: %@", comment: ""), $0.resolvedName) }
+            ?? NSLocalizedString("Add active window to: No Active Project", comment: "")
         addVisibleItem.title = active.map { String(format: NSLocalizedString("Add all visible to: %@", comment: ""), $0.resolvedName) }
             ?? NSLocalizedString("Add all visible to: No Active Project", comment: "")
         for entry in [activeItem!, addFocusedItem!, addVisibleItem!] { entry.isHidden = !Projects.isEnabled }

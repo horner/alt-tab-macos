@@ -209,7 +209,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (14 of 14 tasks); live verification pending
+**Status:** implementation complete (15 of 15 tasks); live verification pending
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -272,6 +272,10 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.14 — User requests the main window switcher show the active Desktop/Project context. Proposed narrow addition: a header/layout hook in `src/switcher/main-window/TilesView.swift`, with context-label logic in `src/projects/`. User approved this narrow TilesView.swift addition. Label must describe the actual window filter scope rather than imply one Desktop when all Spaces are shown.
 
 > Note: Header implementation builds successfully. The approved TilesView.swift diff is limited to header space, minimum readable width, header attachment, and search-field positioning. Label code remains in src/projects/ProjectContextHeader.swift. Live header screenshot and final combined regression checks follow the requested menu/Space-label refinements.
+
+- [x] 3.15 — Harmonize the single-window menu action with bulk add: “Add active window to: {Project}”. Files: `src/projects/ProjectsMenu.swift`, generated strings.
+
+> Note: Single-window action now uses the same destination-name format as bulk add. Debug build passed; source strings regenerated.
 
 ### Milestone 4 — Active-Project lifecycle: pinning and auto-capture
 
