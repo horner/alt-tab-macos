@@ -207,7 +207,7 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 
 **Objective:** With Projects enabled, a dedicated shortcut opens a panel listing the custom Projects plus the current Desktop; releasing on one makes it active and Alt-Tab then lists only its members. Disabled, no shortcut is registered. The Spaces switcher is visually and behaviourally unchanged but now draws through a panel it shares with the Project switcher.
 **Commit:** per task
-**Status:** implementation complete (12 of 12 tasks); live verification pending
+**Status:** in progress (13 of 14 tasks); main-switcher header awaits touch-budget approval
 
 - [x] 3.1 — Extract the grid rendering from `SpacesPanel` into a reusable `GridPanel` + `GridTileView` driven by a small `GridTileItem` protocol (label, icon, isCurrent); make `SpacesPanel` a thin user. No visual change — screenshot before and after. Files: `src/spaces/SpacesPanel.swift`, `src/grid-panel/GridPanel.swift`, `alt-tab-macos.xcodeproj/project.pbxproj`
 
@@ -262,6 +262,12 @@ Dependency worth knowing: with an empty Desktop, `SpaceItem.activateViaSystemSho
 - [x] 3.12 — User-requested label refinement: show only the window title on the primary Spaces tile line; move the app name beside Desktop N in the smaller subtitle, retaining distinct explicit Desktop names. Investigate the Desktop 3 Cloud/zsh mismatch without changing upstream title discovery outside the approved budget. Files: `src/spaces/SpacesList.swift`, docs screenshots/captions.
 
 > Note: Debug build and focused title/subtitle checks pass. User confirmed the normal window switcher also shows only -zsh: the missing Cloud text is already absent from the shared Window.title value. Spaces formatting now uses title-only primary text and app/desktop secondary text. The shared title-ingestion path lives in src/switcher/state/Window.swift and Applications.swift, outside the current edit budget; no edits were made there. Further title-ingestion diagnosis/fixes require narrowly scoped user approval. No new live screenshot yet.
+
+- [x] 3.13 — User-requested menu navigation: rename bulk add to “Add all visible to: {Project}”; make the active/no-active row a submenu with active windows, Desktop selection, and Other Projects → Project → activation/windows. Selecting a window selects its Project and focuses that exact live member after menu dismissal. A bounded one-shot observer preserves only this explicitly requested menu navigation across its Space transition; the remaining M4 general lifecycle work stays unstarted. File: `src/projects/ProjectsMenu.swift`, generated strings, docs captions/screenshots.
+
+> Note: Debug build and all 1,207 tests passed. Actual menu source passed native fixture checks for the named bulk-add destination, enabled active submenu, Project/Desktop selection, exact member focus, one-shot cross-Space restoration, and no effect on subsequent Space changes. Main app was rebuilt/restarted before implementation and will be restarted with this change. Live menu screenshot remains pending.
+
+- [!] 3.14 — User requests the main window switcher show the active Desktop/Project context. Proposed narrow addition: a header/layout hook in `src/switcher/main-window/TilesView.swift`, with context-label logic in `src/projects/`. TilesView.swift is outside the approved upstream touch budget; no edit made, awaiting user approval. Label must describe the actual window filter scope rather than imply one Desktop when all Spaces are shown.
 
 ### Milestone 4 — Active-Project lifecycle: pinning and auto-capture
 
