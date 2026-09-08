@@ -103,3 +103,11 @@ The single-window and **Add all visible** actions ask once when any selected win
 An explicit move also prevents linked-Desktop capture from adding that window back to its source Project, including after an AltTab restart. Explicitly adding it back clears that exclusion. The dialog below uses production UI with isolated sample membership data.
 
 ![Project membership conflict with Move as the default action](screenshots/m3-project-membership-conflict.jpg)
+
+**Switch Projects inside the window switcher**
+
+A compact numbered strip sits beneath the context title. Click a Project or press its digit (0–9) to update the windows in place. **0** returns to normal Desktop filtering; custom Projects follow in creation order. **All Projects** opens a compact, scrollable grid, including Projects beyond 9. Opening the grid keeps the switcher open after releasing the hold key; select a window and press Return to focus it, or Escape to dismiss. While editing search, numbers remain search text.
+
+![Compact numbered Project strip in the window switcher](screenshots/m3-project-strip.jpg)
+
+![All Projects in a centered compact grid](screenshots/m3-project-compact-grid.jpg)
