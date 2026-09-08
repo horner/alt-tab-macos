@@ -1,8 +1,8 @@
 # ProjectReattachResolver
 
-History stores app identifiers, observed titles, and stable Desktop UUIDs. Closing a tracked window preserves its latest cached title and Desktop, while saves retain earlier observed patterns.
-Exact app/title matches take priority, including on another Desktop. Desktop context separates identical titles; when no title matches, one Project in the same app/Desktop history can recover a changed title. Conflicting history stays unassigned automatically. Patterns without a Desktop remain compatible.
-Explicit exclusions survive reboot. Known live identity membership takes priority over a broad title exclusion; an explicit identity exclusion always blocks restoration. Linked Desktop capture cannot override a saved or live owner.
+History stores app identifiers, observed titles, available browser URLs, and stable Desktop UUIDs. Closing a tracked window preserves its latest cached title and Desktop, while saves retain earlier observed patterns.
+Exact app/URL matches take priority, followed by app/title matches when either URL is unavailable, including on another Desktop. Desktop context separates identical titles; when no title matches, one Project in the same app/Desktop history can recover a changed title. Conflicting history stays unassigned automatically. Patterns without a Desktop remain compatible.
+Explicit exclusions survive reboot and match a known URL even when the title changes. Known live identity membership takes priority over a broad title exclusion; an explicit identity exclusion always blocks restoration. Linked Desktop capture cannot override a saved or live owner.
 New windows can join the active Project only on the current Desktop, with no saved/live owner,
 and at least 30 seconds after the owning app launches. This conservative startup grace also skips
 manually created windows in those first 30 seconds; linked Desktop assignment still applies.
@@ -30,3 +30,10 @@ Restored assignments produce a non-activating notice, grouped over one second; i
 
 - **testLastSeenDoesNotChangeMatchingIdentity** — updating observation time does not duplicate an assignment or break matching.
 - **testLastSeenTimestampSurvivesEncoding** — history observation times persist across restarts.
+
+- **testURLRestoresProjectDespiteSignInTitleChange** — the observed URL outranks a conflicting title-only match.
+- **testDifferentKnownURLsDoNotMatchOnlyByTitle** — identical sign-in titles cannot override differing known URLs.
+- **testSharedURLUsesDesktopToResolveProject** — Desktop context disambiguates a common login URL.
+- **testURLSurvivesEncodingAndOlderHistoryStillLoads** — URLs persist and older history without them remains readable.
+
+- **testObservationMatchesChangedTitleByURLWithoutConflatingDifferentURLs** — removal/exclusion matching follows a known URL through title changes and keeps different known URLs separate.

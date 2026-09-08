@@ -7,14 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C109C47827CA49DE8D95BA42 /* ProjectBrowserURLs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313BA7FDEAF34E6691A665D6 /* ProjectBrowserURLs.swift */; };
 		8E26AFE3A4FD4C31B58C61F9 /* ProjectRestoreNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9346C0507359497FBCE3C401 /* ProjectRestoreNotice.swift */; };
 		2CB4EB8C077F22F9B8FFB4C3 /* ProjectNumberResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBDED8E316B1D410102D2B13 /* ProjectNumberResolverTests.swift */; };
+		48E74F3FEAAD4B4DBBCECC5D /* ProjectBrowserURLResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55B3D0678D2B47388D307BA5 /* ProjectBrowserURLResolverTests.swift */; };
 		A76F4A91062F4232A4AB9EA3 /* ProjectReattachResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B43B885FAEC4C3FB7562B9E /* ProjectReattachResolverTests.swift */; };
 		803541EE640B4F25B1F54232 /* ProjectPointerResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A84684408104C8E96D93018 /* ProjectPointerResolverTests.swift */; };
 		B925DEB8A4B7C56143BB48E2 /* ProjectNumberResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042592CF691DADF3A74C4D94 /* ProjectNumberResolver.swift */; };
+		4C87310684F944988BDA26C5 /* ProjectBrowserURLResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD076BDC9F545B3954A2768 /* ProjectBrowserURLResolver.swift */; };
 		3A80AA496ADA4F5DB9C49AC2 /* ProjectReattachResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5177FF6CB3FF421EBCBBD690 /* ProjectReattachResolver.swift */; };
 		DC3B27113AD54B14BD585D57 /* ProjectPointerResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B61859814C94A7F8E415E5C /* ProjectPointerResolver.swift */; };
 		FF2DA61DD07D066D842D62D7 /* ProjectNumberResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042592CF691DADF3A74C4D94 /* ProjectNumberResolver.swift */; };
+		A8F45FC4519F4E2CBB51DD15 /* ProjectBrowserURLResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFD076BDC9F545B3954A2768 /* ProjectBrowserURLResolver.swift */; };
 		1215F118C5DA40A797540D34 /* ProjectReattachResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5177FF6CB3FF421EBCBBD690 /* ProjectReattachResolver.swift */; };
 		4FB0642692F342D5A8413D3E /* ProjectPointerResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B61859814C94A7F8E415E5C /* ProjectPointerResolver.swift */; };
 		1493871A2B19BB5CFC92D710 /* ProjectAssignmentPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5402B70341EFA09C1A60A8 /* ProjectAssignmentPrompt.swift */; };
@@ -492,14 +496,18 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		313BA7FDEAF34E6691A665D6 /* ProjectBrowserURLs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectBrowserURLs.swift; sourceTree = "<group>"; };
 		9346C0507359497FBCE3C401 /* ProjectRestoreNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRestoreNotice.swift; sourceTree = "<group>"; };
 		B6CE23E8D65FA5D38FCC040F /* ProjectNumberResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectNumberResolverSpecs.md; sourceTree = "<group>"; };
+		9E2EE092115743C8BE063ECA /* ProjectBrowserURLResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectBrowserURLResolverSpecs.md; sourceTree = "<group>"; };
 		7FE52BF58194408B9027D7E2 /* ProjectReattachResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectReattachResolverSpecs.md; sourceTree = "<group>"; };
 		64297D6BAF3642A6BD7A35BD /* ProjectPointerResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectPointerResolverSpecs.md; sourceTree = "<group>"; };
 		EBDED8E316B1D410102D2B13 /* ProjectNumberResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNumberResolverTests.swift; sourceTree = "<group>"; };
+		55B3D0678D2B47388D307BA5 /* ProjectBrowserURLResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectBrowserURLResolverTests.swift; sourceTree = "<group>"; };
 		5B43B885FAEC4C3FB7562B9E /* ProjectReattachResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectReattachResolverTests.swift; sourceTree = "<group>"; };
 		6A84684408104C8E96D93018 /* ProjectPointerResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectPointerResolverTests.swift; sourceTree = "<group>"; };
 		042592CF691DADF3A74C4D94 /* ProjectNumberResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNumberResolver.swift; sourceTree = "<group>"; };
+		AFD076BDC9F545B3954A2768 /* ProjectBrowserURLResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectBrowserURLResolver.swift; sourceTree = "<group>"; };
 		5177FF6CB3FF421EBCBBD690 /* ProjectReattachResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectReattachResolver.swift; sourceTree = "<group>"; };
 		3B61859814C94A7F8E415E5C /* ProjectPointerResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectPointerResolver.swift; sourceTree = "<group>"; };
 		0E5402B70341EFA09C1A60A8 /* ProjectAssignmentPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectAssignmentPrompt.swift; sourceTree = "<group>"; };
@@ -1001,12 +1009,16 @@
 			isa = PBXGroup;
 			children = (
 				B6CE23E8D65FA5D38FCC040F /* ProjectNumberResolverSpecs.md */,
+				9E2EE092115743C8BE063ECA /* ProjectBrowserURLResolverSpecs.md */,
 				7FE52BF58194408B9027D7E2 /* ProjectReattachResolverSpecs.md */,
 				64297D6BAF3642A6BD7A35BD /* ProjectPointerResolverSpecs.md */,
 				EBDED8E316B1D410102D2B13 /* ProjectNumberResolverTests.swift */,
+				55B3D0678D2B47388D307BA5 /* ProjectBrowserURLResolverTests.swift */,
 				5B43B885FAEC4C3FB7562B9E /* ProjectReattachResolverTests.swift */,
 				6A84684408104C8E96D93018 /* ProjectPointerResolverTests.swift */,
 				042592CF691DADF3A74C4D94 /* ProjectNumberResolver.swift */,
+				313BA7FDEAF34E6691A665D6 /* ProjectBrowserURLs.swift */,
+				AFD076BDC9F545B3954A2768 /* ProjectBrowserURLResolver.swift */,
 				9346C0507359497FBCE3C401 /* ProjectRestoreNotice.swift */,
 				5177FF6CB3FF421EBCBBD690 /* ProjectReattachResolver.swift */,
 				3B61859814C94A7F8E415E5C /* ProjectPointerResolver.swift */,
@@ -2239,9 +2251,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				2CB4EB8C077F22F9B8FFB4C3 /* ProjectNumberResolverTests.swift in Sources */,
+				48E74F3FEAAD4B4DBBCECC5D /* ProjectBrowserURLResolverTests.swift in Sources */,
 				A76F4A91062F4232A4AB9EA3 /* ProjectReattachResolverTests.swift in Sources */,
 				803541EE640B4F25B1F54232 /* ProjectPointerResolverTests.swift in Sources */,
 				B925DEB8A4B7C56143BB48E2 /* ProjectNumberResolver.swift in Sources */,
+				4C87310684F944988BDA26C5 /* ProjectBrowserURLResolver.swift in Sources */,
 				3A80AA496ADA4F5DB9C49AC2 /* ProjectReattachResolver.swift in Sources */,
 				DC3B27113AD54B14BD585D57 /* ProjectPointerResolver.swift in Sources */,
 				955F7A2710354BA37833F429 /* ProjectScopeResolverTests.swift in Sources */,
@@ -2395,6 +2409,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				FF2DA61DD07D066D842D62D7 /* ProjectNumberResolver.swift in Sources */,
+				C109C47827CA49DE8D95BA42 /* ProjectBrowserURLs.swift in Sources */,
+				A8F45FC4519F4E2CBB51DD15 /* ProjectBrowserURLResolver.swift in Sources */,
 				8E26AFE3A4FD4C31B58C61F9 /* ProjectRestoreNotice.swift in Sources */,
 				1215F118C5DA40A797540D34 /* ProjectReattachResolver.swift in Sources */,
 				4FB0642692F342D5A8413D3E /* ProjectPointerResolver.swift in Sources */,

@@ -40,6 +40,8 @@ From [AGENTS.md](AGENTS.md):
 
 ### Upstream touch budget
 
+User approved task 8.8: `src/switcher/state/Applications.swift` may call the Project browser URL refresh hook from the two existing title-refresh paths. URL reading, persistence, matching, and menus stay in `src/projects/`.
+
 User approved task 3.27: `src/events/CursorEvents.swift` may route left-button events for the Project header/grid before the existing tile handling; no other cursor behavior changes.
 
 User approved task 3.26: add a guarded Project-number routing call in `KeyboardEventsTestable.swift` and its test-target stub in `Mocks.swift`. Header controls remain inside `src/projects/` using existing TilesView layout hooks.
@@ -405,6 +407,7 @@ User explicitly authorized this milestone after the reboot test. Milestones 4–
 - [x] 8.6 — User-requested Project History submenu with past titles, Open now/relative last-seen labels, and click-to-focus for live entries. Separate persisted history survives explicit moves without becoming a restoration rule. Observation timestamps do not affect matching identity. Files: Projects model/preferences/menu, resolver model/tests/specs, generated strings, docs and plan. Validation: Debug build and 1,236 tests pass; 17 resolver scenarios match their tests. Imported 85 older history entries with timestamps from the pre-reboot event log. App restarted; live menu appearance awaits user confirmation.
 
 - [x] 8.7 — Remove Gather after the user-authorized single-window test failed. The cross-process compatibility sequence continued past prepare and returned prepare=1066163, move=1006, reset=1066163; immediate and settled Space queries both stayed on the source Desktop. No Project windows were moved. Removed the menu/action, movement scheduler, and four gather-only SkyLight declarations. Debug build passes; app restarted.
+- [x] 8.8 — Capture Safari/Chrome active-tab document URLs off-main at discovery, title refresh, and menu opening. Persist URLs with history, prefer URL matching before title/Desktop fallback, and preserve explicit move/removal exclusions across title changes. Show URLs below History titles. Debug build and 1,246 tests pass; restarted app saved 15 Chrome and 7 Safari URL observations. Reboot verification remains pending.
 
 **Verification:**
 1. Build and tests pass; `audit-specs-tests` clean for `ProjectReattachResolver`.
