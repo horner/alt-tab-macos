@@ -22,7 +22,7 @@ enum ProjectContextHeader {
 
     static func isPointerInsidePopover(at location: CGPoint) -> Bool {
         guard popover.isShown, let view = popover.contentViewController?.view, let window = view.window else { return false }
-        return view.visibleRect.contains(view.convert(window.convertPoint(fromScreen: cocoaPoint(location)), from: nil))
+        return ProjectPointerResolver.contains(view.convert(window.convertPoint(fromScreen: cocoaPoint(location)), from: nil), bounds: view.bounds, visibleRect: view.visibleRect)
     }
 
     static func handleMouseButton(down: Bool, at location: CGPoint) -> Bool {
@@ -60,7 +60,7 @@ enum ProjectContextHeader {
         }
         return candidates.first { button in
             guard button.isEnabled, !button.isHiddenOrHasHiddenAncestor, let window = button.window, window.isVisible else { return false }
-            return button.visibleRect.contains(button.convert(window.convertPoint(fromScreen: cocoaPoint(location)), from: nil))
+            return ProjectPointerResolver.contains(button.convert(window.convertPoint(fromScreen: cocoaPoint(location)), from: nil), bounds: button.bounds, visibleRect: button.visibleRect)
         }
     }
 

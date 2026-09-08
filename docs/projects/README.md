@@ -115,3 +115,5 @@ A compact numbered strip sits beneath the context title. Click a Project or pres
 The numbered strip now follows keyboard order **1–9, then 0**. Later entries show only their names. Pointer clicks on the strip and grid use the switcher’s mouse-event routing; pressing on one button and releasing elsewhere cancels the click. Earlier screenshots above show the superseded numbering.
 
 ![Corrected 1–9, 0 Project buttons, followed by click-only Projects](screenshots/m3-project-pointer-numbering.jpg)
+
+A physical Lilly click exposed a hit-area bug: AppKit reported the whole panel as the first button’s visible region. Hit areas now intersect that region with each button’s bounds, so a click selects the button under the pointer. The regression tests include the captured Lilly coordinates and scrolled grid clipping.
