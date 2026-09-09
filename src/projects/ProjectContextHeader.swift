@@ -18,7 +18,8 @@ enum ProjectContextHeader {
     static func handleNumberKey(_ event: NSEvent?) -> Bool {
         guard Projects.isEnabled, SwitcherSession.isActive, !TilesView.isSearchEditing,
               let event, event.type == .keyDown,
-              let id = ProjectNumberResolver.projectId(keyCode: event.keyCode, choices: projectChoices) else { return false }
+              let id = ProjectNumberResolver.projectId(keyCode: event.keyCode, choices: projectChoices,
+                  currentProjectId: Projects.active?.id) else { return false }
         if event.isARepeat { return true }
         select(id)
         return true

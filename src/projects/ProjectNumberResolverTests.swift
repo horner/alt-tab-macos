@@ -28,12 +28,36 @@ final class ProjectNumberResolverTests: XCTestCase {
         XCTAssertNil(choices.last?.shortcutIndex)
     }
 
+    func testSharedDesktopDigitsCycleInDisplayOrderAndWrap() {
+        let choices = ProjectNumberResolver.choices([.init(id: "second", desktopNumber: 1, claimIndex: 1),
+            .init(id: "other", desktopNumber: 2), .init(id: "first", desktopNumber: 1, claimIndex: 0),
+            .init(id: "third", desktopNumber: 1)], desktopCount: 2)
+        for keyCode: UInt16 in [18, 83] {
+            var selected: String?
+            for expected in ["first", "second", "third", "first", "second"] {
+                selected = ProjectNumberResolver.projectId(keyCode: keyCode, choices: choices, currentProjectId: selected)
+                XCTAssertEqual(selected, expected)
+            }
+        }
+    }
+
+    func testDigitStartsAtFirstMatchWhenCurrentProjectIsElsewhereOrMissing() {
+        let choices = ProjectNumberResolver.choices([.init(id: "first", desktopNumber: 1),
+            .init(id: "second", desktopNumber: 1), .init(id: "other", desktopNumber: 2)], desktopCount: 2)
+        for current in ["other", "deleted"] {
+            XCTAssertEqual(ProjectNumberResolver.projectId(keyCode: 18, choices: choices, currentProjectId: current), "first")
+        }
+        XCTAssertNil(ProjectNumberResolver.projectId(keyCode: 20, choices: choices, currentProjectId: "first"))
+        XCTAssertNil(ProjectNumberResolver.projectId(keyCode: 18, choices: [], currentProjectId: "deleted"))
+    }
+
     func testSingleDesktopKeepsUniqueProjectDigitsInCreationOrder() {
         let entries = (0..<12).map { ProjectNumberResolver.Entry(id: "p\($0)", desktopNumber: 1, claimIndex: 11 - $0) }
         let choices = ProjectNumberResolver.choices(entries, desktopCount: 1)
         XCTAssertEqual(choices.map { $0.id }, entries.map { $0.id })
         XCTAssertEqual(choices.compactMap { $0.label }, ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"])
         XCTAssertEqual(ProjectNumberResolver.projectId(keyCode: 21, choices: choices), "p3")
+        XCTAssertEqual(ProjectNumberResolver.projectId(keyCode: 21, choices: choices, currentProjectId: "p3"), "p3")
         XCTAssertEqual(ProjectNumberResolver.projectId(keyCode: 29, choices: choices), "p9")
         XCTAssertNil(choices[10].shortcutIndex)
     }

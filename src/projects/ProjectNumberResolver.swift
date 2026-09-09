@@ -40,8 +40,10 @@ enum ProjectNumberResolver {
         }
     }
 
-    static func projectId(keyCode: UInt16, choices: [Choice]) -> String? {
-        guard let index = index(keyCode: keyCode) else { return nil }
-        return choices.first { $0.shortcutIndex == index }?.id
+    static func projectId(keyCode: UInt16, choices: [Choice], currentProjectId: String? = nil) -> String? {
+        guard let index = index(keyCode: keyCode), let first = choices.first(where: { $0.shortcutIndex == index }) else { return nil }
+        guard let currentProjectId,
+              let currentIndex = choices.firstIndex(where: { $0.id == currentProjectId && $0.shortcutIndex == index }) else { return first.id }
+        return choices.dropFirst(currentIndex + 1).first { $0.shortcutIndex == index }?.id ?? first.id
     }
 }
