@@ -3,6 +3,8 @@
 Names resolve in order: a nonblank user name, a sticky automatic name, then `Desktop N` or `Project N`.
 Claiming a name only fills an unnamed record once. Forgetting operates only on the automatic name,
 so a user's name is preserved when all windows close. Whitespace-only input clears a user name.
+Desktop tiles, navigation and context headers use explicit or automatic names when available.
+The initial Projects setup claims names from existing windows as well as newly discovered windows.
 
 ## Test scenarios
 

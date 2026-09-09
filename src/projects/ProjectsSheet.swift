@@ -137,6 +137,7 @@ final class ProjectsSheet: SheetWindow {
 
     @objc private func toggleEnabled(_ sender: NSButton) {
         Preferences.set("projectsEnabled", sender.state == .on ? "true" : "false")
+        Projects.synchronizeEnabled()
         SpaceLabelWindows.synchronizeEnabled()
         if Projects.isEnabled {
             _ = ProjectsPanel.shared

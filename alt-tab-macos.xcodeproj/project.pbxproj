@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CF00F4F0FD034A2484FFAA00 /* ProjectsSetupResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56809AB179584C66AA8A85CC /* ProjectsSetupResolver.swift */; };
+		A445D9DF2F9341AE98EA62DC /* ProjectsSetupResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56809AB179584C66AA8A85CC /* ProjectsSetupResolver.swift */; };
+		8AA32DAD987B4AFD89F758FF /* ProjectsSetupResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644059C4675A4964A369F1EB /* ProjectsSetupResolverTests.swift */; };
 		AD7A8C62EB394F14B0852886 /* ProjectStripLayoutResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */; };
 		13C197C71EED4A9390D16660 /* ProjectStripLayoutResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */; };
 		10D7B8DB3B7F4E279558DD2C /* ProjectStripLayoutResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F4E939E30248EA904C8DEA /* ProjectStripLayoutResolverTests.swift */; };
@@ -494,6 +497,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		56809AB179584C66AA8A85CC /* ProjectsSetupResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsSetupResolver.swift; sourceTree = "<group>"; };
+		644059C4675A4964A369F1EB /* ProjectsSetupResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsSetupResolverTests.swift; sourceTree = "<group>"; };
+		F14D2344288D445B9BFE8C75 /* ProjectsSetupResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectsSetupResolverSpecs.md; sourceTree = "<group>"; };
 		1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStripLayoutResolver.swift; sourceTree = "<group>"; };
 		F0F4E939E30248EA904C8DEA /* ProjectStripLayoutResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStripLayoutResolverTests.swift; sourceTree = "<group>"; };
 		8736827BC11C473FBB654903 /* ProjectStripLayoutResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectStripLayoutResolverSpecs.md; sourceTree = "<group>"; };
@@ -1050,6 +1056,9 @@
 				242CCD8399505E29F594D454 /* ProjectMembershipResolverSpecs.md */,
 				07E0B4B7F20E4250B013E058 /* ProjectMembershipResolverTests.swift */,
 				4999806373D9BBF8225F4A69 /* ProjectMembershipResolver.swift */,
+				56809AB179584C66AA8A85CC /* ProjectsSetupResolver.swift */,
+				644059C4675A4964A369F1EB /* ProjectsSetupResolverTests.swift */,
+				F14D2344288D445B9BFE8C75 /* ProjectsSetupResolverSpecs.md */,
 				DCC7D86505C304207EADFAEC /* Projects.swift */,
 			);
 			path = "projects";
@@ -2273,6 +2282,8 @@
 				8CEAB3DE253F0BFD5CDAAE8C /* ProjectsOrderResolverTests.swift in Sources */,
 				547464810E4F5939D45AA43B /* ProjectsOrderResolver.swift in Sources */,
 				6AEBEDA9547721AF3C46DBEC /* ProjectNameResolverTests.swift in Sources */,
+				A445D9DF2F9341AE98EA62DC /* ProjectsSetupResolver.swift in Sources */,
+				8AA32DAD987B4AFD89F758FF /* ProjectsSetupResolverTests.swift in Sources */,
 				43CD1813ADF4B33A8400A61B /* ProjectNameResolver.swift in Sources */,
 				E4916672E3F37C25ACE8086B /* ProjectMembershipResolverTests.swift in Sources */,
 				E8C6B859A2A1D79590ED3517 /* ProjectMembershipResolver.swift in Sources */,
@@ -2430,6 +2441,7 @@
 				D27FAF23969FB3D99AF7FFB7 /* GridPanel.swift in Sources */,
 				A092D7F2840D4BAFEDD96930 /* ProjectsMenu.swift in Sources */,
 				4E3DFF3A5459781DA62232BC /* ProjectNamePrompt.swift in Sources */,
+				CF00F4F0FD034A2484FFAA00 /* ProjectsSetupResolver.swift in Sources */,
 				CF3DC6A39A6D5D01B0C85B08 /* ProjectNameResolver.swift in Sources */,
 				AA8E2AB44ABDE8861E1872C4 /* ProjectsPreferences.swift in Sources */,
 				85ED4BC5ADE1055EE64788B5 /* ProjectMembershipResolver.swift in Sources */,

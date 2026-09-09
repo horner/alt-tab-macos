@@ -111,7 +111,7 @@ enum DesktopNavigation {
     static func name(of space: SpaceItem, includeName: Bool = true) -> String {
         let desktop = space.isFullscreen ? NSLocalizedString("Fullscreen", comment: "Desktop navigation destination")
             : String(format: NSLocalizedString("Desktop %d", comment: ""), space.desktopNumber)
-        let name = includeName ? ProjectNameResolver.normalized(Projects.byId["desktop-\(space.uuid)"]?.name) : nil
+        let name = includeName ? Projects.byId["desktop-\(space.uuid)"]?.preferredName : nil
         return name.map { "\(desktop) · \($0)" } ?? desktop
     }
 

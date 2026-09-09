@@ -11,6 +11,13 @@ enum SpaceLabelResolver {
         private(set) var presentationRevision = 0
         private var closedSpaces = Set<String>()
 
+        mutating func restoreOnLaunch() {
+            isRequested = true
+            closedSpaces.removeAll()
+            presentation = .back
+            presentationRevision += 1
+        }
+
         mutating func showAll() {
             isRequested = true
             closedSpaces.removeAll()

@@ -2,7 +2,7 @@
 
 Worktree: `/Volumes/Case/prj/alt-tab-projects-release`, branch `projects-release`.
 
-`config/projects.xcconfig` sets the Release app name, version, bundle ID, and `PROJECTS_DISTRIBUTION` condition. The app keeps normal Pro licensing, opens this fork for support and feedback, and uses the release page for updates. It does not start Sparkle or the upstream crash reporter. Debug settings are independent.
+`config/projects.xcconfig` sets the Release app name, version, bundle ID, and `PROJECTS_DISTRIBUTION` condition. The app keeps normal Pro licensing, opens this fork for support and feedback, and uses the release page for updates. It does not start Sparkle or the upstream crash reporter. Debug settings are independent. Release defaults enable Projects and labels with a 1,500 ms reveal. The first enable links all discovered Desktops to Projects and captures their windows; see `src/projects/ProjectsSetupResolverSpecs.md`.
 
 ## Build
 
@@ -18,7 +18,7 @@ This uses the command-line build convention from `ai/build.sh`, producing an uns
 
 The release uses `Developer ID Application: Medical Informatics Engineering, Inc. (X5873NL7XM)`. Its certificate and matching private key are installed in the login Keychain. Developer ID signing and nested signature verification passed on September 9, 2026.
 
-The `alttab-projects` notarization profile is configured on this Mac. Apple accepted version 0.1.0, and the stapled app passed Gatekeeper assessment. The published output is `build/release-0.1.0/`. [Version 0.1.0](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.0) is available through the public `horner/projects/alttab-projects` cask; see the repository README for installation commands. The earlier portable test kit remains in `build/AltTabProjects-0.1.0-cask-test.zip`.
+The `alttab-projects` notarization profile is configured on this Mac. Production packages require Apple notarization and a stapled app that passes Gatekeeper assessment. Version 0.1.1 uses `build/release-0.1.1/` and the public `horner/projects/alttab-projects` cask; see the repository README for installation commands. The earlier portable test kit remains in `build/AltTabProjects-0.1.0-cask-test.zip`.
 
 Create the notarization profile once, entering an Apple app-specific password at the secure prompt:
 
@@ -34,7 +34,7 @@ Then package with that identity and profile:
 python3 scripts/projects/package.py \
   --identity 'Developer ID Application: Medical Informatics Engineering, Inc. (X5873NL7XM)' \
   --notary-profile alttab-projects \
-  --output build/release-0.1.0
+  --output build/release-0.1.1
 ```
 
 The output directory must be new, and production packaging requires a clean working tree. The packager verifies both architectures in all embedded Mach-O files, signs nested code before the outer app, verifies the signature, submits for notarization, staples the accepted ticket, and verifies Gatekeeper assessment. It then writes the final ZIP, checksum, casks, and build metadata. A public cask is only generated after these checks pass.

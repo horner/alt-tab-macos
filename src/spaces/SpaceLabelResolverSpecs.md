@@ -2,10 +2,12 @@
 
 ## Summary
 
-Labels start hidden. “Show Space Labels” requests one window per live Space, including Spaces added
+AltTabProjects starts with labels behind other windows; Debug starts hidden. “Show Space Labels” requests one window per live Space, including Spaces added
 while the set is open. Closing a window suppresses only its UUID across naming and topology refreshes.
 “Show Space Labels” explicitly restores closed windows. “Close All Space Labels”, disabling Projects,
-and restarting AltTab end the session; subsequent refreshes or re-enabling Projects do not reopen it.
+and restarting AltTab end the session. Show and Close All save whether labels should open on the next
+launch or enable. Disabling Projects temporarily closes labels without changing that choice.
+Routine refreshes do not reopen a closed session. Individual closures last for the session.
 
 Labels normally use the normal window level. “Bring Space Labels to Front” raises the existing set once and
 restores minimized labels, preserving individual close decisions. If no session exists, it creates
@@ -24,7 +26,8 @@ Each window also provides Show All, Bring All to Front, Minimize All and Close A
 name. These invoke the same set-wide operations as the menu; native title-bar controls affect only
 their own window. Show All restores closed labels, while Bring All to Front respects closures.
 
-“Show label after switching Spaces” accepts 0–3000 ms in 100 ms increments and defaults to 0 (disabled).
+“Show label after switching Spaces” accepts 0–3000 ms in 100 ms increments and defaults to 1500 in
+AltTabProjects, or 0 (disabled) in Debug. Saved durations are preserved.
 An active-Space notification requests an asynchronous topology read. Only changed Spaces on existing
 displays reveal their open, non-minimized label; startup, wake, duplicate notifications, new displays
 and ordinary topology/name refreshes do not trigger a reveal. First topology establishes a baseline.
@@ -39,10 +42,14 @@ Manual Show, Bring, Minimize, Close and disabling the preference cancel pending 
 label session is never created by an automatic reveal.
 
 Each live Space has one label window, keyed by its persistent UUID. Names resolve from the Desktop
-record's explicit name, then its automatic name; a missing name is rendered as “Unnamed Space”.
+record's explicit name, then its automatic name, then its numbered Desktop or fullscreen fallback.
 Desktop numbers follow WindowServer display/Space order. Fullscreen Spaces retain their ordinal in
 that complete order and display “Fullscreen · Space N”; they do not consume a Desktop number.
 Project shortcut numbers and the current custom Project never affect these labels.
+
+Launch restoration is covered by **testLaunchRestoresLabelsBehindWindowsWithoutRevealingThem** and
+**testRestoredSessionIgnoresClicksFromThePreviousSession**. Distribution defaults and persistence
+are covered by ProjectsSetupResolverTests.
 
 A malformed or ambiguous topology returns nil so the adapter retains its last valid state. A valid
 new snapshot replaces the previous topology, allowing creation, removal, renumbering and display

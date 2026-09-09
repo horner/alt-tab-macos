@@ -1,6 +1,27 @@
 import XCTest
 
 final class SpaceLabelResolverTests: XCTestCase {
+    func testLaunchRestoresLabelsBehindWindowsWithoutRevealingThem() {
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.restoreOnLaunch()
+        XCTAssertTrue(visibility.includes("a"))
+        XCTAssertTrue(visibility.includes("b"))
+        XCTAssertEqual(visibility.presentation, .back)
+    }
+
+    func testRestoredSessionIgnoresClicksFromThePreviousSession() {
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.showAll()
+        let oldRevision = visibility.presentationRevision
+        visibility.close("a")
+        visibility.hideAll()
+        visibility.restoreOnLaunch()
+        visibility.bringToFront()
+        XCTAssertTrue(visibility.includes("a"))
+        XCTAssertFalse(visibility.sendToBack(after: oldRevision))
+        XCTAssertEqual(visibility.presentation, .front)
+    }
+
     func testShowRequestsFrontPresentation() {
         var visibility = SpaceLabelResolver.Visibility()
         visibility.showAll()

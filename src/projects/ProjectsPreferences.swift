@@ -6,14 +6,17 @@ extension Preferences {
     static var projectsCurrentSpaceOnly: Bool { UserDefaults.standard.bool(forKey: "projectsCurrentSpaceOnly") }
     static var projectsFollowDesktop: Bool { UserDefaults.standard.bool(forKey: "projectsFollowDesktop") }
     static var spaceLabelRevealDuration: Int { SpaceLabelResolver.revealDuration(UserDefaults.standard.integer(forKey: "spaceLabelRevealDuration")) }
+    static var spaceLabelsOnLaunch: Bool { UserDefaults.standard.bool(forKey: "spaceLabelsOnLaunch") }
+    static var projectsInitialSetupCompleted: Bool { UserDefaults.standard.bool(forKey: "projectsInitialSetupCompleted") }
     static var projects: [ProjectEntry] { CachedUserDefaults.json("projects", [ProjectEntry].self) }
     static var projectsShortcutStyle: ShortcutStylePreference { CachedUserDefaults.macroPref("projectsShortcutStyle", ShortcutStylePreference.allCases) }
     static var projectsDefaultValues: [String: Any] {
-        ["projectsCurrentSpaceOnly": "false", "projectsEnabled": "false", "projectsFollowDesktop": "true", "projects": "[]", "spaceLabelRevealDuration": "0",
+        ["projectsCurrentSpaceOnly": "false", "projectsFollowDesktop": "true", "projects": "[]",
          ProjectSwitcher.holdShortcutId: defaultShortcut(""),
          ProjectSwitcher.nextShortcutId: defaultShortcut("⇥"),
          ProjectSwitcher.previousShortcutId: defaultShortcut("⇧"),
          "projectsShortcutStyle": ShortcutStylePreference.focusOnRelease.indexAsString]
+            .merging(ProjectsSetupResolver.defaults) { _, value in value }
     }
 }
 

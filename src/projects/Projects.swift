@@ -52,6 +52,8 @@ enum Projects {
     static var isEnabled: Bool { Preferences.projectsEnabled }
     static private(set) var spaces = [SpaceItem]()
     private static var spaceObserver: NSObjectProtocol?
+    private static var preferencesObserver: NSObjectProtocol?
+    private static var enabled = false
     private static var isLoading = false
     private static var windowIdentities = [String: ProjectWindowIdentity]()
     private static var retainedEntries = [ProjectEntry]()
@@ -65,12 +67,32 @@ enum Projects {
         refreshSpaces()
         SpaceLabelWindows.start()
         if isEnabled, !Preferences.projectsFollowDesktop, let id = savedActiveId, let project = byId[id], project.isCustom { active = project }
-        Windows.list.forEach { window in ProjectBrowserURLs.refresh(window) { restoreMembership(window) } }
+        refreshExistingWindows()
+        enabled = isEnabled
+        preferencesObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
+            DispatchQueue.main.async { synchronizeEnabled() }
+        }
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
         ) { _ in
             Spaces.refresh()
             refreshSpaces()
+        }
+    }
+
+    static func synchronizeEnabled() {
+        guard spaceObserver != nil, enabled != isEnabled else { return }
+        enabled = isEnabled
+        guard enabled else { return }
+        refreshSpaces()
+        refreshExistingWindows()
+    }
+
+    private static func refreshExistingWindows() {
+        for window in Windows.list where !window.isWindowlessApp {
+            ProjectBrowserURLs.refresh(window) {
+                restoreMembership(window) { _ in captureWindowOnDesktops(window) }
+            }
         }
     }
 
@@ -86,6 +108,7 @@ enum Projects {
         spaces.forEach { _ = forSpace(uuid: $0.uuid) }
         isLoading = false
         if list.count != previousCount { save() }
+        initializeDesktopProjectsIfNeeded()
         if isEnabled {
             for desktop in list where !desktop.isCustom {
                 if let project = linkedProject(for: desktop) { captureDesktopWindows(desktop, into: project) }
@@ -96,6 +119,22 @@ enum Projects {
             let desktop = forSpace(uuid: space.uuid)
             return isEnabled && Preferences.projectsFollowDesktop ? linkedProject(for: desktop) ?? desktop : desktop
         }
+    }
+
+    private static func initializeDesktopProjectsIfNeeded() {
+        let desktops = spaces.map { ProjectsSetupResolver.Desktop(uuid: $0.uuid, hasLinkedProject: linkedProject(for: forSpace(uuid: $0.uuid)) != nil) }
+        guard let uuids = ProjectsSetupResolver.desktopsToLink(enabled: isEnabled, completed: Preferences.projectsInitialSetupCompleted, desktops: desktops) else { return }
+        isLoading = true
+        for uuid in uuids {
+            let desktop = forSpace(uuid: uuid)
+            guard let project = createCustom(homeSpaceUuid: uuid) else { continue }
+            project.name = desktop.name
+            project.autoName = desktop.autoName
+            link(desktop, to: project)
+        }
+        isLoading = false
+        save()
+        Preferences.set("projectsInitialSetupCompleted", "true", false)
     }
 
     static var activeMembers: Set<String>? {
@@ -120,11 +159,7 @@ enum Projects {
             Logger.debug { "projects discovered window=\(window.tracked.id) spaces=\(window.spaceIds) phantom=\(window.isPhantom) active=\(active?.id ?? "none")" }
             ProjectBrowserURLs.refresh(window) {
                 restoreMembership(window) { applicationAge in
-                    for space in spaces where window.spaceIds.contains(space.spaceId) {
-                        let desktop = forSpace(uuid: space.uuid)
-                        claimName(window.application.localizedName, for: desktop)
-                        if isEnabled, !window.isPhantom, let project = linkedProject(for: desktop) { addAutomatically(windowId: window.tracked.id, to: project) }
-                    }
+                    captureWindowOnDesktops(window)
                     let savedOwners = owners(of: window.tracked.id)
                     let onCurrentDesktop = window.spaceIds.contains(Spaces.currentSpaceId)
                     if !window.isPhantom, pattern(for: window.tracked.id) != nil, let project = creationProject, project.isCustom,
@@ -135,11 +170,20 @@ enum Projects {
                     } else {
                         Logger.debug { "projects auto-add skipped window=\(window.tracked.id) new=\(isNew) target=\(creationProject?.id ?? "none") phantom=\(window.isPhantom)" }
                     }
-                    if isEnabled, let project = active, project.isCustom {
+                    if isEnabled, let project = active, project.isCustom, project.members.contains(window.tracked.id) {
                         claimName(window.application.localizedName, for: project)
                     }
                 }
             }
+        }
+    }
+
+    private static func captureWindowOnDesktops(_ window: Window) {
+        guard !window.isWindowlessApp, !window.isPhantom else { return }
+        for space in spaces where window.spaceIds.contains(space.spaceId) {
+            let desktop = forSpace(uuid: space.uuid)
+            claimName(window.application.localizedName, for: desktop)
+            if isEnabled, let project = linkedProject(for: desktop) { addAutomatically(windowId: window.tracked.id, to: project) }
         }
     }
 
@@ -268,6 +312,8 @@ enum Projects {
         guard let space = spaces.first(where: { $0.uuid == desktop.homeSpaceUuid }) else { return }
         var changed = false
         for window in Windows.list where !window.isWindowlessApp && !window.isPhantom && window.spaceIds.contains(space.spaceId) {
+            claimName(window.application.localizedName, for: desktop)
+            claimName(desktop.preferredName ?? window.application.localizedName, for: project)
             if permitsAutomaticAssignment(window.tracked.id, to: project), insertMember(window.tracked.id, into: project) { changed = true }
         }
         if changed { save() }
@@ -317,6 +363,7 @@ enum Projects {
 
     private static func addAutomatically(windowId: String, to project: Project) {
         guard isEnabled, project.isCustom, byId[project.id] === project, permitsAutomaticAssignment(windowId, to: project) else { return }
+        claimName(Windows.list.first { $0.tracked.id == windowId }?.application.localizedName, for: project)
         if insertMember(windowId, into: project) { save() }
     }
 

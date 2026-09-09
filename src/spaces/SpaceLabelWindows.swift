@@ -39,6 +39,7 @@ enum SpaceLabelWindows {
 
     static func showAll() {
         guard Projects.isEnabled else { return }
+        Preferences.set("spaceLabelsOnLaunch", "true", false)
         synchronizeEnabled()
         visibility.showAll()
         updatePresentation()
@@ -57,7 +58,8 @@ enum SpaceLabelWindows {
         updatePresentation()
     }
 
-    static func closeAll() {
+    static func closeAll(remember: Bool = true) {
+        if remember { Preferences.set("spaceLabelsOnLaunch", "false", false) }
         visibility.hideAll()
         revealRequested = false
         reveal.cancel()
@@ -112,7 +114,10 @@ enum SpaceLabelWindows {
         guard enabled != Projects.isEnabled else { return }
         enabled = Projects.isEnabled
         revision += 1
-        if !enabled { closeAll() }
+        guard enabled else { closeAll(remember: false); return }
+        guard Preferences.spaceLabelsOnLaunch else { return }
+        visibility.restoreOnLaunch()
+        refresh()
     }
 
     static func refreshNames() {
@@ -169,7 +174,7 @@ enum SpaceLabelWindows {
     private static func reconcile() {
         MainThreadStall.step()
         let names = Dictionary(uniqueKeysWithValues: Projects.list.filter { !$0.isCustom }.map {
-            ($0.homeSpaceUuid, SpaceLabelResolver.Name(explicit: $0.name, automatic: $0.autoName))
+            ($0.homeSpaceUuid, SpaceLabelResolver.Name(explicit: $0.name, automatic: $0.autoName ?? $0.resolvedName))
         })
         let labels = SpaceLabelResolver.labels(spaces: spaces, names: names, enabled: enabled)
             .filter { visibility.includes($0.space.uuid) }

@@ -1,9 +1,12 @@
 import Cocoa
 
 extension Project {
+    var preferredName: String? { ProjectNameResolver.normalized(name) ?? ProjectNameResolver.normalized(autoName) }
+
     var resolvedName: String {
         let desktopNumber = isCustom ? nil : Projects.spaces.first { $0.uuid == homeSpaceUuid }?.desktopNumber ?? 0
         let projectNumber = (Projects.list.filter { $0.isCustom }.firstIndex { $0 === self } ?? 0) + 1
+        if desktopNumber == 0 { return preferredName ?? NSLocalizedString("Fullscreen", comment: "Spaces switcher tile label") }
         return ProjectNameResolver.resolved(name: name, autoName: autoName, desktopNumber: desktopNumber, projectNumber: projectNumber)
     }
 }
