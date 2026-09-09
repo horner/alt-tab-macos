@@ -1,12 +1,12 @@
 # AltTabProjects friends release plan
 
-Status: implementation and local cask testing authorized on September 9, 2026. Worktree: `/Volumes/Case/prj/alt-tab-projects-release`, branch `projects-release`. The current development changes were copied here without modifying the original checkout. A universal Release build and all 1,332 existing tests passed. Local cask installation and checksum/signature checks passed with a disposable ad-hoc copy. The selected Medical Informatics Engineering Developer ID team is `X5873NL7XM`. Developer ID signing, Apple notarization, ticket stapling, Gatekeeper assessment, cask style checks, and installation from the portable test kit passed. The signed output is `build/distribution-0.1.0/`, and `build/AltTabProjects-0.1.0-cask-test.zip` is ready to copy to the other Mac. Actual launch and feature testing on that Mac remain. The user authorized publishing a GitHub prerelease and testing the remote Homebrew download on September 9, 2026.
+Status: AltTabProjects 0.1.0 is published as a [friends prerelease](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.0). Source tag `projects-v0.1.0` points to commit `3a5b91005d75e165bf65c10c0d08efc3ba06ef38` on `projects-release`. The cask is on the fork's default `master` branch. Homebrew downloaded the published `AltTabProjects.zip` and installed `/Applications/AltTabProjects.app`; its signature, notarization ticket, Gatekeeper assessment, version, bundle ID, and both architecture slices were verified on macOS 26.6.2 / arm64. The selected signing team is Medical Informatics Engineering, Inc. (`X5873NL7XM`). The inherited upstream publishing job was skipped on the fork. Actual launch and feature testing on the other Mac remain.
 
 Publish a downloadable `AltTabProjects.app` through releases in `horner/alt-tab-macos`, with a Homebrew cask that installs that same release ZIP. Start with a manually initiated prerelease and updates through Homebrew or direct download. Keep distribution work on a dedicated branch so development can continue on `horner`.
 
 ## Findings from the current checkout
 
-- `origin` is `horner/alt-tab-macos`; `upstream` is `lwouis/alt-tab-macos`. GitHub reports that the fork is public, its default branch is `master`, and its release list is empty.
+- `origin` is `horner/alt-tab-macos`; `upstream` is `lwouis/alt-tab-macos`. GitHub reports that the fork is public, its default branch is `master`, and `projects-v0.1.0` is the published friends prerelease.
 - The working branch is `horner`, currently at `620cab02`, with substantial uncommitted Projects and Spaces work. The release source must include the intended finished changes, not just the current committed tip.
 - Ignored `config/local.xcconfig` sets `AltTabDebug`, `com.lwouis.alt-tab-macos.debug`, version `99.0.0`, and an Apple Development signing identity. Both Debug and Release include this local file, so the existing Release configuration alone does not establish a distributable identity.
 - `config/base.xcconfig` defaults to `AltTab` and upstream's bundle ID. `config/release.xcconfig` names upstream's Developer ID. The target's Release team comes from `TEAM_ID`.
@@ -65,6 +65,7 @@ Use the same app target with explicit Projects release settings, keeping the bra
    Friends would run the following commands once this distribution exists:
 
    ```sh
+   if brew command trust >/dev/null 2>&1; then brew trust --cask horner/projects/alttab-projects; fi
    brew tap horner/projects https://github.com/horner/alt-tab-macos.git
    brew install --cask horner/projects/alttab-projects
    ```

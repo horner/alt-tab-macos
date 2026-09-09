@@ -18,7 +18,7 @@ This uses the command-line build convention from `ai/build.sh`, producing an uns
 
 The release uses `Developer ID Application: Medical Informatics Engineering, Inc. (X5873NL7XM)`. Its certificate and matching private key are installed in the login Keychain. Developer ID signing and nested signature verification passed on September 9, 2026.
 
-The `alttab-projects` notarization profile is configured on this Mac. Apple accepted version 0.1.0, and the stapled app passed Gatekeeper assessment. The final output is `build/distribution-0.1.0/`; the portable Homebrew test kit is `build/AltTabProjects-0.1.0-cask-test.zip`.
+The `alttab-projects` notarization profile is configured on this Mac. Apple accepted version 0.1.0, and the stapled app passed Gatekeeper assessment. The published output is `build/release-0.1.0/`. [Version 0.1.0](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.0) is available through the public `horner/projects/alttab-projects` cask; see the repository README for installation commands. The earlier portable test kit remains in `build/AltTabProjects-0.1.0-cask-test.zip`.
 
 Create the notarization profile once, entering an Apple app-specific password at the secure prompt:
 
@@ -89,7 +89,7 @@ Distribution packaging requires a clean, committed source snapshot and records i
 - Every packaged Mach-O has `arm64` and `x86_64` slices.
 - Local Homebrew installation and removal, cask style, ZIP checksum, and installed code-signature verification passed.
 - Developer ID signing and nested signature verification passed with team `X5873NL7XM`.
-- Apple notarization accepted submission `41b0b8b2-9657-4d73-a4ee-ee30613616c7`; the stapled app passes Gatekeeper as `Notarized Developer ID`.
+- Apple notarization accepted submission `e73d2e75-e953-417a-ab49-af6c90c5048c`; the stapled app passes Gatekeeper as `Notarized Developer ID`.
 - The portable kit was extracted into a different directory containing spaces and installed with the cask initially untrusted. Cask trust setup, installation, signature checks, ticket validation, and uninstall passed on macOS 26.6.2 / arm64.
-- Both generated casks passed Homebrew style checks. Actual launch and feature testing on the other Mac remain for the user.
+- Both generated casks passed Homebrew style checks. Homebrew also downloaded the published GitHub asset and installed `/Applications/AltTabProjects.app`; the installed copy passed signature, ticket, Gatekeeper, version, bundle ID, and architecture checks. Actual launch and feature testing on the other Mac remain for the user.
 - Comment audit: source baseline was 11,627 comment lines / 44,054 code lines. Reviewed `App.swift` (92 comment lines), `Endpoints.swift` (0), and `GeneralTab.swift` (3). Fixed the stale hard-coded license URL scheme in `App.swift`; retained the measured AppKit/WindowServer ordering notes. No runtime behavior changed in the comment audit.

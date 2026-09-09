@@ -5,11 +5,12 @@ Saved Projects and Desktop navigation in a dedicated AltTab app, distributed fro
 [Download the friends beta](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.0), or install the prebuilt app with Homebrew:
 
 ```sh
+if brew command trust >/dev/null 2>&1; then brew trust --cask horner/projects/alttab-projects; fi
 brew tap horner/projects https://github.com/horner/alt-tab-macos.git
 brew install --cask horner/projects/alttab-projects
 ```
 
-If Homebrew asks you to trust the cask, run `brew trust --cask horner/projects/alttab-projects`, then retry the install. Updates use `brew upgrade --cask horner/projects/alttab-projects` after `brew update`.
+Updates use `brew upgrade --cask horner/projects/alttab-projects` after `brew update`.
 
 The ZIP contains `AltTabProjects.app`, signed with Developer ID and notarized by Apple. Both Apple silicon and Intel architectures are included. Packaging and Gatekeeper checks were tested on macOS 26.6.2 / Apple silicon; behavior on other Macs is still being tested.
 
