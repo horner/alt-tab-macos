@@ -28,8 +28,8 @@ The default branch carries the cask; development can continue in its separate ch
    validation results, and anything that still requires hands-on testing. Do not claim first-run
    UI testing from build or packaging checks alone.
 
-The current published app is [0.1.1](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.1).
-The deployment tooling itself does not change the app version. An ordinary attempt to deploy an
+Versions 0.1.0 and [0.1.1](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.1) were
+published manually before this script. The tooling itself does not change the app version. An ordinary attempt to deploy an
 existing version is rejected; `--resume` is for recovering the same deployment, not republishing.
 
 ## Required setup
