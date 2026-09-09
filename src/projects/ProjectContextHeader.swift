@@ -167,7 +167,7 @@ enum ProjectContextHeader {
             return String(format: NSLocalizedString("Project: %@", comment: "Window switcher context"), project.resolvedName)
         }
         let space = Projects.spaces.first { $0.isCurrent }
-        let name = space.flatMap { ProjectNameResolver.normalized(Projects.byId["desktop-\($0.uuid)"]?.name) }
+        let name = space.flatMap { Projects.desktopDisplayName($0.uuid) }
         let desktop = name ?? space.map { String(format: NSLocalizedString("Desktop %d", comment: ""), $0.desktopNumber) }
             ?? NSLocalizedString("Desktop", comment: "")
         switch Preferences.spacesToShow[SwitcherSession.activeShortcutIndex] {

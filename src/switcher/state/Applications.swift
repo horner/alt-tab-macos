@@ -357,7 +357,7 @@ class Applications {
             // (stale old Space), and a background tab's true membership is NO Space.
             // A nil answer says nothing. Keep it distinct from a completed empty answer: discovery can use
             // the latter as Space-less evidence, while a later sync is responsible for filling an unknown.
-            let spaceMembership: SpaceMembershipObservation = (isSelf || adoptedAsInactiveTab) ? .known([])
+            let spaceMembership: SpaceMembershipObservation = adoptedAsInactiveTab ? .known([])
                 : CGSCallScheduler.windowSpaces(wid).map { .known($0) } ?? .unavailable
             DispatchQueue.main.async { [weak app] in
                 guard let app else { return }

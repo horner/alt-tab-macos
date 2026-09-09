@@ -11,7 +11,7 @@ class SpaceItem {
     let isCurrent: Bool
     private(set) weak var previewWindow: Window?
     private(set) var previewIcon: NSImage?
-    private var desktopName: String? { ProjectNameResolver.normalized(Projects.byId["desktop-\(uuid)"]?.name) }
+    private var desktopName: String? { Projects.desktopDisplayName(uuid) }
     var label: String { desktopName ?? windowDetail }
     var subtitle: String? { desktopName == nil ? nil : windowDetail }
 

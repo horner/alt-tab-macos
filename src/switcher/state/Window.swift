@@ -79,8 +79,10 @@ class Window {
     /// reducer setting it true states an INTENT that the `copyThumbnail` effect fulfils after this runs, and
     /// may not (the source window can be gone by then).
     func adopt(_ record: TrackedWindow) {
+        let previousSpaces = tracked.spaceIds
         tracked = record
         tracked.hasThumbnail = thumbnail != nil
+        if tracked.spaceIds != previousSpaces { Projects.windowSpaceChanged(self) }
     }
 
     /// `axUiElement` is optional for an exact-attention destination whose app has not answered yet.

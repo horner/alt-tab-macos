@@ -49,4 +49,9 @@ enum ProjectReattachResolver {
     static func allowsActiveAssignment(isNew: Bool, applicationAge: TimeInterval, onCurrentDesktop: Bool, hasSavedOwner: Bool) -> Bool {
         isNew && applicationAge >= 30 && onCurrentDesktop && !hasSavedOwner
     }
+
+    static func allowsAutomaticAssignment(to projectId: String, savedOwners: Set<String>, liveOwners: Set<String>) -> Bool {
+        guard liveOwners.isEmpty || liveOwners == [projectId] else { return false }
+        return savedOwners.isEmpty || savedOwners.contains(projectId)
+    }
 }

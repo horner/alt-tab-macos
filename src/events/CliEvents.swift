@@ -155,24 +155,10 @@ class CliServer {
         let filters = WindowFilters.snapshot()
         let frontmostPid = Applications.frontmostPid
         let visibleSpaceIds = Spaces.visibleSpaces
+        let projectMembers = Projects.activeMembers
         let windows = Windows.list.enumerated().map { (i, w) -> QaWindow in
             let wid = w.cgWindowId
-            let shown = WindowFilterResolver.shouldShow(
-                w.state, w.application.state,
-                onlyFrontmostApp: filters.appsToShow == .active,
-                excludeFrontmostApp: filters.appsToShow == .nonActive,
-                hideHidden: filters.showHiddenWindows == .hide,
-                hideWindowless: filters.showWindowlessApps == .hide,
-                hideFullscreen: filters.showFullscreenWindows == .hide,
-                hideMinimized: filters.showMinimizedWindows == .hide,
-                onlyVisibleSpaces: filters.spacesToShow == .visible,
-                onlyNonVisibleSpaces: filters.spacesToShow == .nonVisible,
-                onlyPreferredScreen: filters.screensToShow == .showingAltTab,
-                separateTabs: filters.groupTabs == .separateWindows,
-                frontmostPid: frontmostPid,
-                visibleSpaceIds: visibleSpaceIds,
-                exceptions: filters.exceptions,
-                isOnPreferredScreen: w.isOnScreen(NSScreen.preferred))
+            let shown = Windows.shouldShow(w, filters, projectMembers: projectMembers)
             return QaWindow(
                 index: i,
                 wid: wid,
@@ -181,6 +167,7 @@ class CliServer {
                 bundleId: w.application.bundleIdentifier,
                 pid: w.application.pid,
                 shown: shown,
+                projectIds: Projects.list.filter { $0.isCustom && $0.members.contains(w.tracked.id) }.map { $0.id },
                 tabbed: w.isTabbed,
                 groupId: wid.flatMap { TabGroups.groupId(of: $0) },
                 siblings: w.tabbedSiblingWids,
@@ -371,6 +358,7 @@ class CliServer {
         var bundleId: String?
         var pid: pid_t
         var shown: Bool
+        var projectIds: [String]
         var tabbed: Bool
         var groupId: Int?
         var siblings: [CGWindowID]?

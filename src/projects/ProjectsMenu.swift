@@ -2,6 +2,10 @@ import Cocoa
 
 final class ProjectsMenu: NSObject {
     private static var desktopItem: NSMenuItem!
+    private static var showLabelsItem: NSMenuItem!
+    private static var raiseLabelsItem: NSMenuItem!
+    private static var minimizeLabelsItem: NSMenuItem!
+    private static var closeLabelsItem: NSMenuItem!
     private static var projectsItem: NSMenuItem!
     private static weak var focusedWindow: Window?
     private static var unassignedItem: NSMenuItem!
@@ -46,6 +50,14 @@ final class ProjectsMenu: NSObject {
         unassignedItem.isHidden = !Projects.isEnabled
         menu.addItem(unassignedItem)
         menu.addItem(desktopItem)
+        showLabelsItem = item(NSLocalizedString("Show Space Labels", comment: "Space label menu action"), #selector(showSpaceLabels))
+        raiseLabelsItem = item(NSLocalizedString("Bring Space Labels to Front", comment: "Space label menu action"), #selector(raiseSpaceLabels))
+        minimizeLabelsItem = item(NSLocalizedString("Minimize All Space Labels", comment: "Space label menu action"), #selector(minimizeSpaceLabels))
+        closeLabelsItem = item(NSLocalizedString("Close All Space Labels", comment: "Space label menu action"), #selector(closeSpaceLabels))
+        for labelItem in [showLabelsItem!, raiseLabelsItem!, minimizeLabelsItem!, closeLabelsItem!] {
+            labelItem.isHidden = !Projects.isEnabled
+            menu.addItem(labelItem)
+        }
         menu.addItem(projectsItem)
     }
 
@@ -66,6 +78,12 @@ final class ProjectsMenu: NSObject {
         addWindows(of: nil, to: unassigned)
         unassignedItem.submenu = unassigned
         desktopItem.isEnabled = currentDesktop != nil
+        showLabelsItem.isHidden = !Projects.isEnabled
+        raiseLabelsItem.isHidden = !Projects.isEnabled
+        minimizeLabelsItem.isHidden = !Projects.isEnabled
+        minimizeLabelsItem.isEnabled = SpaceLabelWindows.hasLabels
+        closeLabelsItem.isHidden = !Projects.isEnabled
+        closeLabelsItem.isEnabled = SpaceLabelWindows.hasLabels
         projectsItem.isHidden = !Projects.isEnabled
         guard Projects.isEnabled, let submenu = projectsItem.submenu else { return }
         submenu.autoenablesItems = false
@@ -134,6 +152,22 @@ final class ProjectsMenu: NSObject {
         defer { logMenu("nameDesktop", "finished") }
         guard let project = currentDesktop else { return }
         DesktopNamePrompt.present(project)
+    }
+
+    @objc private static func showSpaceLabels() {
+        DispatchQueue.main.async { SpaceLabelWindows.showAll() }
+    }
+
+    @objc private static func closeSpaceLabels() {
+        DispatchQueue.main.async { SpaceLabelWindows.closeAll() }
+    }
+
+    @objc private static func raiseSpaceLabels() {
+        DispatchQueue.main.async { SpaceLabelWindows.bringAllToFront() }
+    }
+
+    @objc private static func minimizeSpaceLabels() {
+        DispatchQueue.main.async { SpaceLabelWindows.minimizeAll() }
     }
 
     private static func refreshActiveItems() {

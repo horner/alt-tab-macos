@@ -166,6 +166,11 @@ class Menubar {
         statusItem.menu = nil
     }
 
+    static func popUpMenu(from view: NSView) {
+        guard let menu, view.window != nil else { return }
+        menu.popUp(positioning: nil, at: NSPoint(x: view.bounds.minX, y: view.bounds.maxY), in: view)
+    }
+
     static func menubarIconCallback(_: NSControl?) {
         // Guard: can be invoked during `LicenseManager.initialize()` (e.g. Pro users where
         // `onStateChanged` → `ProTransitionManager.onLicenseStateChanged` fires before

@@ -10,6 +10,9 @@
 /* No comment provided by engineer. */
 "%d selected window(s) already belong to: %@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships." = "%1$d selected window(s) already belong to: %2$@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships.";
 
+/* Space label reveal duration help */
+"0 ms disables the automatic reveal. Closed or minimized labels stay hidden." = "0 ms disables the automatic reveal. Closed or minimized labels stay hidden.";
+
 /* No comment provided by engineer. */
 "3-finger Horizontal Swipe" = "3-finger Horizontal Swipe";
 
@@ -235,6 +238,15 @@
 /* No comment provided by engineer. */
 "Brief description of the change" = "Brief description of the change";
 
+/* Raise all Space labels button */
+"Bring All to Front" = "Bring All to Front";
+
+/* Space label button help */
+"Bring open Space labels to the front and restore minimized labels." = "Bring open Space labels to the front and restore minimized labels.";
+
+/* Space label menu action */
+"Bring Space Labels to Front" = "Bring Space Labels to Front";
+
 /* No comment provided by engineer. */
 "Bundle ID" = "Bundle ID";
 
@@ -258,6 +270,12 @@
 
 /* Menubar option */
 "Check permissions…" = "Check permissions…";
+
+/* Close all Space labels button */
+"Close All" = "Close All";
+
+/* Space label menu action */
+"Close All Space Labels" = "Close All Space Labels";
 
 /* No comment provided by engineer. */
 "Close window" = "Close window";
@@ -412,6 +430,9 @@
 /* Spaces switcher tile label */
 "Fullscreen" = "Fullscreen";
 
+/* Fullscreen Space label number */
+"Fullscreen · Space %d" = "Fullscreen · Space %d";
+
 /* No comment provided by engineer. */
 "Fullscreen/Defullscreen window" = "Fullscreen/Defullscreen window";
 
@@ -524,12 +545,6 @@
 "Light" = "Light";
 
 /* No comment provided by engineer. */
-"Link this Desktop to a Project" = "Link this Desktop to a Project";
-
-/* No comment provided by engineer. */
-"Linking enables Projects and includes existing and future windows on this Desktop." = "Linking enables Projects and includes existing and future windows on this Desktop.";
-
-/* No comment provided by engineer. */
 "Machine %@" = "Machine %@";
 
 /* No comment provided by engineer. */
@@ -547,11 +562,20 @@
 /* No comment provided by engineer. */
 "Medium" = "Medium";
 
+/* AltTab menu button */
+"Menu" = "Menu";
+
 /* No comment provided by engineer. */
 "Menubar icon" = "Menubar icon";
 
 /* No comment provided by engineer. */
 "Middle" = "Middle";
+
+/* Minimize all Space labels button */
+"Minimize All" = "Minimize All";
+
+/* Space label menu action */
+"Minimize All Space Labels" = "Minimize All Space Labels";
 
 /* No comment provided by engineer. */
 "Minimize/Deminimize window" = "Minimize/Deminimize window";
@@ -646,6 +670,9 @@
 /* No comment provided by engineer. */
 "Open Screen Recording Settings…" = "Open Screen Recording Settings…";
 
+/* AltTab menu button help */
+"Open the AltTab menu" = "Open the AltTab menu";
+
 /* No comment provided by engineer. */
 "Open Trackpad Settings…" = "Open Trackpad Settings…";
 
@@ -709,11 +736,17 @@
 /* Unnamed custom Project */
 "Project %d" = "Project %d";
 
+/* Whether Project label windows appear in the window switcher */
+"Project windows in switcher" = "Project windows in switcher";
+
 /* Window switcher context */
 "Project: %@" = "Project: %@";
 
 /* Projects menu */
 "Projects" = "Projects";
+
+/* Multiple Projects linked to one Desktop */
+"Projects on this Desktop" = "Projects on this Desktop";
 
 /* No comment provided by engineer. */
 "Projects switcher" = "Projects switcher";
@@ -853,6 +886,12 @@
 /* Menubar option */
 "Show" = "Show";
 
+/* Show all Space labels button */
+"Show All" = "Show All";
+
+/* Space label button help */
+"Show all Space labels, including individually closed labels." = "Show all Space labels, including individually closed labels.";
+
 /* No comment provided by engineer. */
 "Show all windows" = "Show all windows";
 
@@ -877,6 +916,9 @@
 /* No comment provided by engineer. */
 "Show hidden windows" = "Show hidden windows";
 
+/* Space label reveal duration setting */
+"Show label after switching Spaces" = "Show label after switching Spaces";
+
 /* No comment provided by engineer. */
 "Show minimized windows" = "Show minimized windows";
 
@@ -891,6 +933,9 @@
 
 /* No comment provided by engineer. */
 "Show single window for all tabs" = "Show single window for all tabs";
+
+/* Space label menu action */
+"Show Space Labels" = "Show Space Labels";
 
 /* No comment provided by engineer. */
 "Show titles" = "Show titles";
@@ -918,6 +963,9 @@
 
 /* No comment provided by engineer. */
 "Source code" = "Source code";
+
+/* Space label controls */
+"Space labels" = "Space labels";
 
 /* No comment provided by engineer. */
 "Space Order" = "Space Order";
@@ -1041,6 +1089,9 @@
 
 /* No comment provided by engineer. */
 "Unlock the Titles style with Pro" = "Unlock the Titles style with Pro";
+
+/* Space label without a saved name */
+"Unnamed Space" = "Unnamed Space";
 
 /* No comment provided by engineer. */
 "Up to 9 keyboard shortcuts" = "Up to 9 keyboard shortcuts";

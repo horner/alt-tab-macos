@@ -5,10 +5,12 @@ extension Preferences {
     static var projectsEnabled: Bool { UserDefaults.standard.bool(forKey: "projectsEnabled") }
     static var projectsCurrentSpaceOnly: Bool { UserDefaults.standard.bool(forKey: "projectsCurrentSpaceOnly") }
     static var projectsFollowDesktop: Bool { UserDefaults.standard.bool(forKey: "projectsFollowDesktop") }
+    static var projectWindowsInSwitcher: Bool { UserDefaults.standard.bool(forKey: "projectWindowsInSwitcher") }
+    static var spaceLabelRevealDuration: Int { SpaceLabelResolver.revealDuration(UserDefaults.standard.integer(forKey: "spaceLabelRevealDuration")) }
     static var projects: [ProjectEntry] { CachedUserDefaults.json("projects", [ProjectEntry].self) }
     static var projectsShortcutStyle: ShortcutStylePreference { CachedUserDefaults.macroPref("projectsShortcutStyle", ShortcutStylePreference.allCases) }
     static var projectsDefaultValues: [String: Any] {
-        ["projectsCurrentSpaceOnly": "false", "projectsEnabled": "false", "projectsFollowDesktop": "false", "projects": "[]",
+        ["projectsCurrentSpaceOnly": "false", "projectsEnabled": "false", "projectsFollowDesktop": "false", "projects": "[]", "projectWindowsInSwitcher": "false", "spaceLabelRevealDuration": String(SpaceLabelResolver.defaultRevealDuration),
          ProjectSwitcher.holdShortcutId: defaultShortcut(""),
          ProjectSwitcher.nextShortcutId: defaultShortcut("⇥"),
          ProjectSwitcher.previousShortcutId: defaultShortcut("⇧"),
@@ -30,8 +32,10 @@ struct ProjectEntry: Codable {
     var memberPatterns = [ProjectWindowPattern]()
     var excludedPatterns = [ProjectWindowPattern]()
     var linkedProjectId: String?
+    var linkedProjectIds = [String]()
+    var labelUuid: String?
 
-    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = [], memberPatterns: [ProjectWindowPattern] = [], excludedPatterns: [ProjectWindowPattern] = [], windowHistory: [ProjectWindowPattern] = []) {
+    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = [], memberPatterns: [ProjectWindowPattern] = [], excludedPatterns: [ProjectWindowPattern] = [], windowHistory: [ProjectWindowPattern] = [], linkedProjectIds: [String] = [], labelUuid: String? = nil) {
         self.windowHistory = windowHistory
         self.memberPatterns = memberPatterns
         self.excludedPatterns = excludedPatterns
@@ -44,6 +48,8 @@ struct ProjectEntry: Codable {
         self.iconFileName = iconFileName
         self.members = members
         self.linkedProjectId = linkedProjectId
+        self.linkedProjectIds = linkedProjectIds.isEmpty ? linkedProjectId.map { [$0] } ?? [] : linkedProjectIds
+        self.labelUuid = labelUuid
         self.excludedMembers = excludedMembers
     }
 
@@ -63,5 +69,7 @@ struct ProjectEntry: Codable {
         members = (try? c?.decode([ProjectWindowIdentity].self, forKey: .members)) ?? []
         excludedMembers = (try? c?.decode([ProjectWindowIdentity].self, forKey: .excludedMembers)) ?? []
         linkedProjectId = try? c?.decode(String.self, forKey: .linkedProjectId)
+        linkedProjectIds = (try? c?.decode([String].self, forKey: .linkedProjectIds)) ?? linkedProjectId.map { [$0] } ?? []
+        labelUuid = try? c?.decode(String.self, forKey: .labelUuid)
     }
 }

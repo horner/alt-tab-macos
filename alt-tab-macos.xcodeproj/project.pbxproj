@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		600FBAE74F894F11A8628713 /* SpaceLabelWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D20DC9DD7644E0092E428ED /* SpaceLabelWindow.swift */; };
+		21A91CA3655F4C74A66A8183 /* SpaceLabelWindows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1A930531ED4512A5FC1474 /* SpaceLabelWindows.swift */; };
+		F38996B1E86C495BAF2B45BB /* SpaceLabelResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37BDC94A26B7419F88A0C177 /* SpaceLabelResolver.swift */; };
+		093B44A0218B46498C180BC3 /* SpaceLabelResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37BDC94A26B7419F88A0C177 /* SpaceLabelResolver.swift */; };
+		7E368F152DB34A42A51A4F60 /* SpaceLabelResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B632EFE8A93F4985AFD783DC /* SpaceLabelResolverTests.swift */; };
 		C109C47827CA49DE8D95BA42 /* ProjectBrowserURLs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 313BA7FDEAF34E6691A665D6 /* ProjectBrowserURLs.swift */; };
 		8E26AFE3A4FD4C31B58C61F9 /* ProjectRestoreNotice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9346C0507359497FBCE3C401 /* ProjectRestoreNotice.swift */; };
 		2CB4EB8C077F22F9B8FFB4C3 /* ProjectNumberResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBDED8E316B1D410102D2B13 /* ProjectNumberResolverTests.swift */; };
@@ -44,8 +49,11 @@
 		CF3DC6A39A6D5D01B0C85B08 /* ProjectNameResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */; };
 		AA8E2AB44ABDE8861E1872C4 /* ProjectsPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6956D5A824809FDFB8430AF3 /* ProjectsPreferences.swift */; };
 		E4916672E3F37C25ACE8086B /* ProjectMembershipResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07E0B4B7F20E4250B013E058 /* ProjectMembershipResolverTests.swift */; };
+		594E8E28773641AF8E520D70 /* ProjectDesktopResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D59CC5F540144628DAF6742 /* ProjectDesktopResolverTests.swift */; };
 		E8C6B859A2A1D79590ED3517 /* ProjectMembershipResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4999806373D9BBF8225F4A69 /* ProjectMembershipResolver.swift */; };
+		9F27A1227432435393E7137D /* ProjectDesktopResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2EE59C3CF9C42F2AEC8DEFB /* ProjectDesktopResolver.swift */; };
 		85ED4BC5ADE1055EE64788B5 /* ProjectMembershipResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4999806373D9BBF8225F4A69 /* ProjectMembershipResolver.swift */; };
+		F771D56935E34BEA9AA14777 /* ProjectDesktopResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2EE59C3CF9C42F2AEC8DEFB /* ProjectDesktopResolver.swift */; };
 		26C4D4265CCFF5A4F1D70297 /* Projects.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC7D86505C304207EADFAEC /* Projects.swift */; };
 		1C96101BC5817A7F85FA1F8D /* titles_show_running_applications_light@2x.heic in Resources */ = {isa = PBXBuildFile; fileRef = 1C961F57248D4E2377A9038E /* titles_show_running_applications_light@2x.heic */; };
 		1C96108A0CB2565233FE100B /* TableGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C961FB3DCF4906FEEF4A23D /* TableGroupView.swift */; };
@@ -496,6 +504,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		2D20DC9DD7644E0092E428ED /* SpaceLabelWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceLabelWindow.swift; sourceTree = "<group>"; };
+		9A1A930531ED4512A5FC1474 /* SpaceLabelWindows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceLabelWindows.swift; sourceTree = "<group>"; };
+		37BDC94A26B7419F88A0C177 /* SpaceLabelResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceLabelResolver.swift; sourceTree = "<group>"; };
+		B632EFE8A93F4985AFD783DC /* SpaceLabelResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceLabelResolverTests.swift; sourceTree = "<group>"; };
+		9884F50106134CC29ADF58D7 /* SpaceLabelResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = SpaceLabelResolverSpecs.md; sourceTree = "<group>"; };
 		313BA7FDEAF34E6691A665D6 /* ProjectBrowserURLs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectBrowserURLs.swift; sourceTree = "<group>"; };
 		9346C0507359497FBCE3C401 /* ProjectRestoreNotice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectRestoreNotice.swift; sourceTree = "<group>"; };
 		B6CE23E8D65FA5D38FCC040F /* ProjectNumberResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectNumberResolverSpecs.md; sourceTree = "<group>"; };
@@ -533,8 +546,11 @@
 		AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectNameResolver.swift; sourceTree = "<group>"; };
 		6956D5A824809FDFB8430AF3 /* ProjectsPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsPreferences.swift; sourceTree = "<group>"; };
 		242CCD8399505E29F594D454 /* ProjectMembershipResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectMembershipResolverSpecs.md; sourceTree = "<group>"; };
+		CC194730AE3D455DADCC340A /* ProjectDesktopResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectDesktopResolverSpecs.md; sourceTree = "<group>"; };
 		07E0B4B7F20E4250B013E058 /* ProjectMembershipResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMembershipResolverTests.swift; sourceTree = "<group>"; };
+		2D59CC5F540144628DAF6742 /* ProjectDesktopResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDesktopResolverTests.swift; sourceTree = "<group>"; };
 		4999806373D9BBF8225F4A69 /* ProjectMembershipResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMembershipResolver.swift; sourceTree = "<group>"; };
+		E2EE59C3CF9C42F2AEC8DEFB /* ProjectDesktopResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDesktopResolver.swift; sourceTree = "<group>"; };
 		DCC7D86505C304207EADFAEC /* Projects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Projects.swift; sourceTree = "<group>"; };
 		02540420CE27E6C973652426 /* menubar-0.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "menubar-0.pdf"; sourceTree = "<group>"; };
 		126D5AA615CEE89F73C22DA7 /* menubar-1.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = "menubar-1.pdf"; sourceTree = "<group>"; };
@@ -1044,8 +1060,11 @@
 				AB79CE85F32A0A494976533F /* ProjectNameResolver.swift */,
 				6956D5A824809FDFB8430AF3 /* ProjectsPreferences.swift */,
 				242CCD8399505E29F594D454 /* ProjectMembershipResolverSpecs.md */,
+				CC194730AE3D455DADCC340A /* ProjectDesktopResolverSpecs.md */,
 				07E0B4B7F20E4250B013E058 /* ProjectMembershipResolverTests.swift */,
+				2D59CC5F540144628DAF6742 /* ProjectDesktopResolverTests.swift */,
 				4999806373D9BBF8225F4A69 /* ProjectMembershipResolver.swift */,
+				E2EE59C3CF9C42F2AEC8DEFB /* ProjectDesktopResolver.swift */,
 				DCC7D86505C304207EADFAEC /* Projects.swift */,
 			);
 			path = "projects";
@@ -1744,6 +1763,11 @@
 		0000CC00000000000000001D /* spaces */ = {
 			isa = PBXGroup;
 			children = (
+				2D20DC9DD7644E0092E428ED /* SpaceLabelWindow.swift */,
+				9A1A930531ED4512A5FC1474 /* SpaceLabelWindows.swift */,
+				37BDC94A26B7419F88A0C177 /* SpaceLabelResolver.swift */,
+				B632EFE8A93F4985AFD783DC /* SpaceLabelResolverTests.swift */,
+				9884F50106134CC29ADF58D7 /* SpaceLabelResolverSpecs.md */,
 				0000CC00000000000000000E /* SpacesSwitcher.swift */,
 				0000CC000000000000000010 /* SpacesList.swift */,
 				0000CC000000000000000012 /* SpacesOrderResolver.swift */,
@@ -2267,7 +2291,11 @@
 				6AEBEDA9547721AF3C46DBEC /* ProjectNameResolverTests.swift in Sources */,
 				43CD1813ADF4B33A8400A61B /* ProjectNameResolver.swift in Sources */,
 				E4916672E3F37C25ACE8086B /* ProjectMembershipResolverTests.swift in Sources */,
+				594E8E28773641AF8E520D70 /* ProjectDesktopResolverTests.swift in Sources */,
 				E8C6B859A2A1D79590ED3517 /* ProjectMembershipResolver.swift in Sources */,
+				9F27A1227432435393E7137D /* ProjectDesktopResolver.swift in Sources */,
+				093B44A0218B46498C180BC3 /* SpaceLabelResolver.swift in Sources */,
+				7E368F152DB34A42A51A4F60 /* SpaceLabelResolverTests.swift in Sources */,
 				0000CC000000000000000014 /* SpacesOrderResolver.swift in Sources */,
 				0000CC00000000000000001A /* SpacesOrderResolverTests.swift in Sources */,
 				5A1100000000000000030001 /* TrackingTypes.swift in Sources */,
@@ -2429,9 +2457,13 @@
 				CF3DC6A39A6D5D01B0C85B08 /* ProjectNameResolver.swift in Sources */,
 				AA8E2AB44ABDE8861E1872C4 /* ProjectsPreferences.swift in Sources */,
 				85ED4BC5ADE1055EE64788B5 /* ProjectMembershipResolver.swift in Sources */,
+				F771D56935E34BEA9AA14777 /* ProjectDesktopResolver.swift in Sources */,
 				26C4D4265CCFF5A4F1D70297 /* Projects.swift in Sources */,
 				0000CC00000000000000000F /* SpacesSwitcher.swift in Sources */,
 				0000CC000000000000000011 /* SpacesList.swift in Sources */,
+				600FBAE74F894F11A8628713 /* SpaceLabelWindow.swift in Sources */,
+				21A91CA3655F4C74A66A8183 /* SpaceLabelWindows.swift in Sources */,
+				F38996B1E86C495BAF2B45BB /* SpaceLabelResolver.swift in Sources */,
 				0000CC000000000000000013 /* SpacesOrderResolver.swift in Sources */,
 				0000CC000000000000000016 /* SpacesPanel.swift in Sources */,
 				0000CC000000000000000018 /* SpacesPreferences.swift in Sources */,

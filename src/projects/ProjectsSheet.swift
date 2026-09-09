@@ -12,7 +12,17 @@ final class ProjectsSheet: SheetWindow {
     private static let previous = NSLocalizedString("Select previous project", comment: "")
     private static let style = NSLocalizedString("On release", comment: "")
     private static let preset = NSLocalizedString("Use ⌘ / ⌥ / ⌃ layout", comment: "")
-    static let searchableStrings = [title, enable, scope, allLocations, currentLocation, followDesktop, hold, next, previous, style, preset] + ShortcutStylePreference.allCases.map { $0.localizedString }
+    private static let spaceLabels = NSLocalizedString("Space labels", comment: "Space label controls")
+    private static let showLabels = NSLocalizedString("Show Space Labels", comment: "Space label menu action")
+    private static let closeLabels = NSLocalizedString("Close All Space Labels", comment: "Space label menu action")
+    private static let raiseLabels = NSLocalizedString("Bring Space Labels to Front", comment: "Space label menu action")
+    private static let minimizeLabels = NSLocalizedString("Minimize All Space Labels", comment: "Space label menu action")
+    private static let revealLabels = NSLocalizedString("Show label after switching Spaces", comment: "Space label reveal duration setting")
+    private static let revealHelp = NSLocalizedString("0 ms disables the automatic reveal. Closed or minimized labels stay hidden.", comment: "Space label reveal duration help")
+    private static let windowsInSwitcher = NSLocalizedString("Project windows in switcher", comment: "Whether Project label windows appear in the window switcher")
+    private static let showWindows = NSLocalizedString("Show", comment: "")
+    private static let hideWindows = NSLocalizedString("Hide", comment: "")
+    static let searchableStrings = [title, enable, scope, allLocations, currentLocation, followDesktop, hold, next, previous, style, preset, spaceLabels, showLabels, raiseLabels, minimizeLabels, closeLabels, revealLabels, revealHelp, windowsInSwitcher, showWindows, hideWindows] + ShortcutStylePreference.allCases.map { $0.localizedString }
     private var groups: NSStackView?
     private var warning: NSTextField?
     private var warningRow: TableGroupView.RowInfo?
@@ -45,6 +55,14 @@ final class ProjectsSheet: SheetWindow {
         toggle.action = #selector(toggleEnabled(_:))
         _ = table.addRow(TableGroupView.Row(leftTitle: Self.enable, rightViews: [toggle]))
         if Projects.isEnabled {
+            let show = NSButton(title: Self.showLabels, target: self, action: #selector(showSpaceLabels))
+            let close = NSButton(title: Self.closeLabels, target: self, action: #selector(closeSpaceLabels))
+            _ = table.addRow(TableGroupView.Row(leftTitle: Self.spaceLabels, rightViews: [show, close]))
+            let raise = NSButton(title: Self.raiseLabels, target: self, action: #selector(raiseSpaceLabels))
+            let minimize = NSButton(title: Self.minimizeLabels, target: self, action: #selector(minimizeSpaceLabels))
+            _ = table.addRow(leftViews: [], rightViews: [raise, minimize])
+            addRevealDuration(table)
+            addSwitcherVisibility(table)
             let scope = NSPopUpButton()
             scope.addItems(withTitles: [Self.allLocations, Self.currentLocation])
             scope.selectItem(at: Preferences.projectsCurrentSpaceOnly ? 1 : 0)
@@ -75,6 +93,29 @@ final class ProjectsSheet: SheetWindow {
         _ = table.addRow(TableGroupView.Row(leftTitle: label, rightViews: [
             LabelAndControl.makeLabelWithRecorder(label, key, Preferences.shortcut(key), labelPosition: .right)[0],
         ]))
+    }
+
+    private func addRevealDuration(_ table: TableGroupView) {
+        let controls = LabelAndControl.makeLabelWithSlider("", "spaceLabelRevealDuration", 0, 3000, 31, true, "ms", width: 140)
+        controls[1].toolTip = Self.revealHelp
+        let indicator = controls[2] as! NSTextField
+        indicator.alignment = .right
+        indicator.fit(64, indicator.fittingSize.height)
+        let help = NSTextField(wrappingLabelWithString: Self.revealHelp)
+        help.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        help.textColor = .secondaryLabelColor
+        help.preferredMaxLayoutWidth = SheetWindow.width - 40
+        _ = table.addRow(leftViews: [LabelAndControl.makeLabel(Self.revealLabels)], rightViews: [controls[1], indicator], secondaryViews: [help])
+    }
+
+    private func addSwitcherVisibility(_ table: TableGroupView) {
+        let visibility = NSPopUpButton()
+        visibility.addItems(withTitles: [Self.showWindows, Self.hideWindows])
+        visibility.selectItem(at: Preferences.projectWindowsInSwitcher ? 0 : 1)
+        visibility.onAction = { control in
+            Preferences.set("projectWindowsInSwitcher", (control as! NSPopUpButton).indexOfSelectedItem == 0 ? "true" : "false")
+        }
+        _ = table.addRow(TableGroupView.Row(leftTitle: Self.windowsInSwitcher, rightViews: [visibility]))
     }
 
     private func refreshWarning() {
@@ -110,6 +151,7 @@ final class ProjectsSheet: SheetWindow {
 
     @objc private func toggleEnabled(_ sender: NSButton) {
         Preferences.set("projectsEnabled", sender.state == .on ? "true" : "false")
+        SpaceLabelWindows.synchronizeEnabled()
         if Projects.isEnabled {
             _ = ProjectsPanel.shared
         } else {
@@ -117,5 +159,21 @@ final class ProjectsSheet: SheetWindow {
             Projects.active = Projects.spaces.first { $0.isCurrent }.map { Projects.forSpace(uuid: $0.uuid) }
         }
         DispatchQueue.main.async { [weak self] in self?.rebuildRows() }
+    }
+
+    @objc private func showSpaceLabels() {
+        DispatchQueue.main.async { SpaceLabelWindows.showAll() }
+    }
+
+    @objc private func closeSpaceLabels() {
+        DispatchQueue.main.async { SpaceLabelWindows.closeAll() }
+    }
+
+    @objc private func raiseSpaceLabels() {
+        DispatchQueue.main.async { SpaceLabelWindows.bringAllToFront() }
+    }
+
+    @objc private func minimizeSpaceLabels() {
+        DispatchQueue.main.async { SpaceLabelWindows.minimizeAll() }
     }
 }

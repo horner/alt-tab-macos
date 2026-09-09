@@ -37,6 +37,26 @@ final class ProjectReattachResolverTests: XCTestCase {
         XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: false, applicationAge: 60, onCurrentDesktop: true, hasSavedOwner: false))
     }
 
+    func testDesktopProjectResolvesAmbiguousSavedOwners() {
+        XCTAssertTrue(ProjectReattachResolver.allowsAutomaticAssignment(to: "desktop-project",
+            savedOwners: ["desktop-project", "other"], liveOwners: []))
+        XCTAssertFalse(ProjectReattachResolver.allowsAutomaticAssignment(to: "unrelated",
+            savedOwners: ["desktop-project", "other"], liveOwners: []))
+    }
+
+    func testAutomaticAssignmentPreservesLiveAndUniqueSavedOwners() {
+        XCTAssertFalse(ProjectReattachResolver.allowsAutomaticAssignment(to: "desktop-project",
+            savedOwners: ["desktop-project", "other"], liveOwners: ["other"]))
+        XCTAssertFalse(ProjectReattachResolver.allowsAutomaticAssignment(to: "desktop-project",
+            savedOwners: ["other"], liveOwners: []))
+    }
+
+    func testAutomaticAssignmentAcceptsUnownedAndSameProjectWindows() {
+        XCTAssertTrue(ProjectReattachResolver.allowsAutomaticAssignment(to: "desktop-project", savedOwners: [], liveOwners: []))
+        XCTAssertTrue(ProjectReattachResolver.allowsAutomaticAssignment(to: "desktop-project",
+            savedOwners: ["desktop-project"], liveOwners: ["desktop-project"]))
+    }
+
     func testPatternsSurviveEncodingWithoutRunningApp() throws {
         XCTAssertEqual(try JSONDecoder().decode(ProjectWindowPattern.self, from: JSONEncoder().encode(cloud)), cloud)
     }

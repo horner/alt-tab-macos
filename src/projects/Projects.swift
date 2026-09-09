@@ -11,8 +11,8 @@ final class Project {
     }
 
     let id: String
-    let kind: Kind
-    let homeSpaceUuid: String
+    var kind: Kind
+    var homeSpaceUuid: String
     var name: String? { didSet { if name != oldValue { Projects.save() } } }
     var autoName: String? { didSet { if autoName != oldValue { Projects.save() } } }
     var members = Set<String>()
@@ -22,7 +22,9 @@ final class Project {
     var excludedPatterns = [ProjectWindowPattern]()
     var excludedMembers = [ProjectWindowIdentity]()
     var excludedWindowIds = Set<String>()
-    var linkedProjectId: String?
+    var linkedProjectIds = [String]()
+    var linkedProjectId: String? { linkedProjectIds.first }
+    var labelUuid: String?
     var iconSource = IconSource.mostRecent { didSet { Projects.save() } }
 
     init(id: String, kind: Kind, homeSpaceUuid: String) {
@@ -56,6 +58,11 @@ enum Projects {
     private static var windowIdentities = [String: ProjectWindowIdentity]()
     private static var retainedEntries = [ProjectEntry]()
     private static var iconFileNames = [String: String]()
+    private static var pendingSpaceUpdates = Set<String>()
+    private static var restoredWindows = Set<String>()
+    private static var desktopAssignmentQueued = false
+    private static var desktopTopology = [SpaceLabelResolver.Space]()
+    private static var desktopWindowIds = [String: Set<String>]()
 
     static func startObservingSpaceChanges() {
         guard spaceObserver == nil else { return }
@@ -63,6 +70,7 @@ enum Projects {
         let savedActiveId = UserDefaults.standard.string(forKey: "projectsActiveId")
         load()
         refreshSpaces()
+        SpaceLabelWindows.start()
         if isEnabled, let id = savedActiveId, let project = byId[id], project.isCustom { active = project }
         Windows.list.forEach { window in ProjectBrowserURLs.refresh(window) { restoreMembership(window) } }
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
@@ -74,27 +82,143 @@ enum Projects {
     }
 
     private static func refreshSpaces() {
-        spaces = SpacesList.enumerate(includeFullscreen: true).map { $0.0 }
+        SpaceLabelWindows.refreshTopology()
+    }
+
+    static func applyDesktopTopology(_ snapshot: [SpaceLabelResolver.Space], labelLocations: [String: [UInt64]], windowLocations: [String: [UInt64]]) {
+        let previous = desktopTopology
+        desktopTopology = snapshot
+        spaces = snapshot.map { SpaceItem(spaceId: $0.id, uuid: $0.uuid, desktopNumber: $0.desktopNumber, isCurrent: $0.id == Spaces.currentSpaceId) }
         let previousCount = list.count
         isLoading = true
         spaces.forEach { _ = forSpace(uuid: $0.uuid) }
+        var merged = false
+        for source in previous where !snapshot.contains(where: { $0.uuid == source.uuid }) {
+            guard let destination = ProjectDesktopResolver.destination(for: source, previous: previous, current: snapshot,
+                labelSpaces: labelLocations[source.uuid] ?? [], memberSpaces: windowLocations[source.uuid] ?? []) else { continue }
+            merged = mergeDesktop(source.uuid, into: destination) || merged
+        }
         isLoading = false
-        if list.count != previousCount { save() }
+        if merged || list.count != previousCount { save() }
+        desktopWindowIds = Dictionary(uniqueKeysWithValues: snapshot.map { space in
+            (space.uuid, Set(Windows.list.filter { canBelongToProject($0) && $0.spaceIds.contains(space.id) }.map { $0.tracked.id }))
+        })
         if isEnabled {
             for desktop in list where !desktop.isCustom {
-                if let project = linkedProject(for: desktop) { captureDesktopWindows(desktop, into: project) }
+                if let project = defaultProject(for: desktop) { captureDesktopWindows(desktop, into: project) }
             }
         }
         if isEnabled, !Preferences.projectsFollowDesktop, let active, active.isCustom, byId[active.id] === active { return }
         active = spaces.first { $0.isCurrent }.map { space in
             let desktop = forSpace(uuid: space.uuid)
-            return isEnabled && Preferences.projectsFollowDesktop ? linkedProject(for: desktop) ?? desktop : desktop
+            return isEnabled && Preferences.projectsFollowDesktop ? defaultProject(for: desktop) ?? desktop : desktop
         }
     }
 
+    static func migrationWindowIds() -> [String: [CGWindowID]] {
+        Dictionary(uniqueKeysWithValues: desktopWindowIds.map { uuid, ids in
+            (uuid, Windows.list.filter { ids.contains($0.tracked.id) }.compactMap { $0.cgWindowId })
+        })
+    }
+
+    private static func mergeDesktop(_ sourceUuid: String, into destinationUuid: String) -> Bool {
+        guard let source = byId["desktop-\(sourceUuid)"], !source.isCustom else { return false }
+        let destination = forSpace(uuid: destinationUuid)
+        if linkedProjects(for: destination).isEmpty {
+            let resident = Project(id: UUID().uuidString, kind: .custom, homeSpaceUuid: destinationUuid)
+            resident.name = destination.name
+            resident.autoName = destination.autoName
+            resident.labelUuid = destinationUuid
+            insert(resident)
+            destination.linkedProjectIds = [resident.id]
+            for id in desktopWindowIds[destinationUuid] ?? [] where !list.contains(where: { $0.isCustom && $0 !== resident && $0.members.contains(id) }) {
+                _ = insertMember(id, into: resident)
+            }
+        }
+        var incoming = linkedProjects(for: source)
+        if incoming.isEmpty {
+            source.kind = .custom
+            source.labelUuid = sourceUuid
+            source.homeSpaceUuid = destinationUuid
+            for id in desktopWindowIds[sourceUuid] ?? [] where !list.contains(where: { $0.isCustom && $0 !== source && $0.members.contains(id) }) {
+                _ = insertMember(id, into: source)
+            }
+            incoming = [source]
+        }
+        for project in incoming {
+            project.labelUuid = project.labelUuid ?? sourceUuid
+            project.homeSpaceUuid = destinationUuid
+        }
+        destination.linkedProjectIds = ProjectDesktopResolver.merge(resident: destination.linkedProjectIds, incoming: incoming.map { $0.id })
+        if !source.isCustom { source.linkedProjectIds.removeAll() }
+        Logger.debug { "projects desktop removed source=\(sourceUuid) destination=\(destinationUuid) projects=\(incoming.map { $0.id })" }
+        return true
+    }
+
+    static func desktopLabels(_ spaces: [SpaceLabelResolver.Space]) -> [SpaceLabelResolver.Label] {
+        spaces.flatMap { space in
+            guard let desktop = byId["desktop-\(space.uuid)"] else { return [SpaceLabelResolver.Label(space: space, name: nil)] }
+            let projects = linkedProjects(for: desktop)
+            guard !projects.isEmpty else { return [SpaceLabelResolver.Label(space: space, name: desktop.name ?? desktop.autoName)] }
+            return projects.enumerated().map { index, project in
+                SpaceLabelResolver.Label(space: space, name: project.resolvedName, identity: project.labelUuid ?? project.id, stackIndex: index)
+            }
+        }
+    }
+
+    static func desktopDisplayName(_ uuid: String) -> String? {
+        guard let desktop = byId["desktop-\(uuid)"] else { return nil }
+        let projects = linkedProjects(for: desktop)
+        return projects.count > 1 ? projects.map { $0.resolvedName }.joined(separator: " · ") : ProjectNameResolver.normalized(desktop.name)
+    }
+
+    static func activateLabel(_ uuid: String) {
+        guard isEnabled, let project = list.first(where: { $0.isCustom && ($0.labelUuid ?? $0.id) == uuid }) else { return }
+        active = project
+    }
+
     static var activeMembers: Set<String>? {
-        guard isEnabled, let project = active else { return nil }
-        return ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: project.isCustom, members: project.members)
+        guard isEnabled, let project = active, project.isCustom else { return nil }
+        return ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: project.isCustom,
+            members: project.members, unassignedOnDesktop: unassignedOnCurrentDesktop)
+    }
+
+    private static var unassignedOnCurrentDesktop: Set<String> {
+        let assigned = Set(list.filter { $0.isCustom }.flatMap { $0.members })
+        let windowSpaces = Dictionary(uniqueKeysWithValues: Windows.list.filter { canBelongToProject($0) }.map { ($0.tracked.id, $0.spaceIds) })
+        return ProjectMembershipResolver.unassignedOnDesktop(spaceId: Spaces.currentSpaceId, windowSpaces: windowSpaces, assigned: assigned)
+    }
+
+    private static func canBelongToProject(_ window: Window) -> Bool {
+        !window.isWindowlessApp && !window.isPhantom
+            && SpaceLabelWindows.switcherVisibility(windowId: window.cgWindowId, pid: window.application.pid) == nil
+    }
+
+    /// Membership repair runs after the switcher's first frame; visibility uses the cached union immediately.
+    static func assignUnassignedWindowsOnCurrentDesktop(_ candidates: Set<String>?) {
+        guard isEnabled, let project = active, project.isCustom, let candidates,
+              !candidates.isSubset(of: project.members), !desktopAssignmentQueued else { return }
+        desktopAssignmentQueued = true
+        let spaceId = Spaces.currentSpaceId
+        DispatchQueue.main.async {
+            desktopAssignmentQueued = false
+            guard isEnabled, active === project, byId[project.id] === project, Spaces.currentSpaceId == spaceId else { return }
+            var changed = false
+            for id in unassignedOnCurrentDesktop where permitsAutomaticAssignment(id, to: project) {
+                if insertMember(id, into: project) { changed = true }
+            }
+            if changed { save(); App.refreshOpenUiAfterExternalEvent([]) }
+        }
+    }
+
+    static func windowSpaceChanged(_ window: Window) {
+        guard isEnabled, !window.isWindowlessApp, pendingSpaceUpdates.insert(window.tracked.id).inserted else { return }
+        let id = window.tracked.id
+        DispatchQueue.main.async { [weak window] in
+            pendingSpaceUpdates.remove(id)
+            guard let window, Windows.list.contains(where: { $0 === window }) else { return }
+            ProjectBrowserURLs.refresh(window) { restoreMembership(window) }
+        }
     }
 
     /// Discovery applies the real Space after appendWindow, in the same main-queue turn.
@@ -108,11 +232,6 @@ enum Projects {
             Logger.debug { "projects discovered window=\(window.tracked.id) spaces=\(window.spaceIds) phantom=\(window.isPhantom) active=\(active?.id ?? "none")" }
             ProjectBrowserURLs.refresh(window) {
                 restoreMembership(window) { applicationAge in
-                    for space in spaces where window.spaceIds.contains(space.spaceId) {
-                        let desktop = forSpace(uuid: space.uuid)
-                        claimName(window.application.localizedName, for: desktop)
-                        if isEnabled, !window.isPhantom, let project = linkedProject(for: desktop) { addAutomatically(windowId: window.tracked.id, to: project) }
-                    }
                     let savedOwners = owners(of: window.tracked.id)
                     let onCurrentDesktop = window.spaceIds.contains(Spaces.currentSpaceId)
                     if !window.isPhantom, pattern(for: window.tracked.id) != nil, let project = creationProject, project.isCustom,
@@ -141,12 +260,20 @@ enum Projects {
     }
 
     private static func restoreMembership(_ window: Window, completion: ((TimeInterval) -> Void)? = nil) {
-        guard !window.isWindowlessApp else { return }
+        guard !window.isWindowlessApp,
+              SpaceLabelWindows.switcherVisibility(windowId: window.cgWindowId, pid: window.application.pid) == nil else { return }
         let application = window.application.runningApplication
         DispatchQueue.global(qos: .utility).async { [weak window] in
             let launchDate = application.launchDate
             DispatchQueue.main.async {
-                guard let window, let launchDate, Windows.list.contains(where: { $0 === window }) else { return }
+                guard let window, Windows.list.contains(where: { $0 === window }) else { return }
+                guard let launchDate else {
+                    restoredWindows.insert(window.tracked.id)
+                    captureLinkedDesktopWindow(window)
+                    completion?(0)
+                    if SwitcherSession.isActive { App.refreshOpenUiAfterExternalEvent([]) }
+                    return
+                }
                 let identity = ProjectWindowIdentity(windowId: window.tracked.id, pid: window.application.pid, processLaunchedAt: launchDate)
                 windowIdentities[identity.windowId] = identity
                 let savedOwners = owners(of: identity.windowId)
@@ -164,6 +291,7 @@ enum Projects {
                         identityExcluded: project.excludedMembers.contains(identity) || project.excludedWindowIds.contains(identity.windowId),
                         patternExcluded: patternExcluded, isUniquePatternOwner: savedOwners.count == 1 && savedOwners.contains(project.id)) {
                         let inserted = project.members.insert(identity.windowId).inserted
+                        changed = changed || inserted
                         if isEnabled, inserted, !project.memberIdentities.contains(identity), let candidate {
                             let origins = Set(project.memberPatterns.filter { ProjectReattachResolver.matchesObservation($0, candidate) }.compactMap { $0.spaceUuid })
                             let elsewhere = candidate.spaceUuid.map { !origins.isEmpty && !origins.contains($0) } ?? false
@@ -177,9 +305,22 @@ enum Projects {
                         changed = true
                     }
                 }
+                restoredWindows.insert(window.tracked.id)
                 if changed { save() }
+                captureLinkedDesktopWindow(window)
                 completion?(Date().timeIntervalSince(launchDate))
+                if changed || SwitcherSession.isActive { App.refreshOpenUiAfterExternalEvent([]) }
             }
+        }
+    }
+
+    private static func captureLinkedDesktopWindow(_ window: Window) {
+        guard canBelongToProject(window) else { return }
+        for space in spaces where window.spaceIds.contains(space.spaceId) {
+            let desktop = forSpace(uuid: space.uuid)
+            claimName(window.application.localizedName, for: desktop)
+            desktopWindowIds[space.uuid, default: []].insert(window.tracked.id)
+            if isEnabled, let project = defaultProject(for: desktop) { addAutomatically(windowId: window.tracked.id, to: project) }
         }
     }
 
@@ -191,6 +332,7 @@ enum Projects {
         let ids = Set(windows.map { $0.tracked.id })
         Logger.debug { "projects tracking removal windows=\(ids.sorted())" }
         ids.forEach { windowIdentities.removeValue(forKey: $0) }
+        restoredWindows.subtract(ids)
         var changed = false
         let spaceIds = Set(windows.filter { !$0.isWindowlessApp }.flatMap { $0.spaceIds })
         for project in list {
@@ -232,22 +374,40 @@ enum Projects {
     }
 
     static func linkedProject(for desktop: Project) -> Project? {
-        guard !desktop.isCustom, let id = desktop.linkedProjectId, let project = byId[id], project.isCustom else { return nil }
-        return project
+        linkedProjects(for: desktop).first
+    }
+
+    static func linkedProjects(for desktop: Project) -> [Project] {
+        guard !desktop.isCustom else { return [] }
+        return desktop.linkedProjectIds.compactMap { byId[$0] }.filter { $0.isCustom }
+    }
+
+    private static func defaultProject(for desktop: Project) -> Project? {
+        let projects = linkedProjects(for: desktop)
+        return projects.first { $0 === active } ?? projects.first
     }
 
     @discardableResult
     static func link(_ desktop: Project, to project: Project?) -> Bool {
+        link(desktop, toProjects: project.map { [$0] } ?? [])
+    }
+
+    @discardableResult
+    static func link(_ desktop: Project, toProjects projects: [Project]) -> Bool {
         guard !desktop.isCustom, byId[desktop.id] === desktop else { return false }
-        if let project {
+        for project in projects {
             guard isEnabled, project.isCustom, byId[project.id] === project,
-                  !list.contains(where: { $0 !== desktop && $0.linkedProjectId == project.id }) else { return false }
+                  !list.contains(where: { $0 !== desktop && $0.linkedProjectIds.contains(project.id) }) else { return false }
         }
-        if project == nil, desktop.linkedProjectId == nil { return true }
-        Logger.debug { "projects link desktop=\(desktop.id) previous=\(desktop.linkedProjectId ?? "none") next=\(project?.id ?? "none")" }
-        desktop.linkedProjectId = project?.id
-        if let project { captureDesktopWindows(desktop, into: project) }
-        if spaces.contains(where: { $0.isCurrent && $0.uuid == desktop.homeSpaceUuid }) { active = project ?? desktop }
+        desktop.linkedProjectIds = ProjectDesktopResolver.merge(resident: [], incoming: projects.map { $0.id })
+        for project in projects {
+            project.homeSpaceUuid = desktop.homeSpaceUuid
+            if project.labelUuid == nil {
+                project.labelUuid = list.contains { $0 !== project && $0.labelUuid == desktop.homeSpaceUuid } ? project.id : desktop.homeSpaceUuid
+            }
+        }
+        if let project = defaultProject(for: desktop) { captureDesktopWindows(desktop, into: project) }
+        if spaces.contains(where: { $0.isCurrent && $0.uuid == desktop.homeSpaceUuid }) { active = defaultProject(for: desktop) ?? desktop }
         save()
         return true
     }
@@ -263,7 +423,7 @@ enum Projects {
 
     static func delete(id: String) {
         guard let project = byId[id], project.isCustom else { return }
-        for desktop in list where desktop.linkedProjectId == id { desktop.linkedProjectId = nil }
+        for desktop in list { desktop.linkedProjectIds.removeAll { $0 == id } }
         if active === project { active = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) } }
         Logger.debug { "projects delete project=\(id) members=\(project.members.sorted())" }
         byId.removeValue(forKey: id)
@@ -296,16 +456,18 @@ enum Projects {
     }
 
     private static func permitsAutomaticAssignment(_ windowId: String, to project: Project) -> Bool {
-        guard let window = Windows.list.first(where: { $0.tracked.id == windowId }), ProjectBrowserURLs.isReady(window),
+        guard restoredWindows.contains(windowId),
+              let window = Windows.list.first(where: { $0.tracked.id == windowId }), ProjectBrowserURLs.isReady(window),
+              SpaceLabelWindows.switcherVisibility(windowId: window.cgWindowId, pid: window.application.pid) == nil,
               !isExcluded(windowId, from: project) else { return false }
         let savedOwners = owners(of: windowId)
-        guard savedOwners.isEmpty || savedOwners == [project.id] else { return false }
-        return !list.contains { $0.isCustom && $0 !== project && $0.members.contains(windowId) }
+        let liveOwners = Set(list.filter { $0.isCustom && $0.members.contains(windowId) }.map { $0.id })
+        return ProjectReattachResolver.allowsAutomaticAssignment(to: project.id, savedOwners: savedOwners, liveOwners: liveOwners)
     }
 
     private static func addAutomatically(windowId: String, to project: Project) {
         guard isEnabled, project.isCustom, byId[project.id] === project, permitsAutomaticAssignment(windowId, to: project) else { return }
-        if insertMember(windowId, into: project) { save() }
+        if insertMember(windowId, into: project) { save(); App.refreshOpenUiAfterExternalEvent([]) }
     }
 
     static func assign(_ windowIds: Set<String>, to project: Project, move: Bool) {
@@ -393,11 +555,15 @@ enum Projects {
             project.excludedPatterns = entry.excludedPatterns
             project.memberIdentities = entry.members
             project.excludedMembers = entry.excludedMembers
-            project.linkedProjectId = entry.linkedProjectId
+            project.linkedProjectIds = entry.linkedProjectIds
+            project.labelUuid = entry.labelUuid
             project.name = entry.name
             project.autoName = entry.autoName
             iconFileNames[project.id] = entry.iconFileName
             insert(project)
+        }
+        for desktop in list where !desktop.isCustom {
+            for project in linkedProjects(for: desktop) { project.labelUuid = project.labelUuid ?? desktop.homeSpaceUuid }
         }
     }
 
@@ -412,9 +578,11 @@ enum Projects {
             return ProjectEntry(id: project.id, kind: project.isCustom ? "custom" : "desktop", spaceUuid: uuid,
                 homeSpaceUuid: project.homeSpaceUuid, name: project.name, autoName: project.autoName,
                 iconFileName: iconFileNames[project.id], members: project.memberIdentities, linkedProjectId: project.linkedProjectId, excludedMembers: project.excludedMembers,
-                memberPatterns: project.memberPatterns, excludedPatterns: project.excludedPatterns, windowHistory: project.windowHistory)
+                memberPatterns: project.memberPatterns, excludedPatterns: project.excludedPatterns, windowHistory: project.windowHistory,
+                linkedProjectIds: project.linkedProjectIds, labelUuid: project.labelUuid)
         }
         Preferences.set("projects", entries + retainedEntries, false)
+        SpaceLabelWindows.refreshNames()
     }
 
     @discardableResult
