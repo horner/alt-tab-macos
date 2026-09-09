@@ -495,6 +495,10 @@
 		0000CC000000000000000018 /* SpacesPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC000000000000000017 /* SpacesPreferences.swift */; };
 		0000CC00000000000000001A /* SpacesOrderResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC000000000000000019 /* SpacesOrderResolverTests.swift */; };
 		0000CC00000000000000001C /* SpacesSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0000CC00000000000000001B /* SpacesSheet.swift */; };
+		2BA3C355C944ECEF72682229 /* ProjectMenuResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7620F8E985E92F3D08F235 /* ProjectMenuResolver.swift */; };
+		4EFDA7AA04F5934DBD2FAFDF /* ProjectMenuResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7620F8E985E92F3D08F235 /* ProjectMenuResolver.swift */; };
+		A4C91BB85EE991AA99F88C86 /* ProjectMenuResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEF67583835193356DE8CF7C /* ProjectMenuResolverTests.swift */; };
+		1E3A2B2684F2091C7073B607 /* ProjectWindowPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94511453A1565755FEAE8DB5 /* ProjectWindowPicker.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1003,6 +1007,10 @@
 		0000CC000000000000000017 /* SpacesPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesPreferences.swift; sourceTree = "<group>"; };
 		0000CC000000000000000019 /* SpacesOrderResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesOrderResolverTests.swift; sourceTree = "<group>"; };
 		0000CC00000000000000001B /* SpacesSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacesSheet.swift; sourceTree = "<group>"; };
+		BE7620F8E985E92F3D08F235 /* ProjectMenuResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMenuResolver.swift; sourceTree = "<group>"; };
+		CEF67583835193356DE8CF7C /* ProjectMenuResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMenuResolverTests.swift; sourceTree = "<group>"; };
+		94A49C2D94DFBFFA5C1998C3 /* ProjectMenuResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectMenuResolverSpecs.md; sourceTree = "<group>"; };
+		94511453A1565755FEAE8DB5 /* ProjectWindowPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectWindowPicker.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1073,6 +1081,10 @@
 				A17C51F22330F343F4D8F718 /* ProjectsOrderResolverTests.swift */,
 				952FC948F4E292B1004B2BAB /* ProjectsOrderResolver.swift */,
 				84DD042E86E580656BEB1ACC /* ProjectsMenu.swift */,
+				BE7620F8E985E92F3D08F235 /* ProjectMenuResolver.swift */,
+				CEF67583835193356DE8CF7C /* ProjectMenuResolverTests.swift */,
+				94A49C2D94DFBFFA5C1998C3 /* ProjectMenuResolverSpecs.md */,
+				94511453A1565755FEAE8DB5 /* ProjectWindowPicker.swift */,
 				EA0979BB63E6A39BF14ABF47 /* ProjectNamePrompt.swift */,
 				D7B6A0B0A47F44D8EAA5B2FB /* ProjectNameResolverSpecs.md */,
 				5371DE2C0F835BAD1AF5335E /* ProjectNameResolverTests.swift */,
@@ -2318,6 +2330,8 @@
 				547464810E4F5939D45AA43B /* ProjectsOrderResolver.swift in Sources */,
 				6AEBEDA9547721AF3C46DBEC /* ProjectNameResolverTests.swift in Sources */,
 				43CD1813ADF4B33A8400A61B /* ProjectNameResolver.swift in Sources */,
+				4EFDA7AA04F5934DBD2FAFDF /* ProjectMenuResolver.swift in Sources */,
+				A4C91BB85EE991AA99F88C86 /* ProjectMenuResolverTests.swift in Sources */,
 				E4916672E3F37C25ACE8086B /* ProjectMembershipResolverTests.swift in Sources */,
 				594E8E28773641AF8E520D70 /* ProjectDesktopResolverTests.swift in Sources */,
 				E8C6B859A2A1D79590ED3517 /* ProjectMembershipResolver.swift in Sources */,
@@ -2487,6 +2501,8 @@
 				A092D7F2840D4BAFEDD96930 /* ProjectsMenu.swift in Sources */,
 				4E3DFF3A5459781DA62232BC /* ProjectNamePrompt.swift in Sources */,
 				CF3DC6A39A6D5D01B0C85B08 /* ProjectNameResolver.swift in Sources */,
+				2BA3C355C944ECEF72682229 /* ProjectMenuResolver.swift in Sources */,
+				1E3A2B2684F2091C7073B607 /* ProjectWindowPicker.swift in Sources */,
 				AA8E2AB44ABDE8861E1872C4 /* ProjectsPreferences.swift in Sources */,
 				85ED4BC5ADE1055EE64788B5 /* ProjectMembershipResolver.swift in Sources */,
 				F771D56935E34BEA9AA14777 /* ProjectDesktopResolver.swift in Sources */,
