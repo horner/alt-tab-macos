@@ -1,26 +1,53 @@
-# AltTabProjects packaging
+# Deploy AltTabProjects
 
-Worktree: `/Volumes/Case/prj/alt-tab-projects-release`, branch `projects-release`.
+Run `./deploy.sh` from the **projects-release** worktree. This is the supported agent entry point
+for publishing a friends prerelease and its Homebrew cask to **horner/alt-tab-macos only**.
+The default branch carries the cask; development can continue in its separate checkout.
 
-`config/projects.xcconfig` sets the Release app name, version, bundle ID, and `PROJECTS_DISTRIBUTION` condition. The app keeps normal Pro licensing, opens this fork for support and feedback, and uses the release page for updates. It does not start Sparkle or the upstream crash reporter. Debug settings are independent. Release defaults enable Projects and labels with a 1,500 ms reveal. The first enable links all discovered Desktops to Projects and captures their windows; see `src/projects/ProjectsSetupResolverSpecs.md`.
+## Agent workflow
 
-## Build
+1. Use the existing publication authorization in the conversation. Preparing code or this tooling
+   alone does not publish a new app version; use `--dry-run` for a preview.
+2. Work on `projects-release`. Bring over only the intended app changes, preserve the developer's
+   other checkout, and inspect the final diff. Keep `PRODUCT_NAME`, bundle ID and Team ID unchanged.
+3. Choose an unpublished numeric version, for example `0.1.2` after `0.1.1`, and update
+   `CURRENT_PROJECT_VERSION` in `config/projects.xcconfig`. The script reads this value; it does not
+   increment versions or commit application changes for you.
+4. Write release notes describing the user-visible changes, relevant limitations, and installation
+   or upgrade instructions. A file outside the checkout, such as `/tmp/AltTabProjects-0.1.2.md`, is
+   convenient; a file inside the checkout must be committed with the intended source. Review it.
+5. Commit the intended source with the repository's conventional commit format. Leave the release
+   worktree clean, including untracked files. Then run:
 
-From the worktree root:
+   ```sh
+   ./deploy.sh --notes /tmp/AltTabProjects-0.1.2.md --dry-run
+   ./deploy.sh --notes /tmp/AltTabProjects-0.1.2.md
+   ```
 
-```sh
-bash scripts/projects/build.sh
+6. Read the final result and `build/deploy-<version>/deployment.json`. Report the release link,
+   validation results, and anything that still requires hands-on testing. Do not claim first-run
+   UI testing from build or packaging checks alone.
+
+The current published app is [0.1.1](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.1).
+The deployment tooling itself does not change the app version. An ordinary attempt to deploy an
+existing version is rejected; `--resume` is for recovering the same deployment, not republishing.
+
+## Required setup
+
+Use a Mac with command-line Xcode tools, Python 3.9 or newer, Git, GitHub CLI, and Homebrew.
+The script invokes `xcodebuild` using the project's command-line build convention, not the Xcode UI.
+GitHub CLI must authenticate to `github.com` with push access to the public `horner/alt-tab-macos`
+fork. `origin` must fetch and push only that fork. Existing Git commit hooks still run.
+
+The configured signing identity is:
+
+```text
+Developer ID Application: Medical Informatics Engineering, Inc. (X5873NL7XM)
 ```
 
-This uses the command-line build convention from `ai/build.sh`, producing an unsigned universal `DerivedData/Build/Products/Release/AltTabProjects.app`. Signing happens on a packaging copy so credentials do not enter build configuration or source control.
-
-## Sign and notarize
-
-The release uses `Developer ID Application: Medical Informatics Engineering, Inc. (X5873NL7XM)`. Its certificate and matching private key are installed in the login Keychain. Developer ID signing and nested signature verification passed on September 9, 2026.
-
-The `alttab-projects` notarization profile is configured on this Mac. Production packages require Apple notarization and a stapled app that passes Gatekeeper assessment. Version 0.1.1 uses `build/release-0.1.1/` and the public `horner/projects/alttab-projects` cask; see the repository README for installation commands. The earlier portable test kit remains in `build/AltTabProjects-0.1.0-cask-test.zip`.
-
-Create the notarization profile once, entering an Apple app-specific password at the secure prompt:
+Its certificate **and matching private key** must be available in Keychain. The notarization profile
+on this Mac is `alttab-projects`. To configure it on another authorized signing Mac, import the
+signing identity securely and enter an Apple app-specific password at the secure prompt:
 
 ```sh
 xcrun notarytool store-credentials alttab-projects \
@@ -28,68 +55,143 @@ xcrun notarytool store-credentials alttab-projects \
   --team-id X5873NL7XM
 ```
 
-Then package with that identity and profile:
+The script checks the identity and profile before building. `--identity` can select the established
+Developer ID by name or SHA-1; `--notary-profile` selects another existing Keychain profile. Team
+`X5873NL7XM` and bundle ID `com.horner.alt-tab-projects` remain mandatory. Do not put passwords,
+private keys, license keys or exported personal preferences in source, notes or release assets.
+
+Homebrew may download its style-check tooling. The script grants trust only to
+`horner/projects/alttab-projects` on Homebrew versions that require it. All Homebrew commands disable
+automatic updates, removal of unrelated dependencies, and installation cleanup. The script updates
+only this tap explicitly. It does not install, uninstall, launch or quit any app or change preferences.
+
+## What the command does
+
+1. Checks the source branch, clean commit, stable app identity, fork remotes, GitHub access,
+   existing tags/releases, default-branch CI guard, signing identity and notarization profile.
+   It rejects a tag on different source and a cask downgrade.
+2. Runs the deployment tooling tests and Release app test suite, then builds the universal app using
+   `scripts/projects/build.sh`.
+3. Runs `scripts/projects/package.py` to sign embedded code and the app, submit it to Apple, staple
+   the accepted ticket, and check Gatekeeper. The package contains a ZIP, SHA-256 manifest, cask and
+   build metadata identifying the exact source commit. The ZIP is extracted and verified again.
+4. Pushes the release branch and an annotated `projects-v<version>` tag atomically, without force.
+   Creates a draft prerelease, uploads the three assets, and verifies their GitHub SHA-256 digests
+   (or downloads them to compare when GitHub does not supply a digest). Existing assets are never
+   clobbered, and mismatches stop deployment.
+5. Publishes the prerelease and downloads its ZIP anonymously from the public URL. Checks its
+   checksum, version, bundle ID, Developer ID team, both architectures, signature, stapled ticket
+   and Gatekeeper before pointing the cask at it.
+6. Creates a temporary detached worktree from the fork's current default branch. Changes only
+   `Casks/alttab-projects.rb` and the first release download link in `README.md`, commits, and pushes without
+   force. The inherited upstream publishing job must remain guarded by
+   `github.repository == 'lwouis/alt-tab-macos'`. The script does not edit workflows or upstream.
+7. Adds or updates the `horner/projects` tap, checks cask style, and uses `brew fetch` to download
+   the release ZIP. Verifies that actual Homebrew download and the extracted app. It leaves any
+   installed AltTabProjects app in place.
+
+Build/package commands alone still do not publish. The implementation behind the shell entry point
+is `scripts/projects/deploy.py`; the signing implementation is `scripts/projects/package.py`.
+
+## Output and recovery
+
+- `build/release-<version>/` holds the original signed package. Retain this directory for retries.
+- `build/deploy-<version>/` holds `tooling-tests.log`, `tests.log`, `build.log`, `package.log`, `cask-style.log`,
+  `brew-fetch.log`, and, after success, `deployment.json`.
+- `build/projects-tests/` caches test build products. Build output is ignored by Git.
+- An OS file lock prevents two deployments in the same checkout. It releases automatically when
+  the process exits, including interruption; a leftover lock file does not need deletion.
+
+After resolving an interruption, rerun the same command with `--resume`, keeping the same clean
+source commit, version and original package:
+
+```sh
+./deploy.sh --notes /tmp/AltTabProjects-0.1.2.md --resume
+```
+
+Tests run again. A completed package is verified and reused without rebuilding or signing. A partial
+draft gets only its missing assets; matching assets remain untouched. An already published release
+is verified without editing its assets, status or notes, and deployment continues to its cask and
+Homebrew checks. Existing remote tag objects are fetched rather than recreated.
+
+If packaging failed before `build-info.json` was written, preserve the incomplete output under a
+different name, then retry. Once a GitHub release exists, recovery requires its original completed
+package; do not rebuild or replace the published ZIP. Do not advance the release branch until the
+deployment has finished. If a newer cask has already shipped, an older deployment cannot roll it back.
+
+A rejected default-branch push leaves the temporary cask checkout under `build/deploy-<version>/`
+and prints its path. Inspect it if needed; `--resume` prepares a fresh checkout from the latest
+remote default branch. Do not force-push. Remove retained test checkouts with `git worktree remove`
+after review. A local Homebrew tap with edits or a custom branch is preserved and causes verification
+to stop; resolve those changes before retrying. An already published release stays published if a
+later cask or Homebrew step fails.
+
+`--dry-run` is strictly a local preview: it does not build, check credentials, query GitHub, fetch Git
+refs, modify files or publish. It permits uncommitted preparation, but a real run requires a clean
+commit and validates remote state. It is not a successful deployment check.
+
+## Test deployment tooling without publishing
+
+```sh
+bash -n deploy.sh
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/projects -p 'test_deploy.py' -v
+./deploy.sh --notes /path/to/reviewed-notes.md --dry-run
+```
+
+The tests simulate GitHub and signing boundaries and use real temporary Git repositories to check
+cask-only pushes, preserved source work, retries, CI guards, version ordering, and paths containing
+spaces. They do not contact Apple/GitHub or install apps. A real deployment still requires the
+credential and artifact checks above.
+
+## Build and package separately
+
+For local compilation only:
+
+```sh
+bash scripts/projects/build.sh
+```
+
+For a signed package without GitHub publication, use a new output directory and clean committed source:
 
 ```sh
 python3 scripts/projects/package.py \
   --identity 'Developer ID Application: Medical Informatics Engineering, Inc. (X5873NL7XM)' \
   --notary-profile alttab-projects \
-  --output build/release-0.1.1
+  --output build/manual-package
 ```
 
-The output directory must be new, and production packaging requires a clean working tree. The packager verifies both architectures in all embedded Mach-O files, signs nested code before the outer app, verifies the signature, submits for notarization, staples the accepted ticket, and verifies Gatekeeper assessment. It then writes the final ZIP, checksum, casks, and build metadata. A public cask is only generated after these checks pass.
-
-Use the same Developer ID team and bundle identity on subsequent releases. `com.horner.alt-tab-projects` is a separate app identity from the current Debug installation. Export settings from Debug and use the app's settings import if desired. Projects data is included in those preferences. Keep the old installation available until the imported data and Pro activation are verified; permissions and license activation are not copied by the settings import. Enter the license normally on the other Mac. No account email, license key, or personal settings are packaged.
-
-## Local Homebrew test
-
-For packaging checks without distribution credentials:
+For an ad-hoc packaging test, `--test-only` produces a local-only archive that must not be published:
 
 ```sh
 python3 scripts/projects/package.py --test-only --output build/cask-test
 bash build/cask-test/install-local.sh --appdir=/tmp/alttab-projects-cask-install
 ```
 
-The ad-hoc test output is not notarized and must not be published as the friends release. The installer verifies the ZIP checksum, creates a local `horner/projects-local` tap if needed, and installs the cask `alttab-projects-local`. If Homebrew supports explicit tap trust, the installer trusts only this named cask. It leaves macOS quarantine handling intact. Local tests install into a temporary directory so the existing apps are not replaced.
+The local installer validates the ZIP, creates `horner/projects-local`, and trusts only its named
+cask when required. Use a machine without another cask owning `AltTabProjects.app` for install tests.
+Do not uninstall an existing app merely to test packaging; the deployment script's `brew fetch`
+verification avoids that conflict.
 
-For the prepared version 0.1.0 test, copy `build/AltTabProjects-0.1.0-cask-test.zip` to the other Mac and unzip it in Downloads:
+## Friends installing or updating
 
-```sh
-cd ~/Downloads/AltTabProjects-0.1.0-cask-test
-bash install-local.sh
-```
-
-For the other Mac, copy the signed distribution output directory, keeping its ZIP, `Casks/`, `SHA256SUMS.txt`, and `install-local.sh` together. Run:
+New installation:
 
 ```sh
-cd /path/to/copied/distribution-0.1.0
-bash install-local.sh
+if brew command trust >/dev/null 2>&1; then brew trust --cask horner/projects/alttab-projects; fi
+brew tap horner/projects https://github.com/horner/alt-tab-macos.git
+brew install --cask horner/projects/alttab-projects
 ```
 
-That installs `AltTabProjects.app` into Applications through Homebrew. Quit other AltTab variants, open the app, grant Accessibility and Screen Recording access, and activate Pro normally. Validate Projects creation/switching, Desktop navigation, window restoration, and relaunch persistence. The minimum bundle setting is macOS 10.14.4; actual Projects compatibility on older macOS versions and Intel hardware remains untested. The cask uses `depends_on :macos` because the bundle minimum predates Homebrew's currently allowed macOS releases.
-
-To uninstall the local test while retaining app settings:
+Update:
 
 ```sh
-HOMEBREW_NO_AUTOREMOVE=1 brew uninstall --cask horner/projects-local/alttab-projects-local
+brew update
+brew upgrade --cask horner/projects/alttab-projects
 ```
 
-Uninstall that local cask before installing a future public `alttab-projects` cask, because both install the same app filename. The local tap reads a copied ZIP; updating through GitHub requires the public cask below.
-
-## GitHub distribution
-
-The signed output contains `AltTabProjects.zip` and `Casks/alttab-projects.rb` with the final ZIP checksum and a versioned URL in `horner/alt-tab-macos`. Publish the matching `projects-v0.1.0` release asset before copying that cask to the fork's default branch. The release worktree guards the inherited workflow against running on this fork; apply that guard on the default branch before its cask update. No publication commands run as part of building or packaging.
-
-Distribution packaging requires a clean, committed source snapshot and records its source commit and signing team. The release tag must point to that commit. Ad-hoc local tests may use uncommitted changes.
-
-## Checks completed
-
-- Universal Release build succeeded with Xcode 26.6.
-- 1,332 tests passed in the Release test configuration.
-- Every packaged Mach-O has `arm64` and `x86_64` slices.
-- Local Homebrew installation and removal, cask style, ZIP checksum, and installed code-signature verification passed.
-- Developer ID signing and nested signature verification passed with team `X5873NL7XM`.
-- Apple notarization accepted submission `e73d2e75-e953-417a-ab49-af6c90c5048c`; the stapled app passes Gatekeeper as `Notarized Developer ID`.
-- The portable kit was extracted into a different directory containing spaces and installed with the cask initially untrusted. Cask trust setup, installation, signature checks, ticket validation, and uninstall passed on macOS 26.6.2 / arm64.
-- Both generated casks passed Homebrew style checks. Homebrew also downloaded the published GitHub asset and installed `/Applications/AltTabProjects.app`; the installed copy passed signature, ticket, Gatekeeper, version, bundle ID, and architecture checks. Actual launch and feature testing on the other Mac remain for the user.
-- Comment audit: source baseline was 11,627 comment lines / 44,054 code lines. Reviewed `App.swift` (92 comment lines), `Endpoints.swift` (0), and `GeneralTab.swift` (3). Fixed the stale hard-coded license URL scheme in `App.swift`; retained the measured AppKit/WindowServer ordering notes. No runtime behavior changed in the comment audit.
+Quit other AltTab variants before opening AltTabProjects, grant Accessibility and Screen Recording
+access, and activate Pro normally. First-run naming, Projects membership, Desktop navigation, and
+relaunch behavior require hands-on testing. Settings → General offers Export, Reset and Import for
+testing defaults while retaining a backup. The release keeps the existing licensing behavior and
+its distinct identity from AltTabDebug. Minimum macOS and Intel runtime behavior need a real test
+matrix; universal packaging alone does not establish runtime compatibility.

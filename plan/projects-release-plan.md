@@ -1,5 +1,7 @@
 # AltTabProjects friends release plan
 
+The implemented deployment workflow is now documented in [scripts/projects/README.md](../scripts/projects/README.md) and invoked with `./deploy.sh` on `projects-release`. Versions 0.1.0 and 0.1.1 were published manually; the findings and proposed steps below record the original planning context. Use the deployment guide for current agent instructions.
+
 Status: AltTabProjects 0.1.0 is published as a [friends prerelease](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.0). Source tag `projects-v0.1.0` points to commit `3a5b91005d75e165bf65c10c0d08efc3ba06ef38` on `projects-release`. The cask is on the fork's default `master` branch. Homebrew downloaded the published `AltTabProjects.zip` and installed `/Applications/AltTabProjects.app`; its signature, notarization ticket, Gatekeeper assessment, version, bundle ID, and both architecture slices were verified on macOS 26.6.2 / arm64. The selected signing team is Medical Informatics Engineering, Inc. (`X5873NL7XM`). The inherited upstream publishing job was skipped on the fork. Actual launch and feature testing on the other Mac remain.
 
 Publish a downloadable `AltTabProjects.app` through releases in `horner/alt-tab-macos`, with a Homebrew cask that installs that same release ZIP. Start with a manually initiated prerelease and updates through Homebrew or direct download. Keep distribution work on a dedicated branch so development can continue on `horner`.

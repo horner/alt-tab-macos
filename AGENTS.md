@@ -31,3 +31,10 @@ A wrong comment costs several times more than a missing one, for humans and agen
 # License / Keychain invariant
 - The app's Developer ID, TeamID, and bundle ID must remain stable across builds. Keychain items are tied to the code signature; changing any of these orphans every user's stored license key and forces mass re-activation. If a rotation is unavoidable, plan a migration first (e.g., a backup-restore handler, or `kSecAttrAccessGroup` with a stable group identifier).
 - Do not introduce legacy `SecKeychain*` API or `kSecAccessControl` (biometric/PIN gating) into license code — both can trigger Keychain password prompts, which is bad UX for license activation.
+
+# AltTabProjects deployment
+- Release source lives on `projects-release`; the fork's default branch carries the Homebrew cask. Preserve the developer's separate checkout and uncommitted work.
+- Read `scripts/projects/README.md` before deploying. When publication is authorized in the conversation, use `./deploy.sh --notes /path/to/release-notes.md` from a clean, committed release worktree. The script builds, tests, notarizes, publishes to `horner/alt-tab-macos`, updates its cask, and verifies the Homebrew download.
+- Set a new `CURRENT_PROJECT_VERSION` in `config/projects.xcconfig` and prepare concrete release notes before committing a new release. Never reuse a published version or replace a release asset. `--resume` continues only the same source and original package after an interrupted deployment.
+- Use `--dry-run` when preparing or reviewing deployment without publication. It previews the local plan; it does not validate credentials or remote state. Do not treat a request to edit deployment tooling as authorization to publish a new app version.
+- Keep signing keys and notarization credentials in Keychain. Do not export secrets into the repository. The deployment guide records the established identity and profile, not their secrets.
