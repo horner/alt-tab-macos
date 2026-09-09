@@ -18,7 +18,7 @@ The ZIP contains `AltTabProjects.app`, signed with Developer ID and notarized by
 
 Quit other AltTab variants before opening AltTabProjects and grant Accessibility and Screen Recording access. This app uses a separate identity from AltTabDebug: export/import settings if desired, and activate Pro normally. The existing licensing behavior is retained.
 
-Release source and packaging instructions live on [`projects-release`](https://github.com/horner/alt-tab-macos/tree/projects-release). This repository's default branch carries the Homebrew cask. Based on [AltTab](https://github.com/lwouis/alt-tab-macos); upstream information follows.
+Release source lives on [`projects-release`](https://github.com/horner/alt-tab-macos/tree/projects-release). Agents can deploy with `./deploy.sh`; follow the [deployment guide](https://github.com/horner/alt-tab-macos/blob/projects-release/scripts/projects/README.md). This repository's default branch carries the Homebrew cask. Based on [AltTab](https://github.com/lwouis/alt-tab-macos); upstream information follows.
 
 ---
 

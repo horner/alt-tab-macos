@@ -31,3 +31,7 @@ A wrong comment costs several times more than a missing one, for humans and agen
 # License / Keychain invariant
 - The app's Developer ID, TeamID, and bundle ID must remain stable across builds. Keychain items are tied to the code signature; changing any of these orphans every user's stored license key and forces mass re-activation. If a rotation is unavoidable, plan a migration first (e.g., a backup-restore handler, or `kSecAttrAccessGroup` with a stable group identifier).
 - Do not introduce legacy `SecKeychain*` API or `kSecAccessControl` (biometric/PIN gating) into license code — both can trigger Keychain password prompts, which is bad UX for license activation.
+
+# AltTabProjects releases
+- The fork's default branch carries the Homebrew cask; release source and `deploy.sh` live on `projects-release`. Preserve other checkouts and uncommitted development work.
+- For an authorized friends release, use a clean `projects-release` worktree and follow the [agent deployment guide](https://github.com/horner/alt-tab-macos/blob/projects-release/scripts/projects/README.md). Prepare a new version and release notes, commit the intended source, then run `./deploy.sh --notes /path/to/release-notes.md` there. Use `--dry-run` for preparation without publication; `--resume` continues only the same interrupted deployment and original package. Do not use the inherited upstream publishing workflow.
