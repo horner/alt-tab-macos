@@ -63,7 +63,8 @@ enum Projects {
         let savedActiveId = UserDefaults.standard.string(forKey: "projectsActiveId")
         load()
         refreshSpaces()
-        if isEnabled, let id = savedActiveId, let project = byId[id], project.isCustom { active = project }
+        SpaceLabelWindows.start()
+        if isEnabled, !Preferences.projectsFollowDesktop, let id = savedActiveId, let project = byId[id], project.isCustom { active = project }
         Windows.list.forEach { window in ProjectBrowserURLs.refresh(window) { restoreMembership(window) } }
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
@@ -74,7 +75,12 @@ enum Projects {
     }
 
     private static func refreshSpaces() {
+        let origin = DesktopNavigation.leaving(spaces.first { $0.isCurrent })
         spaces = SpacesList.enumerate(includeFullscreen: true).map { $0.0 }
+        let restoration = DesktopNavigation.entered(spaces.first { $0.isCurrent }, leaving: origin)
+        defer {
+            if isEnabled, let id = restoration?.projectId, let project = byId[id] { active = project }
+        }
         let previousCount = list.count
         isLoading = true
         spaces.forEach { _ = forSpace(uuid: $0.uuid) }
@@ -95,6 +101,12 @@ enum Projects {
     static var activeMembers: Set<String>? {
         guard isEnabled, let project = active else { return nil }
         return ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: project.isCustom, members: project.members)
+    }
+
+    static func switcherProjectIds(mru: [String] = []) -> [String] {
+        let desktop = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) }
+        return ProjectsOrderResolver.sorted(currentDesktopId: desktop?.id, linkedProjectId: desktop?.linkedProjectId,
+            customProjectIds: list.filter { $0.isCustom }.map { $0.id }, mru: mru)
     }
 
     /// Discovery applies the real Space after appendWindow, in the same main-queue turn.
@@ -415,6 +427,7 @@ enum Projects {
                 memberPatterns: project.memberPatterns, excludedPatterns: project.excludedPatterns, windowHistory: project.windowHistory)
         }
         Preferences.set("projects", entries + retainedEntries, false)
+        SpaceLabelWindows.refreshNames()
     }
 
     @discardableResult

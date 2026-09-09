@@ -4,12 +4,15 @@ enum ProjectContextHeader {
     private static let label = NSTextField(labelWithString: "")
     private static let strip = NSView()
     private static let allButton = NSButton(title: NSLocalizedString("All Projects", comment: ""), target: nil, action: nil)
+    private static let returnButton = NSButton(title: "", target: nil, action: nil)
     private static var buttons = [NSButton]()
     private static var projectIds = [String]()
     private static let popover = NSPopover()
     private static weak var pressedButton: NSButton?
+    private static var stripLayout = ProjectStripLayoutResolver.layout(buttonWidths: [], allProjectsWidth: 0, maximumWidth: 0)
     private static var titleHeight: CGFloat { Appearance.fontHeight + Appearance.intraCellPadding }
-    static var height: CGFloat { titleHeight + (Projects.isEnabled ? 30 : 0) }
+    static var minimumContentWidth: CGFloat { Projects.isEnabled ? stripLayout.width : 0 }
+    static var height: CGFloat { titleHeight + (Projects.isEnabled ? stripLayout.height : 0) + (DesktopNavigation.returnTarget == nil ? 0 : 30) }
 
     static func handleNumberKey(_ event: NSEvent?) -> Bool {
         guard Projects.isEnabled, SwitcherSession.isActive, !TilesView.isSearchEditing,
@@ -26,7 +29,7 @@ enum ProjectContextHeader {
     }
 
     static func handleMouseButton(down: Bool, at location: CGPoint) -> Bool {
-        guard Projects.isEnabled, SwitcherSession.isActive else { return false }
+        guard SwitcherSession.isActive else { return false }
         let target = buttonUnderPointer(at: location)
         if down {
             guard let target else { return false }
@@ -40,7 +43,7 @@ enum ProjectContextHeader {
         guard target === pressed else { return true }
         // Mouse events are intercepted by the switcher's tap. Dispatch the action after the tap returns.
         DispatchQueue.main.async {
-            guard Projects.isEnabled, SwitcherSession.isActive else { return }
+            guard SwitcherSession.isActive else { return }
             Logger.debug { "projects header pointer click button=\(pressed.title)" }
             pressed.performClick(nil)
         }
@@ -56,7 +59,7 @@ enum ProjectContextHeader {
         if isPointerInsidePopover(at: location) {
             candidates = (popover.contentViewController?.view as? NSScrollView)?.documentView?.subviews.compactMap { $0 as? NSButton } ?? []
         } else {
-            candidates = buttons + [allButton]
+            candidates = buttons + [allButton, returnButton]
         }
         return candidates.first { button in
             guard button.isEnabled, !button.isHiddenOrHasHiddenAncestor, let window = button.window, window.isVisible else { return false }
@@ -66,6 +69,7 @@ enum ProjectContextHeader {
 
     private static func select(_ id: String) {
         guard Projects.isEnabled, SwitcherSession.isActive, let project = Projects.byId[id] else { return }
+        DesktopNavigation.clearSelection()
         popover.close()
         Projects.active = project
         Logger.debug { "projects header select project=\(id)" }
@@ -93,31 +97,40 @@ enum ProjectContextHeader {
         button.bezelColor = project === Projects.active ? .controlAccentColor : nil
     }
 
-    private static func layoutStrip(in host: NSView, width: CGFloat, top: CGFloat) {
-        guard Projects.isEnabled else { strip.removeFromSuperview(); popover.close(); return }
-        let desktop = Projects.spaces.first { $0.isCurrent }.map { Projects.forSpace(uuid: $0.uuid).id }
-        let ids = (desktop.map { [$0] } ?? []) + Projects.list.filter { $0.isCustom }.map { $0.id }
+    static func prepareLayout() {
+        guard Projects.isEnabled else { return }
+        let ids = Projects.switcherProjectIds()
         if ids != projectIds {
             buttons.forEach { $0.removeFromSuperview() }
             projectIds = ids
             buttons = ids.enumerated().map { makeButton($0.offset, $0.element) }
             buttons.forEach { strip.addSubview($0) }
         }
-        if strip.superview !== host { host.addSubview(strip) }
-        strip.frame = NSRect(x: Appearance.windowPadding, y: top - height, width: max(0, width - Appearance.windowPadding * 2), height: 26)
         allButton.controlSize = .small
         allButton.bezelStyle = .rounded
         allButton.font = NSFont.systemFont(ofSize: 11)
         allButton.onAction = { _ in showAll() }
         if allButton.superview !== strip { strip.addSubview(allButton) }
-        allButton.frame = NSRect(x: max(0, strip.bounds.width - 92), y: 0, width: 92, height: 24)
-        var x: CGFloat = 0
+        var widths = [CGFloat]()
         for (index, button) in buttons.enumerated() {
             update(button, index, projectIds[index])
-            let buttonWidth = min(112, max(58, button.intrinsicContentSize.width))
-            button.isHidden = x + buttonWidth > allButton.frame.minX - 4
-            button.frame = NSRect(x: x, y: 0, width: buttonWidth, height: 24)
-            x += buttonWidth + 4
+            widths.append(min(160, max(58, button.intrinsicContentSize.width)))
+        }
+        stripLayout = ProjectStripLayoutResolver.layout(buttonWidths: widths, allProjectsWidth: max(92, allButton.intrinsicContentSize.width),
+            maximumWidth: NSScreen.preferred.visibleFrame.width * 0.9 - Appearance.windowPadding * 2,
+            rightToLeft: App.shared.userInterfaceLayoutDirection == .rightToLeft)
+    }
+
+    private static func layoutStrip(in host: NSView, width: CGFloat, top: CGFloat) {
+        guard Projects.isEnabled else { strip.removeFromSuperview(); popover.close(); return }
+        if strip.superview !== host { host.addSubview(strip) }
+        strip.frame = NSRect(x: (width - stripLayout.width) / 2, y: top - height,
+            width: stripLayout.width, height: stripLayout.height)
+        allButton.frame = stripLayout.allProjectsFrame
+        for (index, button) in buttons.enumerated() {
+            let frame = stripLayout.buttonFrames[index]
+            button.isHidden = frame == nil
+            button.frame = frame ?? .zero
         }
     }
 
@@ -160,6 +173,37 @@ enum ProjectContextHeader {
         label.frame = NSRect(x: Appearance.windowPadding, y: top - titleHeight,
             width: max(0, width - Appearance.windowPadding * 2), height: titleHeight)
         layoutStrip(in: host, width: width, top: top)
+        layoutReturn(in: host, width: width, top: top - titleHeight)
+    }
+
+    private static func layoutReturn(in host: NSView, width: CGFloat, top: CGFloat) {
+        guard let title = DesktopNavigation.returnTitle else { returnButton.removeFromSuperview(); return }
+        returnButton.title = "\(title)    ⌘Z"
+        returnButton.toolTip = title
+        returnButton.setAccessibilityLabel(title)
+        returnButton.setAccessibilityHelp(NSLocalizedString("Cycle to Back and release the switcher shortcut, or press Command-Z to return.", comment: "Desktop return button help"))
+        returnButton.controlSize = .small
+        returnButton.bezelStyle = .rounded
+        returnButton.setButtonType(.toggle)
+        returnButton.font = NSFont.systemFont(ofSize: 12, weight: .medium)
+        returnButton.lineBreakMode = .byTruncatingTail
+        returnButton.onAction = { _ in DesktopNavigation.returnToPrevious() }
+        if returnButton.superview !== host { host.addSubview(returnButton) }
+        let buttonWidth = min(max(0, width - Appearance.windowPadding * 2), returnButton.intrinsicContentSize.width)
+        returnButton.frame = NSRect(x: (width - buttonWidth) / 2, y: top - 26, width: buttonWidth, height: 24)
+        refreshReturnSelection()
+    }
+
+    static func refreshReturnSelection() {
+        returnButton.state = DesktopNavigation.isReturnSelected ? .on : .off
+        returnButton.bezelColor = DesktopNavigation.isReturnSelected ? .controlAccentColor : nil
+    }
+
+    static func voiceOverReturn() {
+        DispatchQueue.main.async {
+            guard DesktopNavigation.isReturnSelected, !TilesView.isSearchEditing, returnButton.window != nil else { return }
+            TilesPanel.shared.makeFirstResponder(returnButton)
+        }
     }
 
     private static func contextTitle() -> String {

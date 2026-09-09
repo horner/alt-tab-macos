@@ -19,6 +19,7 @@ env:
   APP_NAME: AltTab
 jobs:
   build:
+    if: github.repository == 'lwouis/alt-tab-macos'
     runs-on: macos-15 # all options: https://github.com/actions/runner-images/tree/main
     environment: production
     steps:

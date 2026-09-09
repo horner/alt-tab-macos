@@ -77,11 +77,12 @@ class Windows {
 
     static func voiceOverWindow(_ windowIndex: Int = (SwitcherSession.current?.selectedIndex ?? 0)) {
         guard SwitcherSession.isActive && TilesPanel.shared.isKeyWindow else { return }
+        if DesktopNavigation.isReturnSelected { ProjectContextHeader.voiceOverReturn(); return }
         if TilesView.isSearchEditing { return }
         // it seems that sometimes makeFirstResponder is called before the view is visible
         // and it creates a delay in showing the main window; calling it with some delay seems to work around this
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(10)) {
-            if TilesView.isSearchEditing { return }
+            if TilesView.isSearchEditing || DesktopNavigation.isReturnSelected { return }
             let window = TilesView.recycledViews[windowIndex]
             if window.window_ != nil && window.window != nil {
                 TilesPanel.shared.makeFirstResponder(window)
@@ -216,6 +217,7 @@ class Windows {
     }
 
     static func selectedWindow() -> Window? {
+        guard !DesktopNavigation.isReturnSelected else { return nil }
         guard let session = SwitcherSession.current, list.count > session.selectedIndex else { return nil }
         let window = list[session.selectedIndex]
         return shouldDisplay(window) ? window : nil
@@ -233,7 +235,7 @@ class Windows {
     }
 
     static func updateSelectedWindow() {
-        guard let session = SwitcherSession.current else { return }
+        guard let session = SwitcherSession.current, !DesktopNavigation.isReturnSelected else { return }
         let inputs = selectionInputs(session)
         let decision = SelectionResolver.decide(inputs)
         Logger.debug { "select decide=\(decision) fromTarget=\(session.selectedTarget ?? "nil") sel=\(session.selectedIndex)" }
@@ -341,6 +343,7 @@ class Windows {
     /// Wrapper-side reset that mirrors the first half of the old `setInitialSelectedAndHoveredWindowIndex`:
     /// clear `selectedTarget`, reset `selectedIndex` to 0, redraw the old highlight, drop hover.
     private static func resetForInitialPick(_ session: SwitcherSession) {
+        DesktopNavigation.clearSelection()
         let oldIndex = session.selectedIndex
         session.selectedIndex = 0
         session.selectedTarget = nil
@@ -358,6 +361,7 @@ class Windows {
         guard newIndex >= 0 && newIndex < list.count else { return }
         let newWindow = list[newIndex]
         guard shouldDisplay(newWindow) else { return }
+        if fromMouse && Preferences.mouseHoverEnabled { DesktopNavigation.clearSelection() }
         var index: Int?
         if fromMouse { session.userPickedSelection = true }
         if fromMouse && (newIndex != session.hoveredIndex || lastWindowActivityType == .focus) {
@@ -400,6 +404,7 @@ class Windows {
 
     static func cycleSelectedWindowIndex(_ step: Int, allowWrap: Bool = true) {
         guard let session = SwitcherSession.current else { return }
+        if DesktopNavigation.cycle(step, allowWrap: allowWrap) { return }
         guard list.contains(where: { shouldDisplay($0) }) else { return }
         // `list` can shrink while the panel is open (a window closed), and the selection fix-up runs behind
         // `switcherUiRefreshThrottler`, so a dispatched trackpad/key-repeat step can land here with

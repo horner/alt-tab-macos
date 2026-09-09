@@ -13,7 +13,11 @@ class App: AppCenterApplication {
     static let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as! String
     static let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as! String
     static let licence = Bundle.main.object(forInfoDictionaryKey: "NSHumanReadableCopyright") as! String
+    #if PROJECTS_DISTRIBUTION
+    static let repository = "https://github.com/horner/alt-tab-macos"
+    #else
     static let repository = "https://github.com/lwouis/alt-tab-macos"
+    #endif
     static let appIconReps = CGImage.allNamed("app.icns")
 
     static func appIcon(for size: NSSize) -> CGImage {
@@ -50,9 +54,8 @@ class App: AppCenterApplication {
         fatalError("Class only supports programmatic initialization")
     }
 
-    /// we put application code here which should be executed on init() and Preferences change
-    /// The switcher UI only exists once permissions are granted. Activating a license through the
-    /// `alt-tab://activate` url launches the app and can land its callback before that, so we bail
+    /// The switcher UI only exists once permissions are granted. Activating a license through a
+    /// custom URL launches the app and can land its callback before that, so we bail
     /// instead of resetting a UI that isn't built yet (`TilesView.reset` traps on `TilesPanel.shared`).
     static func resetPreferencesDependentComponents() {
         guard TilesPanel.shared != nil else { return }
@@ -122,6 +125,7 @@ class App: AppCenterApplication {
 
     static func focusTarget() {
         guard SwitcherSession.isActive else { return } // already hidden
+        if DesktopNavigation.isReturnSelected { DesktopNavigation.returnToPrevious(); return }
         let selectedWindow = Windows.selectedWindow()
         Logger.info { selectedWindow?.debugId }
         focusSelectedWindow(selectedWindow)
@@ -148,12 +152,16 @@ class App: AppCenterApplication {
     }
 
     @objc static func showFeedbackPanel() {
+        #if PROJECTS_DISTRIBUTION
+        NSWorkspace.shared.open(URL(string: repository + "/issues")!)
+        #else
         let wasFresh = FeedbackWindow.shared == nil
         initializeFeedbackWindowIfNeeded()
         // Fresh init already runs reset(); skip the redundant second call so we don't
         // double-fire the Sparkle preflight on the first ever open.
         if !wasFresh { FeedbackWindow.shared?.reset() }
         showSecondaryWindow(FeedbackWindow.shared!)
+        #endif
     }
 
     @objc static func showDebugWindow() {
@@ -279,6 +287,7 @@ class App: AppCenterApplication {
         (TilesView.scrollView?.documentView as? TilesDocumentView)?.cancelDraggingTimer()
         CursorEvents.resetDeadzone()
         if direction == .up || direction == .down {
+            if DesktopNavigation.clearSelection() { Windows.updateSelectedWindow(); Windows.voiceOverWindow(); return }
             TilesView.navigateUpOrDown(direction, allowWrap: allowWrap)
         } else {
             Windows.cycleSelectedWindowIndex(direction.step(), allowWrap: allowWrap)
@@ -506,6 +515,7 @@ class App: AppCenterApplication {
         // Needs the AX runloop `BackgroundWork.start()` created, so it cannot go with the launch-time setup.
         AxObserverRegistry.shared.startRecoveryTicks()
         CliEvents.observe()
+        #if !PROJECTS_DISTRIBUTION
         App.sparkleDelegate = SparkleDelegate()
         App.updaterController = SPUStandardUpdaterController(
             startingUpdater: false,
@@ -514,6 +524,7 @@ class App: AppCenterApplication {
         DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
             App.updaterController?.startUpdater()
         }
+        #endif
         PreferencesEvents.initialize()
         BenchmarkRunner.startIfNeeded()
         showSettingsWindowOnFirstLaunchIfNeeded()
@@ -530,17 +541,19 @@ class App: AppCenterApplication {
         UsageStats.prune()
         ProTransitionManager.shared.onAction = { ProPromptHost.shared.dispatch($0) }
         ProTransitionManager.shared.onAppLaunchComplete()
-        Logger.info { "Finished launching AltTab" }
+        Logger.info { "Finished launching \(App.name)" }
     }
 }
 
 extension App: NSApplicationDelegate {
     func applicationDidFinishLaunching(_ aNotification: Notification) {
+        #if !PROJECTS_DISTRIBUTION
         App.appCenterDelegate = AppCenterCrash()
+        #endif
         App.shared.disableRelaunchOnLogin()
         Logger.initialize()
         MainThreadStall.observe()
-        Logger.info { "Launching AltTab \(App.version)" }
+        Logger.info { "Launching \(App.name) \(App.version)" }
         // Create the background queues first, before anything that can pump the main run loop re-entrantly
         // (the "move to /Applications" modal below, the WindowServer tap's discovery). Window.init reads
         // BackgroundWork.screenshotsQueue (an implicitly-unwrapped optional) via Application.fetchAppIcon, so

@@ -5,10 +5,11 @@ extension Preferences {
     static var projectsEnabled: Bool { UserDefaults.standard.bool(forKey: "projectsEnabled") }
     static var projectsCurrentSpaceOnly: Bool { UserDefaults.standard.bool(forKey: "projectsCurrentSpaceOnly") }
     static var projectsFollowDesktop: Bool { UserDefaults.standard.bool(forKey: "projectsFollowDesktop") }
+    static var spaceLabelRevealDuration: Int { SpaceLabelResolver.revealDuration(UserDefaults.standard.integer(forKey: "spaceLabelRevealDuration")) }
     static var projects: [ProjectEntry] { CachedUserDefaults.json("projects", [ProjectEntry].self) }
     static var projectsShortcutStyle: ShortcutStylePreference { CachedUserDefaults.macroPref("projectsShortcutStyle", ShortcutStylePreference.allCases) }
     static var projectsDefaultValues: [String: Any] {
-        ["projectsCurrentSpaceOnly": "false", "projectsEnabled": "false", "projectsFollowDesktop": "false", "projects": "[]",
+        ["projectsCurrentSpaceOnly": "false", "projectsEnabled": "false", "projectsFollowDesktop": "true", "projects": "[]", "spaceLabelRevealDuration": "0",
          ProjectSwitcher.holdShortcutId: defaultShortcut(""),
          ProjectSwitcher.nextShortcutId: defaultShortcut("⇥"),
          ProjectSwitcher.previousShortcutId: defaultShortcut("⇧"),

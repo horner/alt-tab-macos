@@ -20,12 +20,17 @@ class GeneralTab {
             ])
         let language = TableGroupView.Row(leftTitle: NSLocalizedString("Language", comment: ""),
             rightViews: [LabelAndControl.makeDropdown("language", LanguagePreference.allCases, extraAction: setLanguageCallback)])
+        #if PROJECTS_DISTRIBUTION
+        let checkForUpdates = NSButton(title: NSLocalizedString("Open releases…", comment: ""), target: nil, action: nil)
+        checkForUpdates.onAction = { control in checkForUpdatesNow(control) }
+        #else
         updatesPolicyDropdown = LabelAndControl.makeDropdown("updatePolicy", UpdatePolicyPreference.allCases)
         let checkForUpdates = NSButton(title: NSLocalizedString("Check for updates now…", comment: ""), target: nil, action: nil)
         checkForUpdates.onAction = { control in checkForUpdatesNow(control) }
         crashPolicyDropdown = LabelAndControl.makeDropdown("crashPolicy", CrashPolicyPreference.allCases)
         let crashPolicy = TableGroupView.Row(leftTitle: NSLocalizedString("Crash reports policy", comment: ""),
             rightViews: [crashPolicyDropdown!])
+        #endif
         for i in 0..<MenubarIconPreference.allCases.count {
             let image = NSImage.initCopy("menubar-\(i)")
             image.isTemplate = i < 2
@@ -46,12 +51,16 @@ class GeneralTab {
         table.addNewTable()
         table.addRow(language)
         table.addNewTable()
+        #if PROJECTS_DISTRIBUTION
+        table.addRow(TableGroupView.Row(leftTitle: NSLocalizedString("Updates policy", comment: ""), rightViews: [checkForUpdates]))
+        #else
         table.addRow(leftViews: [TableGroupView.makeText(NSLocalizedString("Updates policy", comment: ""))],
             rightViews: [updatesPolicyDropdown!],
             secondaryViews: [checkForUpdates],
             secondaryViewsAlignment: .right,
             secondaryViewsTopGap: 8)
         table.addRow(crashPolicy)
+        #endif
         let exportButton = NSButton(title: NSLocalizedString("Export settings…", comment: ""), target: nil, action: nil)
         exportButton.onAction = { _ in exportSettings() }
         let importButton = NSButton(title: NSLocalizedString("Import settings…", comment: ""), target: nil, action: nil)
@@ -95,10 +104,14 @@ class GeneralTab {
     }
 
     @objc static func checkForUpdatesNow(_ sender: Any?) {
+        #if PROJECTS_DISTRIBUTION
+        NSWorkspace.shared.open(URL(string: App.repository + "/releases")!)
+        #else
         // The updater is lazy-started 30s after launch; if the user presses this button before
         // then, defensively start it first (idempotent — second call is a no-op).
         App.updaterController?.startUpdater()
         App.updaterController?.checkForUpdates(sender)
+        #endif
     }
 
     private static func exportSettings() {

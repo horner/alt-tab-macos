@@ -1,7 +1,8 @@
 # ProjectNumberResolver
 
 Physical top-row and keypad digits select numbered entries in the open window switcher’s Project strip.
-1 is the current Desktop (normal filtering); custom Projects follow in creation order. Labels run
+An unlinked current Desktop comes first (normal filtering); custom Projects follow in creation order.
+A linked Desktop appears only as its custom Project, following `ProjectsOrderResolver`. Labels run
 1–9, then 0. Later entries have names only and are click-only; All Projects includes every entry. The caller disables routing outside an enabled
 Project window-switcher session, during search editing, and for repeated/non-key-down events.
 
