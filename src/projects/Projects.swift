@@ -221,6 +221,12 @@ enum Projects {
         }
     }
 
+    static func switcherProjectIds(mru: [String] = []) -> [String] {
+        let desktop = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) }
+        return ProjectsOrderResolver.sorted(currentDesktopId: desktop?.id, linkedProjectId: desktop?.linkedProjectId,
+            customProjectIds: list.filter { $0.isCustom }.map { $0.id }, mru: mru)
+    }
+
     /// Discovery applies the real Space after appendWindow, in the same main-queue turn.
     static func windowAdded(_ window: Window) {
         // discoveryLanded consumes the WindowServer creation marker after appendWindow returns.

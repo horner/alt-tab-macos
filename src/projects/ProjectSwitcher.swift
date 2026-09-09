@@ -24,9 +24,7 @@ enum ProjectSwitcher: AuxiliarySwitcher {
         guard isEnabled, !SwitcherSession.isActive, !SpacesSwitcher.isActive else { return }
         guard !isActive else { cycle(1); return }
         let desktop = Projects.spaces.first { $0.isCurrent }
-        let desktopId = desktop.map { Projects.forSpace(uuid: $0.uuid).id }
-        let ids = ProjectsOrderResolver.sorted(currentDesktopId: desktopId,
-            customProjectIds: Projects.list.filter { $0.isCustom }.map { $0.id }, mru: mru)
+        let ids = Projects.switcherProjectIds(mru: mru)
         items = ids.compactMap { id in Projects.byId[id].map { ProjectTileItem(project: $0, desktopNumber: desktop?.desktopNumber ?? 0) } }
         guard !items.isEmpty else { return }
         selectedIndex = SpacesOrderResolver.initialSelection(count: items.count, currentIndex: items.firstIndex { $0.project === Projects.active })

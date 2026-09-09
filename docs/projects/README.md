@@ -105,7 +105,7 @@ An explicit move also prevents linked-Desktop capture from adding that window ba
 
 **Switch Projects inside the window switcher**
 
-A compact numbered strip sits beneath the context title. Click a Project or press its displayed digit (1–9, then 0) to update the windows in place. **1** returns to normal Desktop filtering; custom Projects follow in creation order. **All Projects** opens a compact, scrollable grid, including unnumbered, click-only Projects after the tenth entry. Opening the grid keeps the switcher open after releasing the hold key; select a window and press Return to focus it, or Escape to dismiss. While editing search, numbers remain search text.
+A compact numbered strip sits beneath the context title. Click a Project or press its displayed digit (1–9, then 0) to update the windows in place. An unlinked Desktop comes first and returns to normal Desktop filtering; custom Projects follow in creation order. A linked Desktop appears only once, as its Project, using the Project's name. This also applies to the Project switcher. Normal Desktop filtering remains available from the menu's **Use Desktop (No Project)** action. **All Projects** opens a compact, scrollable grid, including unnumbered, click-only Projects after the tenth entry. Opening the grid keeps the switcher open after releasing the hold key; select a window and press Return to focus it, or Escape to dismiss. While editing search, numbers remain search text.
 
 ![Compact numbered Project strip in the window switcher](screenshots/m3-project-strip.jpg)
 

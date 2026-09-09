@@ -95,8 +95,7 @@ enum ProjectContextHeader {
 
     private static func layoutStrip(in host: NSView, width: CGFloat, top: CGFloat) {
         guard Projects.isEnabled else { strip.removeFromSuperview(); popover.close(); return }
-        let desktop = Projects.spaces.first { $0.isCurrent }.map { Projects.forSpace(uuid: $0.uuid).id }
-        let ids = (desktop.map { [$0] } ?? []) + Projects.list.filter { $0.isCustom }.map { $0.id }
+        let ids = Projects.switcherProjectIds()
         if ids != projectIds {
             buttons.forEach { $0.removeFromSuperview() }
             projectIds = ids
