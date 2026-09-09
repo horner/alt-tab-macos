@@ -51,13 +51,21 @@ class SpaceItem {
     /// public way there; it is off by default past Desktop 2 in System Settings, so this can silently do
     /// nothing — hence it is the fallback, not the primary route.
     private func activateViaSystemShortcut() {
-        guard let keyCode = Self.digitKeyCodes[desktopNumber] else { return }
-        guard let down = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: true),
-              let up = CGEvent(keyboardEventSource: nil, virtualKey: keyCode, keyDown: false) else { return }
-        down.flags = .maskControl
-        up.flags = .maskControl
-        down.post(tap: .cghidEventTap)
-        up.post(tap: .cghidEventTap)
+        let originSpaceId = Spaces.currentSpaceId
+        DispatchQueue.global(qos: .userInitiated).async {
+            let hotKeys = UserDefaults(suiteName: "com.apple.symbolichotkeys")?.dictionary(forKey: "AppleSymbolicHotKeys") ?? [:]
+            guard let shortcut = DesktopNavigationResolver.systemShortcut(desktopNumber: self.desktopNumber, hotKeys: hotKeys) else { return }
+            DispatchQueue.main.async {
+                guard Spaces.currentSpaceId == originSpaceId, !SwitcherSession.isActive,
+                      Projects.spaces.contains(where: { $0.uuid == self.uuid && $0.desktopNumber == self.desktopNumber }),
+                      let down = CGEvent(keyboardEventSource: nil, virtualKey: shortcut.keyCode, keyDown: true),
+                      let up = CGEvent(keyboardEventSource: nil, virtualKey: shortcut.keyCode, keyDown: false) else { return }
+                down.flags = CGEventFlags(rawValue: shortcut.modifiers)
+                up.flags = down.flags
+                down.post(tap: .cghidEventTap)
+                up.post(tap: .cghidEventTap)
+            }
+        }
     }
 
     private func mostRecentlyFocusedWindow() -> Window? {
@@ -66,10 +74,6 @@ class SpaceItem {
             .min { $0.lastFocusOrder < $1.lastFocusOrder }
     }
 
-    /// ANSI digit key codes, which are not contiguous (6 and 7 are swapped relative to their digits).
-    private static let digitKeyCodes: [Int: CGKeyCode] = [
-        1: 0x12, 2: 0x13, 3: 0x14, 4: 0x15, 5: 0x17, 6: 0x16, 7: 0x1A, 8: 0x1C, 9: 0x19,
-    ]
 }
 
 /// The Spaces switcher's model: enumerate the Spaces the WindowServer reports, order them, and hold the

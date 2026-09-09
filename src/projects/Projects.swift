@@ -71,7 +71,7 @@ enum Projects {
         load()
         refreshSpaces()
         SpaceLabelWindows.start()
-        if isEnabled, let id = savedActiveId, let project = byId[id], project.isCustom { active = project }
+        if isEnabled, !Preferences.projectsFollowDesktop, let id = savedActiveId, let project = byId[id], project.isCustom { active = project }
         Windows.list.forEach { window in ProjectBrowserURLs.refresh(window) { restoreMembership(window) } }
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification, object: nil, queue: .main
@@ -85,10 +85,14 @@ enum Projects {
         SpaceLabelWindows.refreshTopology()
     }
 
-    static func applyDesktopTopology(_ snapshot: [SpaceLabelResolver.Space], labelLocations: [String: [UInt64]], windowLocations: [String: [UInt64]]) {
+    static func applyDesktopTopology(_ snapshot: [SpaceLabelResolver.Space], labelLocations: [String: [UInt64]],
+                                     windowLocations: [String: [UInt64]], movedLabels: [ProjectDesktopResolver.LabelLocation] = []) {
+        let previousDesktop = spaces.first { $0.isCurrent }?.uuid
+        let origin = DesktopNavigation.leaving(spaces.first { $0.isCurrent })
         let previous = desktopTopology
         desktopTopology = snapshot
         spaces = snapshot.map { SpaceItem(spaceId: $0.id, uuid: $0.uuid, desktopNumber: $0.desktopNumber, isCurrent: $0.id == Spaces.currentSpaceId) }
+        let restoration = DesktopNavigation.entered(spaces.first { $0.isCurrent }, leaving: origin)
         let previousCount = list.count
         isLoading = true
         spaces.forEach { _ = forSpace(uuid: $0.uuid) }
@@ -98,21 +102,42 @@ enum Projects {
                 labelSpaces: labelLocations[source.uuid] ?? [], memberSpaces: windowLocations[source.uuid] ?? []) else { continue }
             merged = mergeDesktop(source.uuid, into: destination) || merged
         }
+        var movedProjects = Set<String>()
+        for location in movedLabels {
+            guard let destination = ProjectDesktopResolver.relocation(location, in: snapshot),
+                  let project = relocateLabel(location.labelId, from: location.sourceUuid, to: destination.uuid) else { continue }
+            movedProjects.insert(project.id)
+        }
         isLoading = false
-        if merged || list.count != previousCount { save() }
+        if merged || !movedProjects.isEmpty || list.count != previousCount { save() }
         desktopWindowIds = Dictionary(uniqueKeysWithValues: snapshot.map { space in
             (space.uuid, Set(Windows.list.filter { canBelongToProject($0) && $0.spaceIds.contains(space.id) }.map { $0.tracked.id }))
         })
+        let desktop = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) }
+        let activeMovedAway = active.map { movedProjects.contains($0.id) && $0.homeSpaceUuid != desktop?.homeSpaceUuid } ?? false
+        let selected = ProjectDesktopResolver.selection(current: active?.id,
+            customProjects: isEnabled ? Set(list.filter { $0.isCustom }.map { $0.id }) : [], desktop: desktop?.id,
+            linkedProjects: desktop.map { linkedProjects(for: $0).map { $0.id } } ?? [],
+            followsDesktop: isEnabled && Preferences.projectsFollowDesktop, changedDesktop: previousDesktop != desktop?.homeSpaceUuid || activeMovedAway)
+        active = selected.flatMap { byId[$0] }
+        if isEnabled, let id = restoration?.projectId, let project = byId[id] { active = project }
         if isEnabled {
             for desktop in list where !desktop.isCustom {
                 if let project = defaultProject(for: desktop) { captureDesktopWindows(desktop, into: project) }
             }
         }
-        if isEnabled, !Preferences.projectsFollowDesktop, let active, active.isCustom, byId[active.id] === active { return }
-        active = spaces.first { $0.isCurrent }.map { space in
-            let desktop = forSpace(uuid: space.uuid)
-            return isEnabled && Preferences.projectsFollowDesktop ? defaultProject(for: desktop) ?? desktop : desktop
-        }
+        if !movedProjects.isEmpty { DispatchQueue.main.async { App.refreshOpenUiAfterExternalEvent([]) } }
+    }
+
+    private static func relocateLabel(_ labelId: String, from sourceUuid: String, to destinationUuid: String) -> Project? {
+        guard isEnabled, let source = byId["desktop-\(sourceUuid)"],
+              let project = linkedProjects(for: source).first(where: { ($0.labelUuid ?? $0.id) == labelId }) else { return nil }
+        let destination = forSpace(uuid: destinationUuid)
+        source.linkedProjectIds.removeAll { $0 == project.id }
+        destination.linkedProjectIds = ProjectDesktopResolver.merge(resident: destination.linkedProjectIds, incoming: [project.id])
+        project.homeSpaceUuid = destinationUuid
+        Logger.debug { "projects label moved project=\(project.id) source=\(sourceUuid) destination=\(destinationUuid)" }
+        return project
     }
 
     static func migrationWindowIds() -> [String: [CGWindowID]] {
@@ -225,6 +250,21 @@ enum Projects {
         let desktop = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) }
         return ProjectsOrderResolver.sorted(currentDesktopId: desktop?.id, linkedProjectId: desktop?.linkedProjectId,
             customProjectIds: list.filter { $0.isCustom }.map { $0.id }, mru: mru)
+    }
+
+    static func numberedProjectChoices() -> [ProjectNumberResolver.Choice] {
+        let desktops = spaces.filter { $0.desktopNumber > 0 }
+        let numbers = Dictionary(uniqueKeysWithValues: desktops.map { ($0.uuid, $0.desktopNumber) })
+        var claims = [String: (number: Int, index: Int)]()
+        for space in desktops {
+            guard let desktop = byId["desktop-\(space.uuid)"] else { continue }
+            for (index, project) in linkedProjects(for: desktop).enumerated() { claims[project.id] = (space.desktopNumber, index) }
+        }
+        let entries = switcherProjectIds().compactMap { id -> ProjectNumberResolver.Entry? in
+            guard let project = byId[id] else { return nil }
+            return .init(id: id, desktopNumber: claims[id]?.number ?? numbers[project.homeSpaceUuid], claimIndex: claims[id]?.index ?? Int.max)
+        }
+        return ProjectNumberResolver.choices(entries, desktopCount: desktops.count)
     }
 
     /// Discovery applies the real Space after appendWindow, in the same main-queue turn.
@@ -405,7 +445,7 @@ enum Projects {
             guard isEnabled, project.isCustom, byId[project.id] === project,
                   !list.contains(where: { $0 !== desktop && $0.linkedProjectIds.contains(project.id) }) else { return false }
         }
-        desktop.linkedProjectIds = ProjectDesktopResolver.merge(resident: [], incoming: projects.map { $0.id })
+        desktop.linkedProjectIds = ProjectDesktopResolver.linkOrder(existing: desktop.linkedProjectIds, selected: projects.map { $0.id })
         for project in projects {
             project.homeSpaceUuid = desktop.homeSpaceUuid
             if project.labelUuid == nil {

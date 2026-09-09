@@ -10,7 +10,7 @@ extension Preferences {
     static var projects: [ProjectEntry] { CachedUserDefaults.json("projects", [ProjectEntry].self) }
     static var projectsShortcutStyle: ShortcutStylePreference { CachedUserDefaults.macroPref("projectsShortcutStyle", ShortcutStylePreference.allCases) }
     static var projectsDefaultValues: [String: Any] {
-        ["projectsCurrentSpaceOnly": "false", "projectsEnabled": "false", "projectsFollowDesktop": "false", "projects": "[]", "projectWindowsInSwitcher": "false", "spaceLabelRevealDuration": String(SpaceLabelResolver.defaultRevealDuration),
+        ["projectsCurrentSpaceOnly": "false", "projectsEnabled": "false", "projectsFollowDesktop": "true", "projects": "[]", "projectWindowsInSwitcher": "false", "spaceLabelRevealDuration": String(SpaceLabelResolver.defaultRevealDuration),
          ProjectSwitcher.holdShortcutId: defaultShortcut(""),
          ProjectSwitcher.nextShortcutId: defaultShortcut("⇥"),
          ProjectSwitcher.previousShortcutId: defaultShortcut("⇧"),

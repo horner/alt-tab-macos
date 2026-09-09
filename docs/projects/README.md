@@ -76,11 +76,21 @@ This capture uses the production AppKit dialog with isolated sample data (“Res
 
 ![Desktop naming dialog with an existing Project selected](screenshots/m3-desktop-project-link.jpg)
 
-Desktop switches keep your active Project by default. In **Settings → Controls → Projects switcher**, enable **Switch active Project when switching Desktops** to select the destination Desktop’s linked Project automatically (or normal Desktop scope when unlinked). The setting is off by default; linked window membership works independently.
+Desktop switches select the destination Desktop’s linked Project automatically, including switches made with **⌘F1**, **⌘F2**, Mission Control, or the Spaces switcher. An unlinked Desktop selects normal Desktop scope. **Switch active Project when switching Desktops** in **Settings → Controls → Projects switcher** is on by default; turn it off to keep a custom Project selected across Desktop changes. When following is on, restarting AltTab selects the current Desktop’s linked Project instead of restoring a saved selection from another Desktop. Linked window membership works independently.
+
+**See and return from Desktop changes**
+
+Windows that will switch Desktops show an accent-colored **↗ D:N** badge, or **↗ Fullscreen**. Hover for the destination name. Windows already visible on another display have no badge.
+
+After a Desktop change, the window switcher offers **↩ Back to Project · Desktop N** as a stop between the last and first windows. **Tab** cycles forward through it; **Shift** keeps cycling backward through windows and Back. Release the hold key or press Return to activate the selected item, or Escape to cancel. You can also click Back.
+
+For a direct undo, press **⌘Z while the window switcher is open** to return to the Desktop and Project you just left. Command-Z keeps its normal text-undo behavior while editing search. Returning makes the Desktop just left available as the next Back destination.
+
+Back remembers the most recently focused eligible window on the previous Desktop. If it has closed, another window on that Desktop is focused; an empty Desktop uses its enabled macOS **Switch to Desktop N** shortcut, including custom **⌘F1/⌘F2** bindings. Return history lasts until AltTab quits.
 
 **Windows without a Project** in the menu bar lists windows from all Desktops that belong to no custom Project. Choose a title to focus that window. Hidden and minimized windows are included, so they remain reachable.
 
-The rebuilt Debug app confirms Desktop following is off by default.
+This earlier settings capture shows the optional Desktop-following control switched off; the current default is on.
 
 ![Projects settings with Desktop following disabled](screenshots/m3-desktop-follow-setting.jpg)
 
@@ -105,13 +115,19 @@ An explicit move also prevents linked-Desktop capture from adding that window ba
 
 **Switch Projects inside the window switcher**
 
-A compact numbered strip sits beneath the context title. Click a Project or press its displayed digit (1–9, then 0) to update the windows in place. An unlinked Desktop comes first and returns to normal Desktop filtering; custom Projects follow in creation order. A linked Desktop appears only once, as its Project, using the Project's name. This also applies to the Project switcher. Normal Desktop filtering remains available from the menu's **Use Desktop (No Project)** action. **All Projects** opens a compact, scrollable grid, including unnumbered, click-only Projects after the tenth entry. Opening the grid keeps the switcher open after releasing the hold key; select a window and press Return to focus it, or Escape to dismiss. While editing search, numbers remain search text.
+Numbered Project buttons sit beneath the context title. The window switcher widens to fit them, up to 90% of the usable screen width, even when the active Project has only one or two windows. The buttons wrap onto a second row when needed. All Projects remains at the end of the final row and opens the complete list if two rows fill up. Click a Project or use a digit to update the windows in place. While editing search, numbers remain search text.
+
+With multiple Desktops, Project numbers match their Desktop numbers, and the buttons appear in Desktop order. Projects sharing a Desktop share its number. Digits **1–9** select the first Project to claim that Desktop; **0** selects Desktop 10. Higher Desktop numbers remain visible and are selected by clicking. When **Follow Desktop** is enabled, arriving on a shared Desktop also selects its first claimant. Explicitly choosing another Project lasts until you leave that Desktop. Saving its links preserves the claim order; unlinking the first Project promotes the next, and relinking puts a Project at the end. F-key Desktop shortcuts are unchanged.
+
+With a single Desktop, custom Projects keep creation order and use individual shortcuts **1–9, then 0**; later Projects are click-only. An unlinked current Desktop precedes the custom Projects in this mode. A linked Desktop appears only as its Projects, using their names. This also applies to the Project switcher. Normal Desktop filtering remains available from the menu's **Use Desktop (No Project)** action. **All Projects** opens the complete list in a compact, scrollable grid with the same numbering. Opening the grid keeps the switcher open after releasing the hold key; select a window and press Return to focus it, or Escape to dismiss.
+
+The captures below show the earlier single-row layout.
 
 ![Compact numbered Project strip in the window switcher](screenshots/m3-project-strip.jpg)
 
 ![All Projects in a centered compact grid](screenshots/m3-project-compact-grid.jpg)
 
-The numbered strip now follows keyboard order **1–9, then 0**. Later entries show only their names. Pointer clicks on the strip and grid use the switcher’s mouse-event routing; pressing on one button and releasing elsewhere cancels the click. Earlier screenshots above show the superseded numbering.
+The capture below shows the individual Project shortcuts used with a single Desktop. Pointer clicks on the strip and grid use the switcher’s mouse-event routing; pressing on one button and releasing elsewhere cancels the click. Earlier screenshots above show the superseded numbering.
 
 ![Corrected 1–9, 0 Project buttons, followed by click-only Projects](screenshots/m3-project-pointer-numbering.jpg)
 

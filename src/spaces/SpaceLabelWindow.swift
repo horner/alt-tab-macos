@@ -57,14 +57,14 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         view.addSubview(textLabel)
         addButton(NSLocalizedString("Menu", comment: "AltTab menu button"),
             help: NSLocalizedString("Open the AltTab menu", comment: "AltTab menu button help"), action: #selector(openMenu(_:)))
-        addButton(NSLocalizedString("Show All", comment: "Show all Space labels button"),
-            help: NSLocalizedString("Show all Space labels, including individually closed labels.", comment: "Space label button help"), action: #selector(showAll))
-        addButton(NSLocalizedString("Bring All to Front", comment: "Raise all Space labels button"),
-            help: NSLocalizedString("Bring open Space labels to the front and restore minimized labels.", comment: "Space label button help"), action: #selector(bringAllToFront))
-        addButton(NSLocalizedString("Minimize All", comment: "Minimize all Space labels button"),
-            help: NSLocalizedString("Minimize All Space Labels", comment: "Space label menu action"), action: #selector(minimizeAll))
-        addButton(NSLocalizedString("Close All", comment: "Close all Space labels button"),
-            help: NSLocalizedString("Close All Space Labels", comment: "Space label menu action"), action: #selector(closeAll))
+        addButton(NSLocalizedString("Show All", comment: "Show all Project labels button"),
+            help: NSLocalizedString("Show all Project labels, including individually closed labels.", comment: "Project label button help"), action: #selector(showAll))
+        addButton(NSLocalizedString("Bring All to Front", comment: "Raise all Project labels button"),
+            help: NSLocalizedString("Bring open Project labels to the front and restore minimized labels.", comment: "Project label button help"), action: #selector(bringAllToFront))
+        addButton(NSLocalizedString("Minimize All", comment: "Minimize all Project labels button"),
+            help: NSLocalizedString("Minimize All Project Labels", comment: "Project label menu action"), action: #selector(minimizeAll))
+        addButton(NSLocalizedString("Close All", comment: "Close all Project labels button"),
+            help: NSLocalizedString("Close All Project Labels", comment: "Project label menu action"), action: #selector(closeAll))
     }
 
     func synchronizeSwitcherVisibility() {
@@ -88,9 +88,9 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         renderedLabel = label
         renderedSize = visibleSize
         let number = label.isFullscreen
-            ? String(format: NSLocalizedString("Fullscreen · Space %d", comment: "Fullscreen Space label number"), label.number)
+            ? String(format: NSLocalizedString("Fullscreen · Space %d", comment: "Fullscreen Project label number"), label.number)
             : String(format: NSLocalizedString("Desktop %d", comment: "Spaces switcher tile label"), label.number)
-        let name = label.name ?? NSLocalizedString("Unnamed Space", comment: "Space label without a saved name")
+        let name = label.name ?? NSLocalizedString("Unnamed Space", comment: "Project label without a saved name")
         title = "\(name) · \(number)"
         setAccessibilityLabel(title)
         textLabel.toolTip = title

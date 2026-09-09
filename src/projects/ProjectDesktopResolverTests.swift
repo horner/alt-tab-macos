@@ -1,6 +1,68 @@
 import XCTest
 
 final class ProjectDesktopResolverTests: XCTestCase {
+    func testMovedLabelUsesItsActualDesktopWhileBothDesktopsRemain() {
+        let location = ProjectDesktopResolver.LabelLocation(labelId: "project", sourceUuid: "s2", spaceIds: [1])
+        XCTAssertEqual(ProjectDesktopResolver.relocation(location, in: [space(1), space(2)]), space(1))
+    }
+
+    func testUnchangedAndAmbiguousLabelLocationsDoNotRelink() {
+        for ids: [UInt64] in [[], [2], [1, 2], [99]] {
+            XCTAssertNil(ProjectDesktopResolver.relocation(.init(labelId: "project", sourceUuid: "s2", spaceIds: ids),
+                in: [space(1), space(2)]))
+        }
+    }
+
+    func testLabelRelocationDoesNotOverrideDesktopDeletionOrDisconnection() {
+        XCTAssertNil(ProjectDesktopResolver.relocation(.init(labelId: "project", sourceUuid: "s2", spaceIds: [1]), in: [space(1)]))
+    }
+
+    func testFullscreenLocationsDoNotRelinkProjects() {
+        XCTAssertNil(ProjectDesktopResolver.relocation(.init(labelId: "project", sourceUuid: "s2", spaceIds: [1]),
+            in: [space(1, fullscreen: true), space(2)]))
+        XCTAssertNil(ProjectDesktopResolver.relocation(.init(labelId: "project", sourceUuid: "s1", spaceIds: [2]),
+            in: [space(1, fullscreen: true), space(2)]))
+    }
+
+    func testMovingALabelToAnotherConnectedDisplayUpdatesItsDesktop() {
+        let destination = space(1, "external")
+        XCTAssertEqual(ProjectDesktopResolver.relocation(.init(labelId: "project", sourceUuid: "s2", spaceIds: [1]),
+            in: [destination, space(2)]), destination)
+    }
+
+    func testSavingLinksKeepsClaimOrderInsteadOfCheckboxOrder() {
+        XCTAssertEqual(ProjectDesktopResolver.linkOrder(existing: ["resident", "arrived"], selected: ["arrived", "resident", "new"]),
+            ["resident", "arrived", "new"])
+    }
+
+    func testRemovingFirstClaimPromotesNextAndRelinkingAppends() {
+        let remaining = ProjectDesktopResolver.linkOrder(existing: ["first", "second", "third"], selected: ["third", "second"])
+        XCTAssertEqual(remaining, ["second", "third"])
+        XCTAssertEqual(ProjectDesktopResolver.linkOrder(existing: remaining, selected: ["first", "second", "third"]), ["second", "third", "first"])
+    }
+
+    func testDesktopArrivalSelectsFirstClaimEvenWhenAnotherProjectWasSelected() {
+        XCTAssertEqual(ProjectDesktopResolver.selection(current: "second", customProjects: ["first", "second"], desktop: "desktop",
+            linkedProjects: ["first", "second"], followsDesktop: true, changedDesktop: true), "first")
+    }
+
+    func testRoutineRefreshPreservesAnExplicitProjectChoice() {
+        XCTAssertEqual(ProjectDesktopResolver.selection(current: "second", customProjects: ["first", "second"], desktop: "desktop",
+            linkedProjects: ["first", "second"], followsDesktop: true, changedDesktop: false), "second")
+    }
+
+    func testDesktopFollowingCanStillBeDisabled() {
+        XCTAssertEqual(ProjectDesktopResolver.selection(current: "elsewhere", customProjects: ["first", "elsewhere"], desktop: "desktop",
+            linkedProjects: ["first"], followsDesktop: false, changedDesktop: true), "elsewhere")
+    }
+
+    func testStartupAndDeletedSelectionUseFirstClaimOrDesktop() {
+        XCTAssertEqual(ProjectDesktopResolver.selection(current: nil, customProjects: ["first"], desktop: "desktop",
+            linkedProjects: ["first"], followsDesktop: true, changedDesktop: true), "first")
+        XCTAssertEqual(ProjectDesktopResolver.selection(current: "deleted", customProjects: [], desktop: "desktop",
+            linkedProjects: [], followsDesktop: true, changedDesktop: false), "desktop")
+    }
+
     private func space(_ id: UInt64, _ display: String = "main", fullscreen: Bool = false) -> SpaceLabelResolver.Space {
         .init(id: id, uuid: "s\(id)", displayIdentifier: display, desktopNumber: fullscreen ? 0 : Int(id), ordinal: Int(id))
     }

@@ -24,7 +24,7 @@ func handleKeyboardEvent(_ globalId: Int?, _ shortcutState: ShortcutState?, _ ke
         case .passToShortcuts: break
         }
     }
-    if ProjectContextHeader.handleNumberKey(event) { return true }
+    if DesktopNavigation.handleUndoKey(event) || ProjectContextHeader.handleNumberKey(event) { return true }
     logKeyboardEvent(globalId, shortcutState, keyCode, modifiers, isARepeat)
     let someShortcutTriggered = triggerMatchingShortcuts(globalId, shortcutState, keyCode, modifiers, isARepeat)
     return someShortcutTriggered

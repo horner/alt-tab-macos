@@ -91,6 +91,7 @@ class TilesView {
 
     static func enableSearchEditing() {
         MainThreadStall.step()
+        DesktopNavigation.clearSelection()
         switch SearchModeResolver.enableEditing(mode: searchMode, canSearch: ProFeature.searchInSwitcher.attemptUse()) {
             case .placeCaretOnly:
                 giveTheFieldTheCaret()
@@ -402,7 +403,7 @@ class TilesView {
         let focusedView = recycledViews[selectedIndex]
         let hoveredView = SwitcherSession.current?.hoveredIndex.flatMap { $0 >= 0 && $0 < recycledViews.count ? recycledViews[$0] : nil }
         underLayer.updateHighlight(
-            focusedView: focusedView.frame != .zero ? focusedView : nil,
+            focusedView: !DesktopNavigation.isReturnSelected && focusedView.frame != .zero ? focusedView : nil,
             hoveredView: hoveredView != focusedView && hoveredView?.frame != .zero ? hoveredView : nil
         )
     }
@@ -459,6 +460,7 @@ class TilesView {
             Self.updateCachedSizes()
             widthMax = TilesPanel.maxThumbnailsWidth().rounded()
         }
+        ProjectContextHeader.prepareLayout()
         if let (maxX, maxY, labelHeight, rowSignature) = layoutTileViews(widthMax) {
             layoutParentViews(maxX, widthMax, maxY, labelHeight)
             centerRows(TilesView.thumbnailsWidth)
@@ -497,11 +499,13 @@ class TilesView {
 
     private static func resolveAutoSize(_ widthMax: CGFloat) {
         let searchReservedHeight: CGFloat = searchMode == .off ? 0 : searchBarHeight() + 10
-        let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight - ProjectContextHeader.height)
-        _ = TileGridLayout.firstSizeThatFits([AppearanceSizePreference.large, .medium, .small], heightMax: heightMax) { size in
+        for size in [AppearanceSizePreference.large, .medium, .small] {
             Appearance.applySize(size)
             Self.updateCachedSizes()
-            return dryRunLayoutTileViews(widthMax)
+            ProjectContextHeader.prepareLayout()
+            let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight - ProjectContextHeader.height)
+            let maxY = dryRunLayoutTileViews(widthMax)
+            if size == .small || maxY <= heightMax { return }
         }
     }
 
@@ -577,7 +581,7 @@ class TilesView {
         let searchReservedHeight = searchMode == .off ? 0 : searchBarHeight + searchBottomPadding
         let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight - ProjectContextHeader.height)
         let minSearchWidth = min(widthMax, 320)
-        let minWidth = min(widthMax, 320)
+        let minWidth = max(min(widthMax, 320), ProjectContextHeader.minimumContentWidth)
         TilesView.thumbnailsWidth = max(min(maxX, widthMax), minWidth)
         TilesView.thumbnailsHeight = min(maxY, heightMax)
         let appIconsBottomViewportPadding = appIconsBottomViewportPadding(maxY, heightMax, labelHeight)
@@ -613,10 +617,10 @@ class TilesView {
             searchField.removeFromSuperview()
         }
         if App.shared.userInterfaceLayoutDirection == .rightToLeft {
-            let croppedWidth = max(0, TilesView.thumbnailsWidth - maxX)
-            scrollView.documentView!.subviews.forEach { $0.frame.origin.x -= croppedWidth }
+            let offset = TilesView.thumbnailsWidth - widthMax
+            scrollView.documentView!.subviews.forEach { $0.frame.origin.x += offset }
         }
-        scrollView.documentView!.frame.size = NSSize(width: maxX, height: maxY)
+        scrollView.documentView!.frame.size = NSSize(width: max(maxX, TilesView.thumbnailsWidth), height: maxY)
         let docSize = scrollView.documentView!.frame.size
         thumbnailOverView.frame = CGRect(origin: .zero, size: docSize)
         thumbnailUnderLayer.frame = CGRect(origin: .zero, size: docSize)

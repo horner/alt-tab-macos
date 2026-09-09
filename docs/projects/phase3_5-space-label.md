@@ -61,10 +61,54 @@ A Desktop can link multiple Projects through **Name this Desktop → Projects on
 Closing a Desktop moves its Projects to the destination Desktop without combining memberships.
 Each Project keeps its own label window, identity and saved placement; colliding migrated labels
 are repositioned so both can be seen. The Spaces view displays both Project names. Existing windows
-are reused, and closing or minimizing one label leaves the other label alone. Returning to the
-shared Desktop retains the active linked Project when possible. Display disconnection and exiting
+are reused, and closing or minimizing one label leaves the other label alone. With Follow Desktop
+enabled, returning to a shared Desktop selects its first claimant. Explicitly choosing another
+linked Project is preserved while staying on that Desktop. Display disconnection and exiting
 fullscreen do not merge Projects.
 
 The merge change passed 175 focused tests and a production-adapter simulation checking separate
 memberships, window reuse, both reveal timers, label closure, legacy decoding and persisted links.
 No real user Desktop was deleted during validation.
+
+**Naming a Desktop and showing Project Labels (2026-09-09)**
+
+The controls now say **Project Labels**, since several Projects can share a Space. The old naming
+alert activated AltTab before entering an app-modal loop, allowing its other windows to pull focus
+to another Desktop. The replacement uses a nonactivating AppKit panel with keyboard focus on the
+current Desktop. Save closes the panel before applying its changes; Cancel, Escape and close leave
+the Desktop untouched. Saving after that Desktop has been removed is ignored.
+
+Saving also explicitly shows or restores the edited Desktop's Project Labels. Previously it only
+saved the name and links, so a closed label session stayed closed. The scoped request opens all linked
+Projects on that Desktop without opening or restoring labels elsewhere. Show Project Labels still
+opens the complete set. Saved placement and reveal-duration preferences retain their existing keys.
+
+Validation: the Debug build and 66 focused tests pass. A production-source AppKit fixture verifies
+key focus with the foreground app and active Space unchanged, usable panel geometry, Save creating
+and displaying the scoped label, Cancel leaving it closed, and a removed Desktop rejecting Save.
+The live menu and settings use the new terminology, and label windows were restored after restart.
+
+**Desktop numbering and Project claim order (2026-09-09)**
+
+With multiple Desktops, the numbered strip and All Projects grid show Desktop numbers, including
+the same number for Projects sharing a Desktop. Their claim order determines which Project a digit
+or Desktop arrival selects. Saving links retains that order, and merged Projects follow the
+destination's existing claimants. A single Desktop retains individual Project shortcuts 1–9 and 0.
+
+Validation: the Debug build and 126 focused tests pass. A production registry fixture also checks
+numbering, explicit links taking precedence over old home locations, claim order persistence,
+Desktop arrival, manual selection, primary removal, Desktop merging and single-Desktop shortcuts.
+The restarted app's live buttons show the expected Desktop numbers and duplicate shared numbers.
+
+**Moving a Project Label between Desktops (2026-09-09)**
+
+A Project follows its label window when that window moves to another Desktop. WindowServer
+membership events, Desktop arrival and Mission Control exit recheck the label's actual Space.
+The destination keeps its existing Projects first; the arriving Project retains its members,
+history, identity and label window. Ambiguous locations and unfinished app assignments are ignored.
+
+The reported Desktop 1 label was physically on Desktop 1 while its Project still linked Desktop 2.
+The new controller detected the move and saved the correct link. After restarting, WindowServer
+confirmed the label on Desktop 1, its title read **Desktop 1 · Desktop 1**, and the strip showed
+**1–Desktop 1** and **2–Desktop 2**. The Debug build, 126 focused tests and a production controller
+fixture pass, including preserved claim order and rejection of stale location observations.

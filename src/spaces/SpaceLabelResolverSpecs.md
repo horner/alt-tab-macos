@@ -2,21 +2,25 @@
 
 ## Summary
 
-Labels start hidden. “Show Space Labels” requests one window per linked Project on each live Desktop,
+Labels start hidden. Saving “Name this Desktop…” explicitly opens or restores the labels on that
+Desktop, including each of its linked Projects. This does not open labels on other Desktops or
+restore their closed/minimized windows. Cancel leaves labels unchanged.
+
+“Show Project Labels” requests one window per linked Project on each live Desktop,
 or one Desktop label when it has no linked Projects. New Spaces are included while the set is open.
 Closing a window suppresses only its stable label identity across naming and topology refreshes.
-“Show Space Labels” explicitly restores closed windows. “Close All Space Labels”, disabling Projects,
+“Show Project Labels” explicitly restores closed windows. “Close All Project Labels”, disabling Projects,
 and restarting AltTab end the session; subsequent refreshes or re-enabling Projects do not reopen it.
 
-Labels normally use the normal window level. “Bring Space Labels to Front” raises the existing set once and
+Labels normally use the normal window level. “Bring Project Labels to Front” raises the existing set once and
 restores minimized labels, preserving individual close decisions. If no session exists, it creates
-one. “Show Space Labels” creates or restores the whole set and raises it. A click outside a label,
+one. “Show Project Labels” creates or restores the whole set and raises it. A click outside a label,
 including our own settings, or activation of another app sends the set to the back of the normal
 window level. Labels remain open for Exposé. Event handlers defer ordering and ignore stale clicks
 from before a newer bring-to-front, minimize or session request. Click monitoring stops when no front
 presentation, reveal or interacted label needs it.
 
-The native yellow button minimizes one label; “Minimize All Space Labels” minimizes the set.
+The native yellow button minimizes one label; “Minimize All Project Labels” minimizes the set.
 Minimizing does not close the session. Newly discovered labels and pending assignments follow the
 latest front/back/minimized request. Routine name and topology refreshes never raise labels or
 restore an individually minimized window; another explicit Show or Bring request restores it.
@@ -143,3 +147,9 @@ small action buttons wrap into additional rows when needed.
 - **testExplicitActionCancelsPendingRevealTimers** — A manual action invalidates all outstanding timers.
 - **testInteractingWithOneLabelPreservesOtherDisplayTimer** — Per-window interaction cancels only that reveal.
 - **testRevealDurationIsBounded** — External preference values remain within 0–3000 ms.
+
+## Naming and selective visibility tests
+
+- `testNamingDesktopShowsOnlyItsProjectLabels` — naming opens just the selected Desktop’s labels.
+- `testNamingReopensItsLabelWithoutRestoringOtherClosedLabels` — naming overrides its own closure, retaining other closures and bulk presentation state.
+- `testSelectiveLabelsCloseAndShowAllStillRestoresEveryDesktop` — selective sessions close normally and remain compatible with Show All and Close All.

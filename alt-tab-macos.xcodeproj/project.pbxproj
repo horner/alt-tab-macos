@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AD7A8C62EB394F14B0852886 /* ProjectStripLayoutResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */; };
+		13C197C71EED4A9390D16660 /* ProjectStripLayoutResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */; };
+		10D7B8DB3B7F4E279558DD2C /* ProjectStripLayoutResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F4E939E30248EA904C8DEA /* ProjectStripLayoutResolverTests.swift */; };
+		75EBF1FCFFCE46A28C9283EF /* DesktopNavigationResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D64E7F4842F40A18CA7D6F0 /* DesktopNavigationResolver.swift */; };
+		3DF2C4AB125C49E3A4538560 /* DesktopNavigationResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D64E7F4842F40A18CA7D6F0 /* DesktopNavigationResolver.swift */; };
+		995C9C5F5F1B474D91DC1B14 /* DesktopNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27E4278272B04818B68E381F /* DesktopNavigation.swift */; };
+		81367FFD0EBD4C878A5CAA17 /* DesktopDestinationBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A388C62AB13D4C069B70BAD7 /* DesktopDestinationBadge.swift */; };
+		E8B9C560383C433BA8EBCA6A /* DesktopNavigationResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EA682F31A6141AEA1F2B98D /* DesktopNavigationResolverTests.swift */; };
 		600FBAE74F894F11A8628713 /* SpaceLabelWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D20DC9DD7644E0092E428ED /* SpaceLabelWindow.swift */; };
 		21A91CA3655F4C74A66A8183 /* SpaceLabelWindows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1A930531ED4512A5FC1474 /* SpaceLabelWindows.swift */; };
 		F38996B1E86C495BAF2B45BB /* SpaceLabelResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37BDC94A26B7419F88A0C177 /* SpaceLabelResolver.swift */; };
@@ -504,6 +512,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStripLayoutResolver.swift; sourceTree = "<group>"; };
+		F0F4E939E30248EA904C8DEA /* ProjectStripLayoutResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStripLayoutResolverTests.swift; sourceTree = "<group>"; };
+		8736827BC11C473FBB654903 /* ProjectStripLayoutResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectStripLayoutResolverSpecs.md; sourceTree = "<group>"; };
+		5D64E7F4842F40A18CA7D6F0 /* DesktopNavigationResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopNavigationResolver.swift; sourceTree = "<group>"; };
+		27E4278272B04818B68E381F /* DesktopNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopNavigation.swift; sourceTree = "<group>"; };
+		A388C62AB13D4C069B70BAD7 /* DesktopDestinationBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopDestinationBadge.swift; sourceTree = "<group>"; };
+		6EA682F31A6141AEA1F2B98D /* DesktopNavigationResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopNavigationResolverTests.swift; sourceTree = "<group>"; };
+		3F3A92712A14482586F34291 /* DesktopNavigationResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DesktopNavigationResolverSpecs.md; sourceTree = "<group>"; };
 		2D20DC9DD7644E0092E428ED /* SpaceLabelWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceLabelWindow.swift; sourceTree = "<group>"; };
 		9A1A930531ED4512A5FC1474 /* SpaceLabelWindows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceLabelWindows.swift; sourceTree = "<group>"; };
 		37BDC94A26B7419F88A0C177 /* SpaceLabelResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceLabelResolver.swift; sourceTree = "<group>"; };
@@ -1024,6 +1040,9 @@
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
+				1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */,
+				F0F4E939E30248EA904C8DEA /* ProjectStripLayoutResolverTests.swift */,
+				8736827BC11C473FBB654903 /* ProjectStripLayoutResolverSpecs.md */,
 				B6CE23E8D65FA5D38FCC040F /* ProjectNumberResolverSpecs.md */,
 				9E2EE092115743C8BE063ECA /* ProjectBrowserURLResolverSpecs.md */,
 				7FE52BF58194408B9027D7E2 /* ProjectReattachResolverSpecs.md */,
@@ -1763,6 +1782,11 @@
 		0000CC00000000000000001D /* spaces */ = {
 			isa = PBXGroup;
 			children = (
+				5D64E7F4842F40A18CA7D6F0 /* DesktopNavigationResolver.swift */,
+				27E4278272B04818B68E381F /* DesktopNavigation.swift */,
+				A388C62AB13D4C069B70BAD7 /* DesktopDestinationBadge.swift */,
+				6EA682F31A6141AEA1F2B98D /* DesktopNavigationResolverTests.swift */,
+				3F3A92712A14482586F34291 /* DesktopNavigationResolverSpecs.md */,
 				2D20DC9DD7644E0092E428ED /* SpaceLabelWindow.swift */,
 				9A1A930531ED4512A5FC1474 /* SpaceLabelWindows.swift */,
 				37BDC94A26B7419F88A0C177 /* SpaceLabelResolver.swift */,
@@ -2274,6 +2298,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3DF2C4AB125C49E3A4538560 /* DesktopNavigationResolver.swift in Sources */,
+				13C197C71EED4A9390D16660 /* ProjectStripLayoutResolver.swift in Sources */,
+				E8B9C560383C433BA8EBCA6A /* DesktopNavigationResolverTests.swift in Sources */,
+				10D7B8DB3B7F4E279558DD2C /* ProjectStripLayoutResolverTests.swift in Sources */,
 				2CB4EB8C077F22F9B8FFB4C3 /* ProjectNumberResolverTests.swift in Sources */,
 				48E74F3FEAAD4B4DBBCECC5D /* ProjectBrowserURLResolverTests.swift in Sources */,
 				A76F4A91062F4232A4AB9EA3 /* ProjectReattachResolverTests.swift in Sources */,
@@ -2436,6 +2464,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				75EBF1FCFFCE46A28C9283EF /* DesktopNavigationResolver.swift in Sources */,
+				AD7A8C62EB394F14B0852886 /* ProjectStripLayoutResolver.swift in Sources */,
+				995C9C5F5F1B474D91DC1B14 /* DesktopNavigation.swift in Sources */,
+				81367FFD0EBD4C878A5CAA17 /* DesktopDestinationBadge.swift in Sources */,
 				FF2DA61DD07D066D842D62D7 /* ProjectNumberResolver.swift in Sources */,
 				C109C47827CA49DE8D95BA42 /* ProjectBrowserURLs.swift in Sources */,
 				A8F45FC4519F4E2CBB51DD15 /* ProjectBrowserURLResolver.swift in Sources */,

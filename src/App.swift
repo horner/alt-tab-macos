@@ -122,6 +122,7 @@ class App: AppCenterApplication {
 
     static func focusTarget() {
         guard SwitcherSession.isActive else { return } // already hidden
+        if DesktopNavigation.isReturnSelected { DesktopNavigation.returnToPrevious(); return }
         let selectedWindow = Windows.selectedWindow()
         Logger.info { selectedWindow?.debugId }
         focusSelectedWindow(selectedWindow)
@@ -279,6 +280,7 @@ class App: AppCenterApplication {
         (TilesView.scrollView?.documentView as? TilesDocumentView)?.cancelDraggingTimer()
         CursorEvents.resetDeadzone()
         if direction == .up || direction == .down {
+            if DesktopNavigation.clearSelection() { Windows.updateSelectedWindow(); Windows.voiceOverWindow(); return }
             TilesView.navigateUpOrDown(direction, allowWrap: allowWrap)
         } else {
             Windows.cycleSelectedWindowIndex(direction.step(), allowWrap: allowWrap)

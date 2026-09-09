@@ -50,10 +50,10 @@ final class ProjectsMenu: NSObject {
         unassignedItem.isHidden = !Projects.isEnabled
         menu.addItem(unassignedItem)
         menu.addItem(desktopItem)
-        showLabelsItem = item(NSLocalizedString("Show Space Labels", comment: "Space label menu action"), #selector(showSpaceLabels))
-        raiseLabelsItem = item(NSLocalizedString("Bring Space Labels to Front", comment: "Space label menu action"), #selector(raiseSpaceLabels))
-        minimizeLabelsItem = item(NSLocalizedString("Minimize All Space Labels", comment: "Space label menu action"), #selector(minimizeSpaceLabels))
-        closeLabelsItem = item(NSLocalizedString("Close All Space Labels", comment: "Space label menu action"), #selector(closeSpaceLabels))
+        showLabelsItem = item(NSLocalizedString("Show Project Labels", comment: "Project label menu action"), #selector(showSpaceLabels))
+        raiseLabelsItem = item(NSLocalizedString("Bring Project Labels to Front", comment: "Project label menu action"), #selector(raiseSpaceLabels))
+        minimizeLabelsItem = item(NSLocalizedString("Minimize All Project Labels", comment: "Project label menu action"), #selector(minimizeSpaceLabels))
+        closeLabelsItem = item(NSLocalizedString("Close All Project Labels", comment: "Project label menu action"), #selector(closeSpaceLabels))
         for labelItem in [showLabelsItem!, raiseLabelsItem!, minimizeLabelsItem!, closeLabelsItem!] {
             labelItem.isHidden = !Projects.isEnabled
             menu.addItem(labelItem)

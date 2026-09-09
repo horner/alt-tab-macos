@@ -284,6 +284,10 @@ class ModifierFlags {
     static var current: NSEvent.ModifierFlags = []
 }
 
+enum DesktopNavigation {
+    static func handleUndoKey(_ event: NSEvent?) -> Bool { false }
+}
+
 enum ProjectContextHeader {
     static func handleNumberKey(_ event: NSEvent?) -> Bool { false }
 }

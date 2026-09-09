@@ -7,8 +7,9 @@ the Desktop available, and unlinking restores its separate entry.
 
 Custom Projects follow most-recently-activated order. Unvisited custom Projects keep their input
 creation order. History may contain deleted ids; it cannot add a Project to the list. The Project
-switcher and window switcher's numbered strip share this list; the strip passes empty history to
-keep creation order, and All Projects uses the strip's same entries. Selection, cycling and grid
+switcher uses this list directly. The numbered strip passes empty history for stable input, then
+ProjectNumberResolver orders and numbers it by Desktop (or retains creation order on one Desktop).
+All Projects uses the strip's same entries. Selection, cycling and grid
 sizing reuse `SpacesOrderResolver`. Normal Desktop filtering remains available through the menu's
 Use Desktop (No Project) action; choosing it does not highlight a custom Project.
 
@@ -21,7 +22,7 @@ Use Desktop (No Project) action; choosing it does not highlight a custom Project
 - **testDesktopRemainsWhenThereAreNoCustomProjects** — an empty custom collection still leaves the current Desktop.
 - **testMissingDesktopDoesNotHideCustomProjects** — missing Space topology does not hide customs or create a phantom Desktop.
 - **testDeletedProjectsInHistoryAreIgnored** — stale history cannot reintroduce a deleted Project.
-- **testLinkedDesktopAppearsOnlyAsItsProjectInCreationOrder** — the numbered strip lists the linked Project once without a separate Desktop entry or reordered Projects.
+- **testLinkedDesktopAppearsOnlyAsItsProjectInCreationOrder** — the strip's base list contains the linked Project once without a separate Desktop entry or changes to creation order.
 - **testLinkedDesktopAppearsOnlyAsItsProjectInRecencyOrder** — the Project switcher removes the linked Desktop without disturbing Project recency.
 - **testDeletedLinkedProjectRestoresDesktopEntry** — a stale link cannot hide the Desktop, even when no custom Projects remain.
 - **testUnlinkingRestoresSeparateDesktopEntry** — a lone linked Project remains selectable, and unlinking restores the Desktop alongside it.

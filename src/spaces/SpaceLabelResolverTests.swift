@@ -1,6 +1,43 @@
 import XCTest
 
 final class SpaceLabelResolverTests: XCTestCase {
+    func testNamingDesktopShowsOnlyItsProjectLabels() {
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.show(["project-a", "project-b"])
+        XCTAssertTrue(visibility.isRequested)
+        XCTAssertTrue(visibility.includes("project-a"))
+        XCTAssertTrue(visibility.includes("project-b"))
+        XCTAssertFalse(visibility.includes("another-desktop"))
+        XCTAssertFalse(visibility.includes("new-desktop"))
+    }
+
+    func testNamingReopensItsLabelWithoutRestoringOtherClosedLabels() {
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.showAll()
+        visibility.close("project-a")
+        visibility.close("project-b")
+        visibility.minimizeAll()
+        let revision = visibility.presentationRevision
+        visibility.show(["project-a"])
+        XCTAssertTrue(visibility.includes("project-a"))
+        XCTAssertFalse(visibility.includes("project-b"))
+        XCTAssertEqual(visibility.presentation, .minimized)
+        XCTAssertEqual(visibility.presentationRevision, revision)
+    }
+
+    func testSelectiveLabelsCloseAndShowAllStillRestoresEveryDesktop() {
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.show(["project-a"])
+        visibility.close("project-a")
+        XCTAssertFalse(visibility.isRequested)
+        visibility.show(["project-a"])
+        visibility.hideAll()
+        XCTAssertFalse(visibility.includes("project-a"))
+        visibility.showAll()
+        XCTAssertTrue(visibility.includes("project-a"))
+        XCTAssertTrue(visibility.includes("new-desktop"))
+    }
+
     func testTwoProjectLabelsKeepSeparateIdentitiesOnOneDesktop() {
         let space = SpaceLabelResolver.Space(id: 1, uuid: "destination", displayIdentifier: "display", desktopNumber: 1, ordinal: 1)
         let labels = [SpaceLabelResolver.Label(space: space, name: "First", identity: "project-a"),

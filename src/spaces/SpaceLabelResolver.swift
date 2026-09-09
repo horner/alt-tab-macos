@@ -14,15 +14,23 @@ enum SpaceLabelResolver {
     }
 
     struct Visibility {
-        private(set) var isRequested = false
+        var isRequested: Bool { allRequested || !requestedLabels.isEmpty }
         private(set) var presentation = Presentation.back
         private(set) var presentationRevision = 0
+        private var allRequested = false
+        private var requestedLabels = Set<String>()
         private var closedSpaces = Set<String>()
 
         mutating func showAll() {
-            isRequested = true
+            allRequested = true
+            requestedLabels.removeAll()
             closedSpaces.removeAll()
             bringToFront()
+        }
+
+        mutating func show(_ labels: Set<String>) {
+            requestedLabels.formUnion(labels)
+            closedSpaces.subtract(labels)
         }
 
         mutating func bringToFront() {
@@ -45,18 +53,20 @@ enum SpaceLabelResolver {
         }
 
         mutating func close(_ uuid: String) {
+            requestedLabels.remove(uuid)
             closedSpaces.insert(uuid)
         }
 
         mutating func hideAll() {
-            isRequested = false
+            allRequested = false
+            requestedLabels.removeAll()
             closedSpaces.removeAll()
             presentation = .back
             presentationRevision += 1
         }
 
         func includes(_ uuid: String) -> Bool {
-            isRequested && !closedSpaces.contains(uuid)
+            (allRequested || requestedLabels.contains(uuid)) && !closedSpaces.contains(uuid)
         }
     }
 
