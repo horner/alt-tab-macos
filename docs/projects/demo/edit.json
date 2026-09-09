@@ -1,0 +1,18 @@
+{
+  "title": "AltTab rough cut",
+  "output": "1920x1080, 30 fps, silent H.264 MP4",
+  "duration_seconds": 54,
+  "notes": "Real screen recordings operated through Computer Use. Hard cuts remove pauses; retained actions play at their recorded speed. The menu-bar dropdown was opened by the user, then navigated through Computer Use.",
+  "shots": [
+    {"source": "alttab-rough-source.mov", "start": 2, "duration": 10, "crop": [2800, 1400, 70, 250], "caption": "Your windows. One place."},
+    {"source": "alttab-rough-source.mov", "start": 17, "duration": 5, "crop": [2940, 1470, 0, 75], "caption": "Open the window you need."},
+    {"source": "alttab-rough-source.mov", "start": 25, "duration": 6, "crop": [2800, 1400, 70, 250], "caption": "Every app in this project."},
+    {"source": "alttab-rough-source.mov", "start": 37, "duration": 6, "crop": [2800, 1400, 70, 250], "caption": "Two windows. One project."},
+    {"source": "alttab-menu-source.mov", "start": 55, "duration": 4, "crop": [2800, 1400, 70, 250], "caption": "Back to alt-tab."},
+    {"source": "alttab-rough-source.mov", "start": 105, "duration": 5, "crop": [1860, 1140, 52, 536], "caption": "Make AltTab yours."},
+    {"source": "alttab-rough-source.mov", "start": 118, "duration": 5, "crop": [2560, 1280, 0, 630], "caption": "Projects, tuned to your workflow."},
+    {"source": "alttab-menu-source.mov", "start": 0, "duration": 3, "crop": [2940, 1470, 0, 0], "caption": "Navigation from the menu bar."},
+    {"source": "alttab-menu-source.mov", "start": 5, "duration": 3, "crop": [2940, 1470, 0, 0], "caption": "Your active project's windows."},
+    {"source": "alttab-menu-source.mov", "start": 13, "duration": 7, "crop": [2940, 1470, 0, 0], "caption": "Browse another project's windows."}
+  ]
+}
