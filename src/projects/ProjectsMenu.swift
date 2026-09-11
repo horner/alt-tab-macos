@@ -2,16 +2,29 @@ import Cocoa
 
 final class ProjectsMenu: NSObject {
     private static weak var installedMenu: NSMenu?
-    private static var projectsItem: NSMenuItem!
+    private static var currentWindowItem: NSMenuItem!
+    private static var currentProjectItem: NSMenuItem!
+    private static var otherProjectsItem: NSMenuItem!
+    private static var restoreDesktopsItem: NSMenuItem!
+    private static var restoreResultsItem: NSMenuItem!
     private static var desktopLabelsItem: NSMenuItem!
     static var presentationContext: ProjectMenuResolver.Context?
     static weak var presentationWindow: NSWindow?
+    static var presentationCurrentWindow: CurrentWindow?
+    static var presentationVisibleWindows: [Window]?
     private static weak var focusedWindow: Window?
     private static var desktopUuid: String?
+    private static var moveDestination: WindowDesktopMove.Destination?
     private static var visibleWindows = [Window]()
     private static var navigationObserver: NSObjectProtocol?
     private static var navigationTimeout: DispatchWorkItem?
     private static var navigationId = UUID()
+
+    final class CurrentWindow {
+        weak var window: Window?
+
+        init(_ window: Window?) { self.window = window }
+    }
 
     private final class WindowSelection: NSObject {
         let projectId: String?
@@ -29,11 +42,52 @@ final class ProjectsMenu: NSObject {
         init(_ pattern: ProjectWindowPattern) { self.pattern = pattern }
     }
 
+    private final class BringSelection: NSObject {
+        weak var window: Window?
+        let destination: WindowDesktopMove.Destination?
+
+        init(_ window: Window, _ destination: WindowDesktopMove.Destination?) {
+            self.window = window
+            self.destination = destination
+        }
+    }
+
+    private final class DeferredMenu: NSMenu, NSMenuDelegate {
+        private let contents: () -> NSMenu
+
+        init(_ contents: @escaping () -> NSMenu) {
+            self.contents = contents
+            super.init(title: "")
+            autoenablesItems = false
+            delegate = self
+        }
+
+        required init(coder: NSCoder) { fatalError("Class only supports programmatic initialization") }
+
+        func menuNeedsUpdate(_ menu: NSMenu) {
+            let updated = contents()
+            removeAllItems()
+            for entry in updated.items {
+                updated.removeItem(entry)
+                addItem(entry)
+            }
+        }
+    }
+
     static func install(in menu: NSMenu) {
         installedMenu = menu
-        projectsItem = item(NSLocalizedString("Projects", comment: "Projects menu"), nil)
-        desktopLabelsItem = item(NSLocalizedString("Desktop & Labels", comment: "Desktop and Project label menu"), nil)
-        menu.addItem(projectsItem)
+        currentWindowItem = item(NSLocalizedString("Current window", comment: "Current app window menu"), nil)
+        currentProjectItem = item("", nil)
+        otherProjectsItem = item(NSLocalizedString("Other Projects", comment: "Other Project window lists"), nil)
+        restoreDesktopsItem = item(NSLocalizedString("Restore All Windows to Project Desktops", comment: "Restore all Project window locations"), #selector(restoreProjectDesktops))
+        restoreDesktopsItem.toolTip = NSLocalizedString("Return open windows to their Projects' home Desktops. Windows without a clear destination are skipped.", comment: "Restore Project Desktops help")
+        restoreResultsItem = item(NSLocalizedString("Show Last Desktop Restore Results", comment: "Review Desktop restore results"), #selector(showRestoreResults))
+        desktopLabelsItem = item("", nil)
+        menu.addItem(currentWindowItem)
+        menu.addItem(currentProjectItem)
+        menu.addItem(otherProjectsItem)
+        menu.addItem(restoreDesktopsItem)
+        menu.addItem(restoreResultsItem)
         menu.addItem(desktopLabelsItem)
         refresh(menu)
     }
@@ -50,16 +104,38 @@ final class ProjectsMenu: NSObject {
         MainThreadStall.step()
         let context = presentationContext ?? self.context()
         desktopUuid = context.desktopUuid
-        focusedWindow = context.fromLabel ? nil : Windows.list.first {
-            ProjectAssignmentPrompt.canAssign($0) && $0.application.pid == Applications.frontmostPid && $0.application.focusedWindow === $0
-        }
-        visibleWindows = Windows.list.filter { isVisibleOnDesktop($0) }
+        moveDestination = WindowDesktopMove.currentDestination
+        focusedWindow = (presentationCurrentWindow ?? captureCurrentWindow()).window
+        visibleWindows = presentationVisibleWindows ?? captureVisibleWindows(on: desktopUuid)
         let project = context.projectId.flatMap { Projects.byId[$0] }.flatMap { $0.isCustom ? $0 : nil }
-        projectsItem.title = project.map { String(format: NSLocalizedString("Projects · %@", comment: "Projects menu with current Project"), $0.resolvedName) }
-            ?? NSLocalizedString("Projects", comment: "Projects menu")
-        projectsItem.isHidden = !Projects.isEnabled
-        projectsItem.submenu = Projects.isEnabled ? makeProjectsMenu(project, context: context) : nil
+        currentWindowItem.isHidden = !Projects.isEnabled
+        currentWindowItem.submenu = Projects.isEnabled ? makeCurrentWindowMenu(focusedWindow, project: project) : nil
+        currentProjectItem.title = String(format: NSLocalizedString("Project: %@", comment: "Current Project menu"),
+            project?.resolvedName ?? NSLocalizedString("None", comment: "No active Project"))
+        currentProjectItem.isHidden = !Projects.isEnabled
+        currentProjectItem.submenu = Projects.isEnabled ? makeCurrentProjectMenu(project, context: context) : nil
+        otherProjectsItem.isHidden = !Projects.isEnabled
+        otherProjectsItem.submenu = Projects.isEnabled ? makeOtherProjectsMenu(excluding: project) : nil
+        restoreDesktopsItem.isHidden = !Projects.isEnabled
+        restoreDesktopsItem.isEnabled = WindowDesktopRestore.isAvailable
+        restoreDesktopsItem.title = WindowDesktopRestore.isRunning
+            ? NSLocalizedString("Restoring Project Desktops…", comment: "Desktop restoration in progress")
+            : NSLocalizedString("Restore All Windows to Project Desktops", comment: "Restore all Project window locations")
+        restoreResultsItem.isHidden = !Projects.isEnabled || !WindowDesktopRestore.hasLastResults
+        restoreResultsItem.isEnabled = !WindowDesktopRestore.isRunning
+        desktopLabelsItem.title = String(format: NSLocalizedString("Desktop: %@", comment: "Current Desktop menu"),
+            currentDesktop?.resolvedName ?? NSLocalizedString("Unknown", comment: "Unknown Desktop"))
         desktopLabelsItem.submenu = makeDesktopMenu()
+    }
+
+    static func captureCurrentWindow() -> CurrentWindow {
+        CurrentWindow(ProjectMenuResolver.currentWindow(in: Windows.list, isEligible: isCurrentWindowCandidate,
+            isFocused: { $0.application.pid == Applications.frontmostPid && $0.application.focusedWindow === $0 },
+            focusOrder: { $0.lastFocusOrder }))
+    }
+
+    private static func isCurrentWindowCandidate(_ window: Window) -> Bool {
+        window.application.pid != AXUIElement.currentProcessPid && ProjectAssignmentPrompt.canAssign(window)
     }
 
     private static func menu() -> NSMenu {
@@ -75,26 +151,121 @@ final class ProjectsMenu: NSObject {
         return parent
     }
 
+    private static func makeCurrentWindowMenu(_ target: Window?, project: Project?) -> NSMenu {
+        let menu = makeWindowOperationsMenu(target, destination: moveDestination)
+        menu.addItem(.separator())
+        let title = project.map { String(format: NSLocalizedString("Add All Visible Windows to %@", comment: "Project assignment action with destination"), $0.resolvedName) }
+            ?? NSLocalizedString("Add All Visible Windows", comment: "Project assignment action")
+        let visible = addProjectAction(title, #selector(addVisibleWindows), project, to: menu)
+        visible.isEnabled = project != nil && !visibleWindows.isEmpty
+        return menu
+    }
+
+    private static func makeWindowOperationsMenu(_ target: Window?, destination: WindowDesktopMove.Destination?, selection: WindowSelection? = nil) -> NSMenu {
+        let menu = menu()
+        guard let window = ProjectMenuResolver.liveTarget(target, in: Windows.list, isEligible: ProjectAssignmentPrompt.canAssign) else {
+            addHeading(NSLocalizedString("No current window", comment: "No eligible app window"), to: menu)
+            return menu
+        }
+        let title = ProjectNameResolver.normalized(window.title) ?? window.application.localizedName ?? ""
+        let heading = addHeading(title, to: menu)
+        heading.toolTip = title
+        if let icon = window.icon { heading.image = NSImage(cgImage: icon, size: NSSize(width: 16, height: 16)) }
+        let owners = Projects.list.filter { $0.isCustom && $0.members.contains(window.tracked.id) }
+        if owners.isEmpty {
+            addHeading(NSLocalizedString("Unassigned", comment: "Window without a Project"), to: menu)
+        } else {
+            for owner in owners {
+                addHeading(String(format: NSLocalizedString("Project: %@", comment: "Window Project membership"), owner.resolvedName), to: menu)
+            }
+        }
+        menu.addItem(.separator())
+        if let selection {
+            let show = item(NSLocalizedString("Show Window", comment: "Focus a Project window"), #selector(selectWindow))
+            show.representedObject = selection
+            menu.addItem(show)
+        }
+        let bring = item(NSLocalizedString("Bring to This Desktop", comment: "Move a window to the current Desktop"), #selector(bringWindow))
+        bring.representedObject = BringSelection(window, destination)
+        bring.isEnabled = WindowDesktopMove.canBring(window, to: destination)
+        bring.toolTip = NSLocalizedString("Move this window here and keep its Project membership. Available for individual windows on another regular Desktop.", comment: "Bring window help")
+        menu.addItem(bring)
+        let destinations = self.menu()
+        let memberships = Set(owners.map { $0.id })
+        for project in Projects.list where project.isCustom {
+            let entry = item(project.resolvedName, #selector(moveCurrentWindow))
+            entry.representedObject = WindowSelection(project, window)
+            entry.state = memberships.contains(project.id) ? .on : .off
+            entry.isEnabled = ProjectMenuResolver.canMove(to: project.id, memberships: memberships)
+            destinations.addItem(entry)
+        }
+        menu.addItem(submenu(NSLocalizedString("Move to Project", comment: "Move current window membership"), destinations, enabled: !destinations.items.isEmpty))
+        return menu
+    }
+
+    @discardableResult
+    private static func addHeading(_ title: String, to menu: NSMenu) -> NSMenuItem {
+        let entry = item(title, nil)
+        entry.isEnabled = false
+        menu.addItem(entry)
+        return entry
+    }
+
+    private static func makeOtherProjectsMenu(excluding current: Project?) -> NSMenu {
+        let menu = menu()
+        let destination = moveDestination
+        for project in Projects.list where project.isCustom && project !== current {
+            let id = project.id
+            menu.addItem(submenu(project.resolvedName, DeferredMenu {
+                guard Projects.isEnabled, let project = Projects.byId[id], project.isCustom else { return self.menu() }
+                return makeWindowsMenu(project, destination: destination)
+            }))
+        }
+        if menu.items.isEmpty { addHeading(NSLocalizedString("No other projects", comment: "Empty Other Projects menu"), to: menu) }
+        return menu
+    }
+
+    private static func makeCurrentProjectMenu(_ project: Project?, context: ProjectMenuResolver.Context) -> NSMenu {
+        let menu = menu()
+        let destination = moveDestination
+        if let project {
+            addWindows(of: project, to: menu, destination: destination)
+        } else {
+            addHeading(NSLocalizedString("No Active Project", comment: "Projects menu"), to: menu)
+        }
+        menu.addItem(.separator())
+        menu.addItem(submenu(NSLocalizedString("Unassigned", comment: "Window without a Project"), DeferredMenu { makeWindowsMenu(nil, destination: destination) }))
+        menu.addItem(.separator())
+        menu.addItem(submenu(NSLocalizedString("Manage…", comment: "Less-used Project commands"), makeProjectsMenu(project, context: context)))
+        return menu
+    }
+
     private static func makeProjectsMenu(_ project: Project?, context: ProjectMenuResolver.Context) -> NSMenu {
         let menu = menu()
         menu.addItem(submenu(NSLocalizedString("Switch Project", comment: "Projects menu"), makeSwitchMenu(project)))
-        menu.addItem(.separator())
-        menu.addItem(submenu(NSLocalizedString("Project Windows", comment: "Project windows menu"), makeWindowsMenu(project), enabled: project != nil))
-        menu.addItem(submenu(NSLocalizedString("History", comment: "Project window history"), project.map { makeHistoryMenu($0) } ?? self.menu(), enabled: project != nil))
-        menu.addItem(submenu(NSLocalizedString("Unassigned Windows", comment: "Windows without a Project"), makeWindowsMenu(nil)))
+        if let project {
+            let id = project.id
+            menu.addItem(submenu(NSLocalizedString("History", comment: "Project window history"), DeferredMenu {
+                guard Projects.isEnabled, let project = Projects.byId[id], project.isCustom else { return self.menu() }
+                return makeHistoryMenu(project)
+            }))
+        }
         menu.addItem(.separator())
         menu.addItem(submenu(NSLocalizedString("New Project", comment: "Projects menu"), makeNewProjectMenu(context)))
-        if context.fromLabel {
-            addProjectAction(NSLocalizedString("Rename Project…", comment: "Projects menu"), #selector(renameProject), project, to: menu)
-            addProjectAction(NSLocalizedString("Delete Project", comment: "Projects menu"), #selector(deleteProject), project, to: menu)
-        } else {
+        if !context.fromLabel {
             addProjects(to: menu, title: NSLocalizedString("Rename Project", comment: "Projects submenu"), action: #selector(renameProject))
             addProjects(to: menu, title: NSLocalizedString("Delete Project", comment: "Projects submenu"), action: #selector(deleteProject))
         }
         menu.addItem(.separator())
+        let heading = item(project?.resolvedName ?? NSLocalizedString("No Active Project", comment: "Projects menu"), nil)
+        heading.isEnabled = false
+        menu.addItem(heading)
+        if context.fromLabel {
+            addProjectAction(NSLocalizedString("Rename Project…", comment: "Projects menu"), #selector(renameProject), project, to: menu)
+            addProjectAction(NSLocalizedString("Delete Project", comment: "Projects menu"), #selector(deleteProject), project, to: menu)
+        }
         addProjectAction(NSLocalizedString("Add Windows…", comment: "Project window picker action"), #selector(chooseWindows), project, to: menu)
-        let visible = addProjectAction(NSLocalizedString("Add All Visible Windows", comment: "Project assignment action"), #selector(addVisibleWindows), project, to: menu)
-        visible.isEnabled = project != nil && !visibleWindows.isEmpty
+        menu.addItem(.separator())
         addProjects(to: menu, title: NSLocalizedString("Add Windows to", comment: "Choose a Project for manual assignment"), action: #selector(chooseWindows))
         return menu
     }
@@ -161,7 +332,7 @@ final class ProjectsMenu: NSObject {
 
     static func showWindows(for projectId: String, from view: NSView) {
         guard Projects.isEnabled, let project = Projects.byId[projectId], project.isCustom else { return }
-        popUp(makeWindowsMenu(project), from: view)
+        popUp(makeWindowsMenu(project, destination: WindowDesktopMove.currentDestination), from: view)
     }
 
     static func showHistory(for projectId: String, from view: NSView) {
@@ -244,13 +415,13 @@ final class ProjectsMenu: NSObject {
         DispatchQueue.main.async { SpaceLabelWindows.minimizeAll() }
     }
 
-    private static func makeWindowsMenu(_ project: Project?) -> NSMenu {
+    private static func makeWindowsMenu(_ project: Project?, destination: WindowDesktopMove.Destination?) -> NSMenu {
         let menu = menu()
-        addWindows(of: project, to: menu)
+        addWindows(of: project, to: menu, destination: destination)
         return menu
     }
 
-    private static func addWindows(of project: Project?, to menu: NSMenu) {
+    private static func addWindows(of project: Project?, to menu: NSMenu, destination: WindowDesktopMove.Destination?) {
         let assigned = project == nil ? Set(Projects.list.filter { $0.isCustom }.flatMap { $0.members }) : []
         let windows = Windows.list.filter { window in
             ProjectAssignmentPrompt.canAssign(window)
@@ -260,8 +431,8 @@ final class ProjectsMenu: NSObject {
         for window in windows {
             ProjectBrowserURLs.refresh(window)
             let title = ProjectNameResolver.normalized(window.title) ?? window.application.localizedName ?? ""
-            let entry = item(title, #selector(selectWindow))
-            entry.representedObject = WindowSelection(project, window)
+            let entry = item(title, nil)
+            entry.submenu = makeWindowOperationsMenu(window, destination: destination, selection: WindowSelection(project, window))
             if let icon = window.icon { entry.image = NSImage(cgImage: icon, size: NSSize(width: 16, height: 16)) }
             menu.addItem(entry)
             addURL(ProjectBrowserURLs.url(for: window), to: menu)
@@ -349,12 +520,38 @@ final class ProjectsMenu: NSObject {
         Projects.active = currentDesktop
     }
 
+    @objc private static func moveCurrentWindow(_ sender: NSMenuItem) {
+        guard let selection = sender.representedObject as? WindowSelection else { return }
+        DispatchQueue.main.async {
+            guard Projects.isEnabled, let id = selection.projectId, let project = Projects.byId[id], project.isCustom,
+                  let window = ProjectMenuResolver.liveTarget(selection.window, in: Windows.list, isEligible: ProjectAssignmentPrompt.canAssign) else { return }
+            Projects.assign([window.tracked.id], to: project, move: true)
+        }
+    }
+
+    @objc private static func bringWindow(_ sender: NSMenuItem) {
+        guard let selection = sender.representedObject as? BringSelection, let destination = selection.destination else { return }
+        DispatchQueue.main.async {
+            guard let window = ProjectMenuResolver.liveTarget(selection.window, in: Windows.list, isEligible: isCurrentWindowCandidate) else { return }
+            WindowDesktopMove.bring(window, to: destination)
+        }
+    }
+
+    @objc private static func restoreProjectDesktops() {
+        DispatchQueue.main.async { WindowDesktopRestore.restoreAll() }
+    }
+
+    @objc private static func showRestoreResults() {
+        DispatchQueue.main.async { WindowDesktopRestore.showLastResults() }
+    }
+
     @objc private static func selectProject(_ sender: NSMenuItem) {
         logMenu("selectProject", "requested", sender)
         defer { logMenu("selectProject", "finished", sender) }
         cancelNavigation()
         guard Projects.isEnabled, let id = sender.representedObject as? String, let project = Projects.byId[id] else { return }
         Projects.active = project
+        ProjectVisibility.focus(project)
     }
 
     @objc private static func selectWindow(_ sender: NSMenuItem) {
@@ -417,10 +614,20 @@ final class ProjectsMenu: NSObject {
 
     /// Visible means a live, non-minimized destination on this Desktop, including covered windows.
     /// Project membership and the window switcher's user filters must not narrow this capture.
-    private static func isVisibleOnDesktop(_ window: Window) -> Bool {
-        guard let space = Projects.spaces.first(where: { $0.uuid == desktopUuid }) else { return false }
+    private static func isVisibleOnDesktop(_ window: Window, on uuid: String?) -> Bool {
+        guard let space = Projects.spaces.first(where: { $0.uuid == uuid }) else { return false }
         return ProjectAssignmentPrompt.canAssign(window) && !window.isMinimized && !window.isHidden
             && window.spaceIds.contains(space.spaceId)
+    }
+
+    static func captureVisibleWindows(on uuid: String?) -> [Window] {
+        Windows.list.filter { isVisibleOnDesktop($0, on: uuid) }
+    }
+
+    static func addAllVisibleWindows(_ windows: [Window], projectId: String?, desktopUuid: String?, from parent: NSWindow?) {
+        guard Projects.isEnabled, let id = projectId, let project = Projects.byId[id], project.isCustom,
+              let uuid = desktopUuid, Projects.spaces.contains(where: { $0.uuid == uuid }) else { return }
+        ProjectAssignmentPrompt.add(windows, to: project, from: parent)
     }
 
     @objc private static func createEmptyProject() {
@@ -432,7 +639,7 @@ final class ProjectsMenu: NSObject {
     @objc private static func createVisibleProject() {
         logMenu("createVisibleProject", "requested")
         defer { logMenu("createVisibleProject", "finished") }
-        createNamedProject(with: visibleWindows.filter { isVisibleOnDesktop($0) },
+        createNamedProject(with: visibleWindows.filter { isVisibleOnDesktop($0, on: desktopUuid) },
             title: NSLocalizedString("New Project from All Visible Windows…", comment: ""))
     }
 
@@ -466,10 +673,11 @@ final class ProjectsMenu: NSObject {
     @objc private static func addVisibleWindows(_ sender: NSMenuItem) {
         logMenu("addVisibleWindows", "requested", sender)
         defer { logMenu("addVisibleWindows", "finished", sender) }
-        guard Projects.isEnabled, let id = sender.representedObject as? String, let project = Projects.byId[id] else { return }
-        let windows = visibleWindows.filter { isVisibleOnDesktop($0) }
+        let id = sender.representedObject as? String
+        let uuid = desktopUuid
+        let windows = visibleWindows
         let parent = presentationWindow
-        DispatchQueue.main.async { ProjectAssignmentPrompt.add(windows, to: project, from: parent) }
+        DispatchQueue.main.async { addAllVisibleWindows(windows, projectId: id, desktopUuid: uuid, from: parent) }
     }
 
     @objc private static func chooseWindows(_ sender: NSMenuItem) {

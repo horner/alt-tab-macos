@@ -25,13 +25,14 @@ Minimizing does not close the session. Newly discovered labels and pending assig
 latest front/back/minimized request. Routine name and topology refreshes never raise labels or
 restore an individually minimized window; another explicit Show or Bring request restores it.
 
-Each linked Project label provides Project Windows, History, Rename and Menu buttons below the
-name. Unlinked Desktop labels provide Rename and Menu. Project buttons target that label's Project,
+Each linked Project label provides Project Windows, History, Rename, Add All Visible Windows and Menu
+buttons below the name. Unlinked Desktop labels provide Rename and Menu. Project buttons target that label's Project,
 as specified in `../projects/ProjectMenuResolverSpecs.md`. Native title-bar controls affect only their
-own window. Set-wide controls live under Menu → Desktop & Labels; Show All restores closed labels,
+own window. Set-wide controls live under Menu → Desktop: <name>; Show All restores closed labels,
 while Bring All to Front respects closures.
 Menu opens the same live AltTab menu as the status icon with the clicked label's Project and Desktop
-context. It includes Settings, Projects, Help and Quit, works with the status icon hidden, and retains
+context. It includes Current window, Project: <name>, Other Projects, Desktop: <name>, Settings, Help
+and Quit, works with the status icon hidden, and retains
 the existing menu delegate's refreshes.
 “Project windows in switcher” offers Show and Hide, defaulting to Hide independently of the menu-bar
 icon. Show makes live label windows switch destinations. The explicit ownership check uses this process's

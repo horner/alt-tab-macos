@@ -4,6 +4,8 @@ final class ProjectsSheet: SheetWindow {
     private static let title = NSLocalizedString("Projects switcher", comment: "")
     private static let enable = NSLocalizedString("Enable Projects", comment: "")
     private static let followDesktop = NSLocalizedString("Switch active Project when switching Desktops", comment: "")
+    private static let minimizeInactive = NSLocalizedString("Minimize inactive projects", comment: "")
+    private static let minimizeInactiveHelp = NSLocalizedString("On the current Desktop, minimize other projects' windows and restore the active project's windows. Windows you minimized yourself stay minimized.", comment: "")
     private static let scope = NSLocalizedString("Show from active Project", comment: "")
     private static let allLocations = NSLocalizedString("All Spaces/Screens", comment: "")
     private static let currentLocation = NSLocalizedString("Current Space/Screen", comment: "")
@@ -22,7 +24,7 @@ final class ProjectsSheet: SheetWindow {
     private static let windowsInSwitcher = NSLocalizedString("Project windows in switcher", comment: "Whether Project label windows appear in the window switcher")
     private static let showWindows = NSLocalizedString("Show", comment: "")
     private static let hideWindows = NSLocalizedString("Hide", comment: "")
-    static let searchableStrings = [title, enable, scope, allLocations, currentLocation, followDesktop, hold, next, previous, style, preset, spaceLabels, showLabels, raiseLabels, minimizeLabels, closeLabels, revealLabels, revealHelp, windowsInSwitcher, showWindows, hideWindows] + ShortcutStylePreference.allCases.map { $0.localizedString }
+    static let searchableStrings = [title, enable, scope, allLocations, currentLocation, followDesktop, minimizeInactive, minimizeInactiveHelp, hold, next, previous, style, preset, spaceLabels, showLabels, raiseLabels, minimizeLabels, closeLabels, revealLabels, revealHelp, windowsInSwitcher, showWindows, hideWindows] + ShortcutStylePreference.allCases.map { $0.localizedString }
     private var groups: NSStackView?
     private var warning: NSTextField?
     private var warningRow: TableGroupView.RowInfo?
@@ -71,6 +73,7 @@ final class ProjectsSheet: SheetWindow {
             let follow = Switch(Preferences.projectsFollowDesktop)
             follow.onAction = { control in Preferences.set("projectsFollowDesktop", (control as! NSButton).state == .on ? "true" : "false") }
             _ = table.addRow(TableGroupView.Row(leftTitle: Self.followDesktop, rightViews: [follow]))
+            addMinimizeInactive(table)
             addRecorder(table, Self.hold, ProjectSwitcher.holdShortcutId)
             let note = NSTextField(wrappingLabelWithString: "")
             note.preferredMaxLayoutWidth = SheetWindow.width - 40
@@ -93,6 +96,19 @@ final class ProjectsSheet: SheetWindow {
         _ = table.addRow(TableGroupView.Row(leftTitle: label, rightViews: [
             LabelAndControl.makeLabelWithRecorder(label, key, Preferences.shortcut(key), labelPosition: .right)[0],
         ]))
+    }
+
+    private func addMinimizeInactive(_ table: TableGroupView) {
+        let toggle = Switch(Preferences.projectsMinimizeInactive)
+        toggle.onAction = { control in
+            Preferences.set("projectsMinimizeInactive", (control as! NSButton).state == .on ? "true" : "false")
+            ProjectVisibility.selectionChanged()
+        }
+        let help = NSTextField(wrappingLabelWithString: Self.minimizeInactiveHelp)
+        help.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        help.textColor = .secondaryLabelColor
+        help.preferredMaxLayoutWidth = SheetWindow.width - 40
+        _ = table.addRow(leftViews: [LabelAndControl.makeLabel(Self.minimizeInactive)], rightViews: [toggle], secondaryViews: [help])
     }
 
     private func addRevealDuration(_ table: TableGroupView) {

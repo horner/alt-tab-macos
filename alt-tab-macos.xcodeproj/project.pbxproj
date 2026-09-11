@@ -7,6 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		167EB823C7964659A8ED4034 /* WindowDesktopRestore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 852A42D34014432598BCB598 /* WindowDesktopRestore.swift */; };
+		078B6DF9A909416B849E81DE /* WindowDesktopRestoreResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E43CF07A628648768086BD13 /* WindowDesktopRestoreResolver.swift */; };
+		F61D029813B1493286D8F813 /* WindowDesktopRestoreResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E43CF07A628648768086BD13 /* WindowDesktopRestoreResolver.swift */; };
+		F4550C11840444E1B99DADD2 /* WindowDesktopRestoreResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3050CED47F064AD184B4ABAD /* WindowDesktopRestoreResolverTests.swift */; };
+		12CC88BF4C144C22AEF9CDC2 /* WindowDesktopMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20841B84C5A447F79B8F21EE /* WindowDesktopMove.swift */; };
+		78D341A70608434F8C799C27 /* WindowDesktopMoveBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF114C9AD00741E4A3E2A1B5 /* WindowDesktopMoveBridge.swift */; };
+		C44A6402BDD54CB0BAB25DA7 /* WindowDesktopMoveResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13A0CD34964410A8DF9CA83 /* WindowDesktopMoveResolver.swift */; };
+		1ED4A3AD202541B387153F46 /* WindowDesktopMoveResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C13A0CD34964410A8DF9CA83 /* WindowDesktopMoveResolver.swift */; };
+		89E3F921E63B4AECA0DD7038 /* WindowDesktopMoveResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60175C8AB4334629868D033A /* WindowDesktopMoveResolverTests.swift */; };
+		76D577A95B894C5D9F03DC49 /* ProjectVisibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = D321EE5B746943519D192558 /* ProjectVisibility.swift */; };
+		3C712152D278442DBFB72976 /* ProjectVisibilityResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9061AD1D1C784F188EA2E0A3 /* ProjectVisibilityResolver.swift */; };
+		620957A032A0410F93BF0A2B /* ProjectVisibilityResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9061AD1D1C784F188EA2E0A3 /* ProjectVisibilityResolver.swift */; };
+		259AD78E48EA4D96B008E136 /* ProjectVisibilityResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FB345F7344D49E49C0873A1 /* ProjectVisibilityResolverTests.swift */; };
 		AD7A8C62EB394F14B0852886 /* ProjectStripLayoutResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */; };
 		13C197C71EED4A9390D16660 /* ProjectStripLayoutResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */; };
 		10D7B8DB3B7F4E279558DD2C /* ProjectStripLayoutResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0F4E939E30248EA904C8DEA /* ProjectStripLayoutResolverTests.swift */; };
@@ -516,6 +529,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		852A42D34014432598BCB598 /* WindowDesktopRestore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowDesktopRestore.swift; sourceTree = "<group>"; };
+		E43CF07A628648768086BD13 /* WindowDesktopRestoreResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowDesktopRestoreResolver.swift; sourceTree = "<group>"; };
+		3050CED47F064AD184B4ABAD /* WindowDesktopRestoreResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowDesktopRestoreResolverTests.swift; sourceTree = "<group>"; };
+		7A857DBB0ED64BC19F618953 /* WindowDesktopRestoreSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = WindowDesktopRestoreSpecs.md; sourceTree = "<group>"; };
+		20841B84C5A447F79B8F21EE /* WindowDesktopMove.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowDesktopMove.swift; sourceTree = "<group>"; };
+		AF114C9AD00741E4A3E2A1B5 /* WindowDesktopMoveBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowDesktopMoveBridge.swift; sourceTree = "<group>"; };
+		C13A0CD34964410A8DF9CA83 /* WindowDesktopMoveResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowDesktopMoveResolver.swift; sourceTree = "<group>"; };
+		60175C8AB4334629868D033A /* WindowDesktopMoveResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowDesktopMoveResolverTests.swift; sourceTree = "<group>"; };
+		7CEAF832B2764A6E94CA6619 /* WindowDesktopMoveSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = WindowDesktopMoveSpecs.md; sourceTree = "<group>"; };
+		D321EE5B746943519D192558 /* ProjectVisibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectVisibility.swift; sourceTree = "<group>"; };
+		9061AD1D1C784F188EA2E0A3 /* ProjectVisibilityResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectVisibilityResolver.swift; sourceTree = "<group>"; };
+		6FB345F7344D49E49C0873A1 /* ProjectVisibilityResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectVisibilityResolverTests.swift; sourceTree = "<group>"; };
+		ECA2E0F88227454C91E80EBC /* ProjectVisibilityResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectVisibilityResolverSpecs.md; sourceTree = "<group>"; };
 		1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStripLayoutResolver.swift; sourceTree = "<group>"; };
 		F0F4E939E30248EA904C8DEA /* ProjectStripLayoutResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectStripLayoutResolverTests.swift; sourceTree = "<group>"; };
 		8736827BC11C473FBB654903 /* ProjectStripLayoutResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectStripLayoutResolverSpecs.md; sourceTree = "<group>"; };
@@ -1048,6 +1074,10 @@
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
+				D321EE5B746943519D192558 /* ProjectVisibility.swift */,
+				9061AD1D1C784F188EA2E0A3 /* ProjectVisibilityResolver.swift */,
+				6FB345F7344D49E49C0873A1 /* ProjectVisibilityResolverTests.swift */,
+				ECA2E0F88227454C91E80EBC /* ProjectVisibilityResolverSpecs.md */,
 				1E3F6E45AB17482E95C0AA56 /* ProjectStripLayoutResolver.swift */,
 				F0F4E939E30248EA904C8DEA /* ProjectStripLayoutResolverTests.swift */,
 				8736827BC11C473FBB654903 /* ProjectStripLayoutResolverSpecs.md */,
@@ -1800,6 +1830,15 @@
 				6EA682F31A6141AEA1F2B98D /* DesktopNavigationResolverTests.swift */,
 				3F3A92712A14482586F34291 /* DesktopNavigationResolverSpecs.md */,
 				2D20DC9DD7644E0092E428ED /* SpaceLabelWindow.swift */,
+				852A42D34014432598BCB598 /* WindowDesktopRestore.swift */,
+				E43CF07A628648768086BD13 /* WindowDesktopRestoreResolver.swift */,
+				3050CED47F064AD184B4ABAD /* WindowDesktopRestoreResolverTests.swift */,
+				7A857DBB0ED64BC19F618953 /* WindowDesktopRestoreSpecs.md */,
+				20841B84C5A447F79B8F21EE /* WindowDesktopMove.swift */,
+				AF114C9AD00741E4A3E2A1B5 /* WindowDesktopMoveBridge.swift */,
+				C13A0CD34964410A8DF9CA83 /* WindowDesktopMoveResolver.swift */,
+				60175C8AB4334629868D033A /* WindowDesktopMoveResolverTests.swift */,
+				7CEAF832B2764A6E94CA6619 /* WindowDesktopMoveSpecs.md */,
 				9A1A930531ED4512A5FC1474 /* SpaceLabelWindows.swift */,
 				37BDC94A26B7419F88A0C177 /* SpaceLabelResolver.swift */,
 				B632EFE8A93F4985AFD783DC /* SpaceLabelResolverTests.swift */,
@@ -2331,10 +2370,16 @@
 				6AEBEDA9547721AF3C46DBEC /* ProjectNameResolverTests.swift in Sources */,
 				43CD1813ADF4B33A8400A61B /* ProjectNameResolver.swift in Sources */,
 				4EFDA7AA04F5934DBD2FAFDF /* ProjectMenuResolver.swift in Sources */,
+				F61D029813B1493286D8F813 /* WindowDesktopRestoreResolver.swift in Sources */,
+				F4550C11840444E1B99DADD2 /* WindowDesktopRestoreResolverTests.swift in Sources */,
+				1ED4A3AD202541B387153F46 /* WindowDesktopMoveResolver.swift in Sources */,
+				89E3F921E63B4AECA0DD7038 /* WindowDesktopMoveResolverTests.swift in Sources */,
 				A4C91BB85EE991AA99F88C86 /* ProjectMenuResolverTests.swift in Sources */,
 				E4916672E3F37C25ACE8086B /* ProjectMembershipResolverTests.swift in Sources */,
 				594E8E28773641AF8E520D70 /* ProjectDesktopResolverTests.swift in Sources */,
 				E8C6B859A2A1D79590ED3517 /* ProjectMembershipResolver.swift in Sources */,
+				620957A032A0410F93BF0A2B /* ProjectVisibilityResolver.swift in Sources */,
+				259AD78E48EA4D96B008E136 /* ProjectVisibilityResolverTests.swift in Sources */,
 				9F27A1227432435393E7137D /* ProjectDesktopResolver.swift in Sources */,
 				093B44A0218B46498C180BC3 /* SpaceLabelResolver.swift in Sources */,
 				7E368F152DB34A42A51A4F60 /* SpaceLabelResolverTests.swift in Sources */,
@@ -2502,9 +2547,16 @@
 				4E3DFF3A5459781DA62232BC /* ProjectNamePrompt.swift in Sources */,
 				CF3DC6A39A6D5D01B0C85B08 /* ProjectNameResolver.swift in Sources */,
 				2BA3C355C944ECEF72682229 /* ProjectMenuResolver.swift in Sources */,
+				167EB823C7964659A8ED4034 /* WindowDesktopRestore.swift in Sources */,
+				078B6DF9A909416B849E81DE /* WindowDesktopRestoreResolver.swift in Sources */,
+				12CC88BF4C144C22AEF9CDC2 /* WindowDesktopMove.swift in Sources */,
+				78D341A70608434F8C799C27 /* WindowDesktopMoveBridge.swift in Sources */,
+				C44A6402BDD54CB0BAB25DA7 /* WindowDesktopMoveResolver.swift in Sources */,
 				1E3A2B2684F2091C7073B607 /* ProjectWindowPicker.swift in Sources */,
 				AA8E2AB44ABDE8861E1872C4 /* ProjectsPreferences.swift in Sources */,
 				85ED4BC5ADE1055EE64788B5 /* ProjectMembershipResolver.swift in Sources */,
+				76D577A95B894C5D9F03DC49 /* ProjectVisibility.swift in Sources */,
+				3C712152D278442DBFB72976 /* ProjectVisibilityResolver.swift in Sources */,
 				F771D56935E34BEA9AA14777 /* ProjectDesktopResolver.swift in Sources */,
 				26C4D4265CCFF5A4F1D70297 /* Projects.swift in Sources */,
 				0000CC00000000000000000F /* SpacesSwitcher.swift in Sources */,

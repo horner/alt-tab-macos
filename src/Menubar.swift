@@ -173,15 +173,21 @@ class Menubar {
         statusItem.menu = nil
     }
 
-    static func popUpMenu(from view: NSView, context: ProjectMenuResolver.Context? = nil) {
+    static func popUpMenu(from view: NSView, context: ProjectMenuResolver.Context? = nil, currentWindow: ProjectsMenu.CurrentWindow? = nil, visibleWindows: [Window]? = nil) {
         guard let menu, view.window != nil else { return }
         let previous = ProjectsMenu.presentationContext
         let previousWindow = ProjectsMenu.presentationWindow
+        let previousCurrentWindow = ProjectsMenu.presentationCurrentWindow
+        let previousVisibleWindows = ProjectsMenu.presentationVisibleWindows
         ProjectsMenu.presentationContext = context
         ProjectsMenu.presentationWindow = view.window
+        ProjectsMenu.presentationCurrentWindow = currentWindow
+        ProjectsMenu.presentationVisibleWindows = visibleWindows
         defer {
             ProjectsMenu.presentationContext = previous
             ProjectsMenu.presentationWindow = previousWindow
+            ProjectsMenu.presentationCurrentWindow = previousCurrentWindow
+            ProjectsMenu.presentationVisibleWindows = previousVisibleWindows
         }
         menu.popUp(positioning: nil, at: NSPoint(x: view.bounds.minX, y: view.bounds.maxY), in: view)
     }

@@ -143,7 +143,7 @@ The first reboot recovery imported patterns from the pre-reboot snapshot and eve
 
 ![Artipod windows recovered after reboot using saved app and title evidence](screenshots/m8-recovered-artipod.jpg)
 
-Restoration displays a brief, non-activating notice grouped over one second. Each entry shows the window title above **→ Project name**, with **(different Desktop)** when applicable. Up to five entries appear for six seconds, followed by further pages for larger batches. Empty titles use the app name. This restores assignments without moving the windows between Desktops.
+Restoration displays a brief, non-activating notice grouped over one second. Each entry shows the window title above **→ Project name**, with **(different Desktop)** when applicable. Up to five entries initially appear for four seconds, followed by further pages for larger batches. Hover anywhere over the notice to keep the current page visible; moving away starts a two-second countdown. The close button dismisses the notice and its remaining queued pages. Empty titles use the app name. This restores assignments without moving the windows between Desktops.
 
 **Project window history**
 

@@ -9,7 +9,7 @@ manually created windows in those first 30 seconds; linked Desktop assignment st
 Opening the window switcher also repairs unassigned windows on the current Desktop into the active
 custom Project after rendering. That explicit-use repair does not require a creation marker or the
 startup grace; it waits for identity/URL restoration and follows the same ownership and exclusion rules as linked Desktop capture.
-Restored assignments produce a non-activating notice, grouped over one second; it reports Projects/counts and recaptures on a different Desktop. It does not move windows between Desktops.
+Restored assignments produce a non-activating notice; presentation and interaction follow [ProjectRestoreNoticeSpecs.md](ProjectRestoreNoticeSpecs.md). Restoration does not move windows between Desktops.
 
 ## Test scenarios
 

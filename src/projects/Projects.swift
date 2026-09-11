@@ -43,6 +43,7 @@ enum Projects {
     static var active: Project? {
         didSet {
             guard !isLoading, active?.id != oldValue?.id else { return }
+            ProjectVisibility.selectionChanged()
             Logger.debug { "projects active previous=\(oldValue?.id ?? "none") next=\(active?.id ?? "none")" }
             let id = active?.id ?? ""
             DispatchQueue.main.async {
@@ -69,6 +70,7 @@ enum Projects {
         Logger.debug { "projects startup enabled=\(isEnabled)" }
         let savedActiveId = UserDefaults.standard.string(forKey: "projectsActiveId")
         load()
+        ProjectVisibility.start()
         refreshSpaces()
         SpaceLabelWindows.start()
         if isEnabled, !Preferences.projectsFollowDesktop, let id = savedActiveId, let project = byId[id], project.isCustom { active = project }
@@ -127,6 +129,8 @@ enum Projects {
             }
         }
         if !movedProjects.isEmpty { DispatchQueue.main.async { App.refreshOpenUiAfterExternalEvent([]) } }
+        if previousDesktop != desktop?.homeSpaceUuid { ProjectVisibility.selectionChanged() }
+        ProjectVisibility.refresh()
     }
 
     private static func relocateLabel(_ labelId: String, from sourceUuid: String, to destinationUuid: String) -> Project? {
@@ -199,7 +203,9 @@ enum Projects {
 
     static func activateLabel(_ uuid: String) {
         guard isEnabled, let project = list.first(where: { $0.isCustom && ($0.labelUuid ?? $0.id) == uuid }) else { return }
+        let changed = active !== project
         active = project
+        if changed { ProjectVisibility.focus(project) }
     }
 
     static var activeMembers: Set<String>? {
@@ -237,6 +243,8 @@ enum Projects {
     }
 
     static func windowSpaceChanged(_ window: Window) {
+        WindowDesktopMove.spaceChanged(window)
+        ProjectVisibility.refresh()
         guard isEnabled, !window.isWindowlessApp, pendingSpaceUpdates.insert(window.tracked.id).inserted else { return }
         let id = window.tracked.id
         DispatchQueue.main.async { [weak window] in
@@ -306,6 +314,7 @@ enum Projects {
     }
 
     private static func restoreMembership(_ window: Window, completion: ((TimeInterval) -> Void)? = nil) {
+        guard !WindowDesktopMove.preservesMembership(window) else { completion?(0); return }
         guard !window.isWindowlessApp,
               SpaceLabelWindows.switcherVisibility(windowId: window.cgWindowId, pid: window.application.pid) == nil else { return }
         let application = window.application.runningApplication
@@ -313,6 +322,7 @@ enum Projects {
             let launchDate = application.launchDate
             DispatchQueue.main.async {
                 guard let window, Windows.list.contains(where: { $0 === window }) else { return }
+                guard !WindowDesktopMove.preservesMembership(window) else { completion?(0); return }
                 guard let launchDate else {
                     restoredWindows.insert(window.tracked.id)
                     captureLinkedDesktopWindow(window)
@@ -322,6 +332,7 @@ enum Projects {
                 }
                 let identity = ProjectWindowIdentity(windowId: window.tracked.id, pid: window.application.pid, processLaunchedAt: launchDate)
                 windowIdentities[identity.windowId] = identity
+                ProjectVisibility.register(window, identity)
                 let savedOwners = owners(of: identity.windowId)
                 if savedOwners.count > 1 { Logger.debug { "projects restoration ambiguous window=\(identity.windowId) projects=\(savedOwners.sorted())" } }
                 var changed = false
@@ -341,7 +352,7 @@ enum Projects {
                         if isEnabled, inserted, !project.memberIdentities.contains(identity), let candidate {
                             let origins = Set(project.memberPatterns.filter { ProjectReattachResolver.matchesObservation($0, candidate) }.compactMap { $0.spaceUuid })
                             let elsewhere = candidate.spaceUuid.map { !origins.isEmpty && !origins.contains($0) } ?? false
-                            ProjectRestoreNotice.record(windowId: identity.windowId, windowName: ProjectNameResolver.normalized(window.title) ?? window.application.localizedName ?? candidate.bundleIdentifier, projectName: project.resolvedName, differentDesktop: elsewhere)
+                            ProjectRestoreNotice.record(window: window, windowName: ProjectNameResolver.normalized(window.title) ?? window.application.localizedName ?? candidate.bundleIdentifier, projectName: project.resolvedName, differentDesktop: elsewhere)
                         }
                         Logger.debug { "projects restored project=\(project.id) window=\(identity.windowId) pid=\(identity.pid)" }
                     }
@@ -375,6 +386,8 @@ enum Projects {
     }
 
     static func windowsRemoved(_ windows: [Window]) {
+        WindowDesktopMove.forget(windows)
+        ProjectVisibility.forget(windows)
         let ids = Set(windows.map { $0.tracked.id })
         Logger.debug { "projects tracking removal windows=\(ids.sorted())" }
         ids.forEach { windowIdentities.removeValue(forKey: $0) }
@@ -504,6 +517,7 @@ enum Projects {
     private static func permitsAutomaticAssignment(_ windowId: String, to project: Project) -> Bool {
         guard restoredWindows.contains(windowId),
               let window = Windows.list.first(where: { $0.tracked.id == windowId }), ProjectBrowserURLs.isReady(window),
+              !WindowDesktopMove.preservesMembership(window),
               SpaceLabelWindows.switcherVisibility(windowId: window.cgWindowId, pid: window.application.pid) == nil,
               !isExcluded(windowId, from: project) else { return false }
         let savedOwners = owners(of: windowId)
@@ -615,6 +629,7 @@ enum Projects {
 
     static func save() {
         guard !isLoading else { return }
+        ProjectVisibility.refresh()
         for project in list where project.isCustom {
             for id in project.members { _ = rememberPattern(id, in: project) }
         }

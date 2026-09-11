@@ -80,9 +80,13 @@ class Window {
     /// may not (the source window can be gone by then).
     func adopt(_ record: TrackedWindow) {
         let previousSpaces = tracked.spaceIds
+        let wasMinimized = tracked.isMinimized
+        let wasFullscreen = tracked.isFullscreen
         tracked = record
         tracked.hasThumbnail = thumbnail != nil
         if tracked.spaceIds != previousSpaces { Projects.windowSpaceChanged(self) }
+        if wasMinimized != tracked.isMinimized { ProjectVisibility.minimizedChanged(self) }
+        if wasFullscreen != tracked.isFullscreen { ProjectVisibility.refresh() }
     }
 
     /// `axUiElement` is optional for an exact-attention destination whose app has not answered yet.
@@ -332,6 +336,7 @@ class Window {
             NSSound.beep()
             return
         }
+        ProjectVisibility.manuallyChanged(self)
         if let altTabWindow = altTabWindow() {
             self.isMinimized ? altTabWindow.deminiaturize(nil) : altTabWindow.miniaturize(nil)
             return

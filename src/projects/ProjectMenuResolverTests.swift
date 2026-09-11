@@ -1,6 +1,63 @@
 import XCTest
 
 final class ProjectMenuResolverTests: XCTestCase {
+    private final class Candidate {
+        let id: String
+        let order: Int
+        let eligible: Bool
+        let focused: Bool
+
+        init(_ id: String, order: Int, eligible: Bool = true, focused: Bool = false) {
+            self.id = id
+            self.order = order
+            self.eligible = eligible
+            self.focused = focused
+        }
+    }
+
+    private func currentWindow(_ windows: [Candidate]) -> Candidate? {
+        ProjectMenuResolver.currentWindow(in: windows, isEligible: { $0.eligible }, isFocused: { $0.focused }, focusOrder: { $0.order })
+    }
+
+    func testCurrentWindowPrefersTheFocusedAppWindowOverStaleRanks() {
+        let recent = Candidate("recent", order: 0)
+        let focused = Candidate("focused", order: 3, focused: true)
+        XCTAssertTrue(currentWindow([recent, focused]) === focused)
+    }
+
+    func testCurrentWindowSurvivesLabelAndSettingsFocus() {
+        let recent = Candidate("editor", order: 2)
+        let older = Candidate("browser", order: 3)
+        let label = Candidate("label", order: 0, eligible: false, focused: true)
+        let settings = Candidate("settings", order: 1, eligible: false)
+        XCTAssertTrue(currentWindow([older, label, settings, recent]) === recent)
+    }
+
+    func testCurrentWindowIsEmptyWithoutAnEligibleAppWindow() {
+        XCTAssertNil(currentWindow([]))
+        XCTAssertNil(currentWindow([Candidate("label", order: 0, eligible: false, focused: true)]))
+    }
+
+    func testMoveKeepsCapturedWindowWhenFocusChanges() {
+        let captured = Candidate("editor", order: 4)
+        let newlyFocused = Candidate("browser", order: 0, focused: true)
+        XCTAssertTrue(ProjectMenuResolver.liveTarget(captured, in: [newlyFocused, captured], isEligible: { $0.eligible }) === captured)
+    }
+
+    func testClosedMoveTargetCannotBeReplacedByAReusedWindowId() {
+        let captured = Candidate("same-id", order: 1)
+        let replacement = Candidate("same-id", order: 0)
+        XCTAssertNil(ProjectMenuResolver.liveTarget(captured, in: [replacement], isEligible: { $0.eligible }))
+        XCTAssertNil(ProjectMenuResolver.liveTarget(captured, in: [captured], isEligible: { _ in false }))
+    }
+
+    func testMoveAllowsUnassignedAndMultipleMembershipsButDisablesSoleOwner() {
+        XCTAssertTrue(ProjectMenuResolver.canMove(to: "a", memberships: []))
+        XCTAssertTrue(ProjectMenuResolver.canMove(to: "a", memberships: ["b"]))
+        XCTAssertTrue(ProjectMenuResolver.canMove(to: "a", memberships: ["a", "b"]))
+        XCTAssertFalse(ProjectMenuResolver.canMove(to: "a", memberships: ["a"]))
+    }
+
     func testLabelTargetsItsOwnProjectWhenAnotherProjectIsActive() {
         let context = ProjectMenuResolver.context(labelId: "label-a", desktopUuid: "desktop-a", activeProjectId: "b",
             currentDesktopUuid: "desktop-b", projectLabels: ["label-a": "a", "label-b": "b"])

@@ -79,6 +79,15 @@
 /* No comment provided by engineer. */
 "Add all visible to: %@" = "Add all visible to: %@";
 
+/* Project assignment action */
+"Add All Visible Windows" = "Add All Visible Windows";
+
+/* Project label button help */
+"Add all visible windows on this Desktop to this Project" = "Add all visible windows on this Desktop to this Project";
+
+/* Project assignment action with destination */
+"Add All Visible Windows to %@" = "Add All Visible Windows to %@";
+
 /* No comment provided by engineer. */
 "Add all visible to: No Active Project" = "Add all visible to: No Active Project";
 
@@ -316,6 +325,9 @@
 /* No comment provided by engineer. */
 "Current Space/Screen" = "Current Space/Screen";
 
+/* Current app window menu */
+"Current window" = "Current window";
+
 /* No comment provided by engineer. */
 "Cursor follows focus" = "Cursor follows focus";
 
@@ -363,6 +375,9 @@
 
 /* No comment provided by engineer. */
 "Desktop order" = "Desktop order";
+
+/* Current Desktop menu */
+"Desktop: %@" = "Desktop: %@";
 
 /* No comment provided by engineer. */
 "Disabled" = "Disabled";
@@ -560,6 +575,9 @@
 /* No comment provided by engineer. */
 "Manage activations, view receipts, etc" = "Manage activations, view receipts, etc";
 
+/* Less-used Project commands */
+"Manage…" = "Manage…";
+
 /* No comment provided by engineer. */
 "Maybe later" = "Maybe later";
 
@@ -582,6 +600,9 @@
 "Minimize All Project Labels" = "Minimize All Project Labels";
 
 /* No comment provided by engineer. */
+"Minimize inactive projects" = "Minimize inactive projects";
+
+/* No comment provided by engineer. */
 "Minimize/Deminimize window" = "Minimize/Deminimize window";
 
 /* No comment provided by engineer. */
@@ -595,6 +616,9 @@
 
 /* LetsMove replacement alert */
 "Move to Applications folder?" = "Move to Applications folder?";
+
+/* Move current window membership */
+"Move to Project" = "Move to Project";
 
 /* Project assignment conflict */
 "Move windows to %@?" = "Move windows to %@?";
@@ -626,8 +650,14 @@
 /* No comment provided by engineer. */
 "No Active Project" = "No Active Project";
 
+/* No eligible app window */
+"No current window" = "No current window";
+
 /* No comment provided by engineer. */
 "No Open Windows" = "No Open Windows";
+
+/* Empty Other Projects menu */
+"No other projects" = "No other projects";
 
 /* No comment provided by engineer. */
 "No response from server." = "No response from server.";
@@ -640,6 +670,9 @@
 
 /* Project window history */
 "No window history yet" = "No window history yet";
+
+/* No active Project */
+"None" = "None";
 
 /* No comment provided by engineer. */
 "Non-active apps" = "Non-active apps";
@@ -661,6 +694,9 @@
 
 /* No comment provided by engineer. */
 "On release" = "On release";
+
+/* No comment provided by engineer. */
+"On the current Desktop, minimize other projects' windows and restore the active project's windows. Windows you minimized yourself stay minimized." = "On the current Desktop, minimize other projects' windows and restore the active project's windows. Windows you minimized yourself stay minimized.";
 
 /* No comment provided by engineer. */
 "Only on different screen" = "Only on different screen";
@@ -802,6 +838,7 @@
 
 /* Project restoration notice */
 "Restored Project assignments" = "Restored Project assignments";
+"Close notification" = "Close notification";
 
 /* Project name prompt */
 "Save" = "Save";
@@ -1115,6 +1152,12 @@
 /* No comment provided by engineer. */
 "Use Desktop (No Project)" = "Use Desktop (No Project)";
 
+/* Window without a Project */
+"Unassigned" = "Unassigned";
+
+/* Unknown Desktop */
+"Unknown" = "Unknown";
+
 /* No comment provided by engineer. */
 "Use the app without this permission. Thumbnails won’t show." = "Use the app without this permission. Thumbnails won’t show.";
 
@@ -1246,3 +1289,87 @@
 
 /* Return to the previous Desktop and Project */
 "↩ Back to %@" = "↩ Back to %@";
+
+/* Focus a Project window */
+"Show Window" = "Show Window";
+
+/* Move a window to the current Desktop */
+"Bring to This Desktop" = "Bring to This Desktop";
+
+/* Bring window help */
+"Move this window here and keep its Project membership. Available for individual windows on another regular Desktop." = "Move this window here and keep its Project membership. Available for individual windows on another regular Desktop.";
+
+/* Desktop move error */
+"Could not bring window to this Desktop" = "Could not bring window to this Desktop";
+
+/* Desktop move error */
+"macOS did not confirm the move. The window may have closed or its Desktop may no longer be available." = "macOS did not confirm the move. The window may have closed or its Desktop may no longer be available.";
+
+/* Project Desktop restoration */
+"Restore All Windows to Project Desktops" = "Restore All Windows to Project Desktops";
+
+/* Project Desktop restoration */
+"Return open windows to their Projects' home Desktops. Windows without a clear destination are skipped." = "Return open windows to their Projects' home Desktops. Windows without a clear destination are skipped.";
+
+/* Project Desktop restoration */
+"Restoring Project Desktops…" = "Restoring Project Desktops…";
+
+/* Project Desktop restoration */
+"Desktop restore finished" = "Desktop restore finished";
+
+/* Project Desktop restoration */
+"%d moved · %d already home" = "%d moved · %d already home";
+
+/* Project Desktop restoration */
+"%d skipped · %d could not be moved" = "%d skipped · %d could not be moved";
+
+/* Desktop restore details */
+"Show Last Desktop Restore Results" = "Show Last Desktop Restore Results";
+
+/* Desktop restore details */
+"Projects were disabled" = "Projects were disabled";
+
+/* Desktop restore details */
+"Window closed" = "Window closed";
+
+/* Desktop restore details */
+"Project or Desktop changed during restore" = "Project or Desktop changed during restore";
+
+/* Desktop restore details */
+"Move could not be confirmed" = "Move could not be confirmed";
+
+/* Desktop restore details */
+"Unknown app" = "Unknown app";
+
+/* Desktop restore details */
+"No Project assigned" = "No Project assigned";
+
+/* Desktop restore details */
+"%@ (D%d)" = "%@ (D%d)";
+
+/* Desktop restore details */
+"Conflict: %@" = "Conflict: %@";
+
+/* Desktop restore details */
+"Home Desktop unavailable: %@" = "Home Desktop unavailable: %@";
+
+/* Desktop restore details */
+"Fullscreen window" = "Fullscreen window";
+
+/* Desktop restore details */
+"Window belongs to a tab group" = "Window belongs to a tab group";
+
+/* Desktop restore details */
+"Window unavailable" = "Window unavailable";
+
+/* Desktop restore details */
+"Window is on multiple Desktops" = "Window is on multiple Desktops";
+
+/* Desktop restore details */
+"Desktop location not confirmed" = "Desktop location not confirmed";
+
+/* Desktop restore details */
+"%@ (%d/%d)" = "%@ (%d/%d)";
+
+/* Restoration result window link */
+"Focus this window" = "Focus this window";

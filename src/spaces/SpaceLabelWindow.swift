@@ -7,6 +7,15 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
 
     private final class Button: NSButton {
         override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseDown(with event: NSEvent) {
+            let label = window as? SpaceLabelWindow
+            // NSButton's tracking loop can run deferred Project focus before its action is delivered.
+            label?.currentWindow = ProjectsMenu.captureCurrentWindow()
+            label?.visibleWindows = ProjectsMenu.captureVisibleWindows(on: label?.renderedLabel?.space.uuid)
+            defer { label?.currentWindow = nil; label?.visibleWindows = nil }
+            super.mouseDown(with: event)
+        }
     }
 
     var onClose: (() -> Void)?
@@ -21,6 +30,8 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
     private var positioning = false
     private var positionSave: DispatchWorkItem?
     private var controlsHeight = CGFloat.zero
+    private var currentWindow: ProjectsMenu.CurrentWindow?
+    private var visibleWindows: [Window]?
     var savedDisplayIdentifier: String? { position?.displayIdentifier }
     override var canBecomeMain: Bool { false }
 
@@ -64,6 +75,8 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         ]
         addButton(NSLocalizedString("Rename…", comment: "Project label rename button"),
             help: NSLocalizedString("Rename this Project or Desktop", comment: "Project label button help"), action: #selector(rename(_:)))
+        projectButtons.append(addButton(NSLocalizedString("Add All Visible Windows", comment: "Project assignment action"),
+            help: NSLocalizedString("Add all visible windows on this Desktop to this Project", comment: "Project label button help"), action: #selector(addVisibleWindows(_:))))
         addButton(NSLocalizedString("Menu", comment: "AltTab menu button"),
             help: NSLocalizedString("Open the AltTab menu", comment: "AltTab menu button help"), action: #selector(openMenu(_:)))
     }
@@ -204,7 +217,16 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
     }
 
     @objc private func openMenu(_ sender: NSButton) {
-        performFromLabel(sender) { context, button in Menubar.popUpMenu(from: button, context: context) }
+        let target = currentWindow ?? ProjectsMenu.captureCurrentWindow()
+        let windows = visibleWindows ?? ProjectsMenu.captureVisibleWindows(on: renderedLabel?.space.uuid)
+        performFromLabel(sender) { context, button in Menubar.popUpMenu(from: button, context: context, currentWindow: target, visibleWindows: windows) }
+    }
+
+    @objc private func addVisibleWindows(_ sender: NSButton) {
+        let windows = visibleWindows ?? ProjectsMenu.captureVisibleWindows(on: renderedLabel?.space.uuid)
+        performFromLabel(sender) { context, button in
+            ProjectsMenu.addAllVisibleWindows(windows, projectId: context.projectId, desktopUuid: context.desktopUuid, from: button.window)
+        }
     }
 
     private func performFromLabel(_ sender: NSButton, action: @escaping (ProjectMenuResolver.Context, NSButton) -> Void) {
