@@ -1,6 +1,23 @@
 import XCTest
 
 final class WindowAdmissionResolverTests: XCTestCase {
+    func testOwnedControlRemainsADestinationDuringFloatingReveal() {
+        XCTAssertEqual(WindowAdmissionResolver.resolve(physical(level: 3), semantic(subrole: kAXFloatingWindowSubrole),
+            ownedControlVisibility: true), .destination(.ownedControlWindow))
+    }
+
+    func testHiddenOwnedControlCannotBeAdmittedByAttention() {
+        XCTAssertEqual(WindowAdmissionResolver.resolve(physical(), semantic(), evidence: .attention,
+            ownedControlVisibility: false), .reject(.auxiliarySurface))
+    }
+
+    func testOwnedControlDoesNotOverrideInvalidIdOrParentage() {
+        XCTAssertEqual(WindowAdmissionResolver.resolve(physical(wid: 0), semantic(), ownedControlVisibility: true),
+            .reject(.invalidWindowId))
+        XCTAssertEqual(WindowAdmissionResolver.resolve(physical(parentWid: 9), semantic(), ownedControlVisibility: true),
+            .represent(parentWid: 9, .attachedSurface))
+    }
+
     private func physical(wid: CGWindowID = 1, width: CGFloat = 800, height: CGFloat = 600,
                           level: CGWindowLevel = 0, parentWid: CGWindowID = 0,
                           isFullscreen: Bool = false) -> PhysicalSurface {

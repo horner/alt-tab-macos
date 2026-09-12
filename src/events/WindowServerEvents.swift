@@ -173,6 +173,7 @@ class WindowServerEvents {
                 TrackedWindowStateBridge.dispatch(.windowMovedOrResized(wid: w0, inSpaceTransition: inSpaceTransition))
             }
         case .updateSpaceMembership:
+            SpaceLabelWindows.spaceMembershipChanged(windowId: widInSpace)
             TrackedWindowStateBridge.dispatch(.spaceMembershipChanged(wid: widInSpace, spaceId: space,
                 added: n == .windowAddedToSpace, now: now, inSpaceTransition: inSpaceTransition))
         case .acquireAndDiscriminate:

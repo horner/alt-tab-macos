@@ -72,8 +72,8 @@ class SystemPermissions {
             DispatchQueue.main.async {
                 preStartupPermissionsPassed = true
                 PermissionsWindow.shared?.close()
-                setInfrequentTimer()
                 startListeningForDistributedRevoke()
+                setInfrequentTimer()
                 App.continueAppLaunchAfterPermissionsAreGranted()
             }
         } else {

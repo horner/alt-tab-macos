@@ -11,6 +11,7 @@ class TileView: FlippedView {
     var appIconHighlight = noAnimation { CALayer() }
     var label = TileTitleView(font: Appearance.font)
     var statusIcons = StatusIconsView()
+    private let desktopBadge = DesktopDestinationBadge()
     var dockLabelIcon = TileFontIconView(badgeSize: TileFontIconView.badgeBaseSize(forIconSize: TileView.iconSize().width))
     var windowlessAppIndicator = WindowlessAppIndicator(tooltip: TileView.noOpenWindowToolTip)
     private var fullTitle = ""
@@ -80,6 +81,7 @@ class TileView: FlippedView {
 
     func drawHighlight() {
         if Preferences.effectiveAppearanceStyle(SwitcherSession.activeShortcutIndex) == .appIcons {
+            if DesktopNavigation.isReturnSelected { label.isHidden = true; return }
             let session = SwitcherSession.current
             let isFocused = indexInRecycledViews == (session?.selectedIndex ?? 0)
             let isHovered = indexInRecycledViews == session?.hoveredIndex
@@ -124,7 +126,7 @@ class TileView: FlippedView {
         // outlive any single style, so we toggle visibility in `applyCurrentStyle()` instead of
         // conditionally attaching at init time.
         layer!.addSublayer(thumbnail)
-        addSubviews([label, statusIcons])
+        addSubviews([label, statusIcons, desktopBadge])
         setSubviewAbove(windowlessAppIndicator)
         addSubview(dockLabelIcon)
         label.fixHeight()
@@ -138,6 +140,7 @@ class TileView: FlippedView {
         // want for a switcher (no animations are ever desired here).
         TileView.disableImplicitLayerAnimations(on: label)
         TileView.disableImplicitLayerAnimations(on: statusIcons)
+        TileView.disableImplicitLayerAnimations(on: desktopBadge)
         TileView.disableImplicitLayerAnimations(on: windowlessAppIndicator)
         TileView.disableImplicitLayerAnimations(on: dockLabelIcon)
         applyShadows()
@@ -284,11 +287,12 @@ class TileView: FlippedView {
 
     private func updateValues(_ element: Window, _ index: Int, _ newHeight: CGFloat) {
         assignIfDifferent(&windowlessAppIndicator.isHidden, !element.isWindowlessApp)
+        desktopBadge.update(element)
         statusIcons.update(
             isHidden: element.isHidden && !Preferences.hideStatusIcons,
             isFullscreen: element.isFullscreen && !Preferences.hideStatusIcons,
             isMinimized: element.isMinimized && !Preferences.hideStatusIcons,
-            showSpace: !(element.isWindowlessApp || Spaces.isSingleSpace() || Preferences.hideSpaceNumberLabels || {
+            showSpace: desktopBadge.isHidden && !(element.isWindowlessApp || Spaces.isSingleSpace() || Preferences.hideSpaceNumberLabels || {
                 let shortcutIndex = SwitcherSession.current?.shortcutIndex ?? 0
                 return Preferences.spacesToShow[shortcutIndex] == .visible && (
                     NSScreen.screens.count < 2 || Preferences.screensToShow[shortcutIndex] == .showingAltTab
@@ -324,7 +328,7 @@ class TileView: FlippedView {
         }
         updateAppIcon(element, title)
         updateDockLabelIcon(element.dockLabel)
-        setAccessibilityHelp(getAccessibilityHelp(element.application.localizedName, element.dockLabel))
+        setAccessibilityHelp([getAccessibilityHelp(element.application.localizedName, element.dockLabel), desktopBadge.destinationHelp].compactMap { $0 }.joined(separator: " - "))
         mouseUpCallback = { () -> Void in App.focusSelectedWindow(element) }
         mouseMovedCallback = { () -> Void in Windows.updateSelectedAndHoveredWindowIndex(index, true) }
     }
@@ -528,9 +532,10 @@ class TileView: FlippedView {
 
     private func updateSizes(_ newHeight: CGFloat) {
         setFrameWidthHeight(newHeight)
+        desktopBadge.limitWidth(to: frame.width - Appearance.edgeInsetsSize * 2)
         if Preferences.effectiveAppearanceStyle(SwitcherSession.activeShortcutIndex) != .appIcons {
             let hWidth = frame.width - Appearance.edgeInsetsSize * 2
-            let labelWidth = hWidth - appIcon.frame.width - Appearance.appIconLabelSpacing - statusIcons.totalWidth
+            let labelWidth = max(0, hWidth - appIcon.frame.width - Appearance.appIconLabelSpacing - statusIcons.totalWidth - desktopBadge.reservedWidth)
             label.setWidth(labelWidth)
         }
     }
@@ -545,7 +550,7 @@ class TileView: FlippedView {
                 assignIfDifferent(&appIcon.frame.origin.x, edgeInsets + hWidth - appIcon.frame.width)
             }
             statusIcons.layoutIcons(hWidth: hWidth, hHeight: hHeight, edgeInsets: edgeInsets)
-            let labelWidth = hWidth - appIcon.frame.width - Appearance.appIconLabelSpacing - statusIcons.totalWidth
+            let labelWidth = max(0, hWidth - appIcon.frame.width - Appearance.appIconLabelSpacing - statusIcons.totalWidth - desktopBadge.reservedWidth)
             let labelX: CGFloat
             if App.shared.userInterfaceLayoutDirection == .leftToRight {
                 labelX = appIcon.frame.maxX + Appearance.appIconLabelSpacing
@@ -554,6 +559,11 @@ class TileView: FlippedView {
             }
             assignIfDifferent(&label.frame.origin.x, labelX)
             assignIfDifferent(&label.frame.origin.y, edgeInsets + ((hHeight - TilesView.layoutCache.labelHeight) / 2).rounded())
+            desktopBadge.frame.origin = NSPoint(x: App.shared.userInterfaceLayoutDirection == .leftToRight
+                ? edgeInsets + hWidth - statusIcons.totalWidth - desktopBadge.frame.width
+                : edgeInsets + statusIcons.totalWidth, y: edgeInsets + ((hHeight - desktopBadge.frame.height) / 2).rounded())
+        } else {
+            desktopBadge.frame.origin = NSPoint(x: edgeInsets, y: appIcon.frame.maxY - desktopBadge.frame.height)
         }
         if Preferences.effectiveAppearanceStyle(SwitcherSession.activeShortcutIndex) == .thumbnails {
             let hHeight = max(appIcon.frame.height, TilesView.layoutCache.labelHeight)

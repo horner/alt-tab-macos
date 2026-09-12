@@ -80,6 +80,8 @@ enum SettingsSearchIndex {
         if action == #selector(AppearanceTab.showAnimationsSheet) { return AnimationsSheet.searchableStrings }
         if action == #selector(ControlsTab.showShortcutsSettings) { return ShortcutsWhenActiveSheet.searchableStrings }
         if action == #selector(ControlsTab.showAdditionalControlsSettings) { return AdditionalControlsSheet.searchableStrings }
+        if action == #selector(ControlsTab.showSpacesSettings) { return SpacesSheet.searchableStrings }
+        if action == #selector(ControlsTab.showProjectsSettings) { return ProjectsSheet.searchableStrings }
         return nil
     }
 }

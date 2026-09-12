@@ -122,6 +122,7 @@ class App: AppCenterApplication {
 
     static func focusTarget() {
         guard SwitcherSession.isActive else { return } // already hidden
+        if DesktopNavigation.isReturnSelected { DesktopNavigation.returnToPrevious(); return }
         let selectedWindow = Windows.selectedWindow()
         Logger.info { selectedWindow?.debugId }
         focusSelectedWindow(selectedWindow)
@@ -279,6 +280,7 @@ class App: AppCenterApplication {
         (TilesView.scrollView?.documentView as? TilesDocumentView)?.cancelDraggingTimer()
         CursorEvents.resetDeadzone()
         if direction == .up || direction == .down {
+            if DesktopNavigation.clearSelection() { Windows.updateSelectedWindow(); Windows.voiceOverWindow(); return }
             TilesView.navigateUpOrDown(direction, allowWrap: allowWrap)
         } else {
             Windows.cycleSelectedWindowIndex(direction.step(), allowWrap: allowWrap)
@@ -456,7 +458,20 @@ class App: AppCenterApplication {
             })
     }
 
+    private static var didContinueAppLaunch = false
+
+    /// Exactly once, whatever asks. `SystemPermissions` polls every 500ms while the permissions window is
+    /// up and hops its "granted" verdict to main, where `preStartupPermissionsPassed` is set, so a
+    /// main-thread stall longer than one tick queues this function twice. A second run starts a second
+    /// input-events thread while the first keeps running (the old RunLoop still retains the old taps'
+    /// sources, so both threads get every event), and the gesture state in `TrackpadEvents` is unlocked on
+    /// the grounds that one thread reaches it. Two of them segfault in `GestureTracker.prune`.
     static func continueAppLaunchAfterPermissionsAreGranted() {
+        guard !didContinueAppLaunch else {
+            Logger.warning { "launch continuation asked for twice; ignoring" }
+            return
+        }
+        didContinueAppLaunch = true
         Logger.info { "System permissions are granted; continuing launch" }
         BackgroundWork.start()
         NSScreen.updatePreferred()
@@ -467,7 +482,11 @@ class App: AppCenterApplication {
         MainMenu.create()
         _ = TilesPanel()
         _ = PreviewPanel()
+        _ = SpacesPanel()
+        if Projects.isEnabled { _ = ProjectsPanel.shared }
         Spaces.refresh()
+        SpacesList.startObservingSpaceChanges()
+        Projects.startObservingSpaceChanges()
         Screens.refresh()
         ScreensEvents.observe()
         SystemAppearanceEvents.observe()
