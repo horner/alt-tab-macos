@@ -532,13 +532,15 @@ enum Projects {
 
     static func assign(_ windowIds: Set<String>, to project: Project, move: Bool) {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
-        let liveIds = Set(Windows.list.filter { !$0.isWindowlessApp }.map { $0.tracked.id }).intersection(windowIds)
+        let windows = Windows.list.filter { !$0.isWindowlessApp && windowIds.contains($0.tracked.id) }
+        let liveIds = Set(windows.map { $0.tracked.id })
         if move {
             for source in list where source.isCustom && source !== project {
                 for id in source.members.intersection(liveIds) { remove(windowId: id, from: source) }
             }
         }
         for id in liveIds { add(windowId: id, to: project) }
+        if move { ProjectAssignmentPrompt.moveToDesktop(windows, project: project) }
         Logger.debug { "projects assignment target=\(project.id) move=\(move) windows=\(liveIds.sorted())" }
     }
 

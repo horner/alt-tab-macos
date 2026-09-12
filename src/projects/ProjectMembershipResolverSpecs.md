@@ -22,6 +22,16 @@ the linked or active Project can resolve ambiguous history when it is among the 
 Explicitly excluded local windows remain accessible through the fallback without being reassigned.
 QA snapshots use the same per-window filter as the live switcher and never perform assignment.
 
+Explicit Move actions replace the selected windows' custom Project memberships, then send them to
+the destination Project's home Desktop. This applies to Move in both the window menu and the
+assignment conflict prompt. Add and Keep in Both change membership without moving windows.
+Desktop movement runs after dismissal and rechecks the original live objects, target membership,
+Project identity and unchanged home UUID. It uses the verified, non-focusing move path in
+[WindowDesktopMoveSpecs.md](../spaces/WindowDesktopMoveSpecs.md), without selecting a Project or
+switching the active Desktop. Already-home windows need no move. Missing home Desktops,
+unsupported windows and unconfirmed moves retain their new membership and produce one
+non-activating notice listing affected windows. Assignment moves are independent of bulk restore.
+
 ## Test scenarios
 
 - **testDisabledFiltersNothing** — disabled Projects return no filter even with custom members.

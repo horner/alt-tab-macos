@@ -15,7 +15,7 @@ enum ProjectAssignmentPrompt {
         let conflicts = sources.reduce(into: Set<String>()) { $0.formUnion($1.members.intersection(ids)) }
         let alert = NSAlert()
         alert.messageText = String(format: NSLocalizedString("Move windows to %@?", comment: "Project assignment conflict"), project.resolvedName)
-        alert.informativeText = String(format: NSLocalizedString("%d selected window(s) already belong to: %@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships.", comment: ""), conflicts.count, sources.map { $0.resolvedName }.joined(separator: ", "))
+        alert.informativeText = String(format: NSLocalizedString("%d selected window(s) already belong to: %@. Move removes them from those Projects and moves them to this Project's Desktop. Keep in Both adds them without changing their Desktop or existing memberships.", comment: ""), conflicts.count, sources.map { $0.resolvedName }.joined(separator: ", "))
         alert.addButton(withTitle: NSLocalizedString("Move", comment: "Project membership action")).keyEquivalent = "\r"
         alert.addButton(withTitle: NSLocalizedString("Keep in Both", comment: "Project membership action"))
         alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "")).keyEquivalent = "\u{1b}"
@@ -23,6 +23,51 @@ enum ProjectAssignmentPrompt {
             Logger.debug { "projects assignment prompt target=\(project.id) conflicts=\(conflicts.sorted()) response=\(response.rawValue)" }
             guard response == .alertFirstButtonReturn || response == .alertSecondButtonReturn else { return }
             Projects.assign(liveIds(windows).intersection(ids), to: project, move: response == .alertFirstButtonReturn)
+        }
+    }
+
+    static func moveToDesktop(_ windows: [Window], project: Project) {
+        let home = project.homeSpaceUuid
+        // Sheet completion may share the dismissal turn; let that frame commit before moving windows.
+        DispatchQueue.main.async {
+            guard Projects.isEnabled, Projects.byId[project.id] === project, project.homeSpaceUuid == home else { return }
+            let live = windows.filter { window in
+                Windows.list.contains { $0 === window } && project.members.contains(window.tracked.id)
+            }
+            let desktops = Dictionary(uniqueKeysWithValues: Projects.spaces.filter { $0.desktopNumber > 0 }.map { ($0.spaceId, $0.uuid) })
+            var remaining = live.count
+            var failures = [ProjectRestoreNotice.Row]()
+            let name = project.resolvedName
+            for window in live {
+                let title = ProjectNameResolver.normalized(window.title) ?? window.application.localizedName ?? NSLocalizedString("Unknown window", comment: "Project Desktop move failure")
+                let target = ProjectRestoreNotice.WindowTarget(window)
+                let complete: (String?) -> Void = { reason in
+                    if let reason { failures.append(.init(title: title, detail: reason, target: target)) }
+                    remaining -= 1
+                    guard remaining == 0, !failures.isEmpty else { return }
+                    let rows = failures
+                    DispatchQueue.main.async {
+                        ProjectRestoreNotice.showSummary(title: String(format: NSLocalizedString("Assigned to %@; Desktop move incomplete", comment: "Project Desktop move failure"), name), rows: rows)
+                    }
+                }
+                moveToDesktop(window, home: home, desktops: desktops, completion: complete)
+            }
+        }
+    }
+
+    private static func moveToDesktop(_ window: Window, home: String, desktops: [UInt64: String], completion: @escaping (String?) -> Void) {
+        let decision = WindowDesktopRestoreResolver.decision(isEligible: WindowDesktopMove.isEligible(window),
+            spaces: window.spaceIds, projectHomes: [home], desktops: desktops)
+        switch decision {
+        case .alreadyHome: completion(nil)
+        case .move(let destination):
+            WindowDesktopMove.restore(window, to: destination) { succeeded in
+                completion(succeeded ? nil : NSLocalizedString("Desktop move could not be confirmed", comment: "Project Desktop move failure"))
+            }
+        case .missingDesktop:
+            completion(NSLocalizedString("Project Desktop unavailable", comment: "Project Desktop move failure"))
+        default:
+            completion(NSLocalizedString("Desktop move unavailable for this window", comment: "Project Desktop move failure"))
         }
     }
 
