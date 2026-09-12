@@ -127,6 +127,9 @@
 /* No comment provided by engineer. */
 "All Spaces/Screens" = "All Spaces/Screens";
 
+/* Search scope */
+"All windows" = "All windows";
+
 /* No comment provided by engineer. */
 "Allowed" = "Allowed";
 
@@ -857,6 +860,9 @@
 
 /* No comment provided by engineer. */
 "Search" = "Search";
+
+/* All windows search help */
+"Search across all apps, desktops, and projects, including minimized and hidden windows." = "Search across all apps, desktops, and projects, including minimized and hidden windows.";
 
 /* No comment provided by engineer. */
 "Search is a Pro feature." = "Search is a Pro feature.";

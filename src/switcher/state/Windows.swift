@@ -52,7 +52,7 @@ class Windows {
         window.shouldShowTheUser && Search.matches(window, query: (SwitcherSession.current?.searchQuery ?? ""))
     }
 
-    static func updateSearchQuery(_ query: String) {
+    static func updateSearchQuery(_ query: String, scopeChanged: Bool = false) {
         let previousTrimmedQuery = Search.normalizedQuery(SwitcherSession.current?.searchQuery ?? "")
         let newTrimmedQuery = Search.normalizedQuery(query)
         SwitcherSession.current?.searchQuery = query
@@ -62,9 +62,9 @@ class Windows {
             sort()
             return
         }
-        if previousTrimmedQuery != newTrimmedQuery {
+        if previousTrimmedQuery != newTrimmedQuery || scopeChanged {
             if newTrimmedQuery.isEmpty {
-                shouldRestoreDefaultSelectionOnSearchClear = !previousTrimmedQuery.isEmpty
+                shouldRestoreDefaultSelectionOnSearchClear = !previousTrimmedQuery.isEmpty || scopeChanged
                 shouldSelectBestMatchOnSearchChange = false
             } else {
                 shouldSelectBestMatchOnSearchChange = true
@@ -127,7 +127,7 @@ class Windows {
     }
 
     static func refreshWhichWindowsToShowTheUser() {
-        guard Preferences.showsOneWindowPerApp() else { return }
+        guard !TilesView.isSearchingAllWindows, Preferences.showsOneWindowPerApp() else { return }
         let current = AttentionEngine.currentUserContext
         for (pid, windows) in Dictionary(grouping: list, by: { $0.application.pid }) {
             let eligible = windows.filter { $0.shouldShowTheUser }
@@ -162,6 +162,7 @@ class Windows {
         // filters above don't already exclude the window.
         return WindowFilterResolver.shouldShow(
             window.state, window.application.state,
+            searchAllWindows: TilesView.isSearchingAllWindows,
             onlyFrontmostApp: f.appsToShow == .active,
             excludeFrontmostApp: f.appsToShow == .nonActive,
             hideHidden: f.showHiddenWindows == .hide,

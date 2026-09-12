@@ -14,6 +14,7 @@ class TilesView {
     static var currentEffectViewKind: EffectViewKind?
     private static var cachedEffectViews: [EffectViewKind: EffectView] = [:]
     static var searchField = NSSearchField(frame: NSRect(x: 0, y: 0, width: 320, height: 30))
+    static let searchAllWindowsButton = NSButton(checkboxWithTitle: NSLocalizedString("All windows", comment: "Search scope"), target: nil, action: nil)
     static var noWindowLabel = NSTextField(labelWithString: NSLocalizedString("No Window", comment: ""))
     private(set) static var searchMode: SearchMode = .off
     static var rows = [[TileView]]()
@@ -39,8 +40,10 @@ class TilesView {
 
     static var isSearchModeOn: Bool { searchMode != .off }
     static var isSearchEditing: Bool { searchMode == .editing }
+    static var isSearchingAllWindows: Bool { isSearchModeOn && SwitcherSession.current?.searchAllWindows == true }
 
     static func startSearchSession(_ startInSearchMode: Bool) {
+        SwitcherSession.current?.searchAllWindows = false
         searchField.stringValue = ""
         Windows.updateSearchQuery("")
         searchMode = SearchModeResolver.startMode(startInSearch: startInSearchMode)
@@ -52,6 +55,7 @@ class TilesView {
         Windows.updateSearchQuery("")
         TilesPanel.shared.resetFrozenPosition()
         searchMode = .off
+        SwitcherSession.current?.searchAllWindows = false
         takeTheCaretFromTheField()
     }
 
@@ -80,10 +84,13 @@ class TilesView {
     static func disableSearchMode() {
         MainThreadStall.step()
         guard SearchModeResolver.disable(mode: searchMode) == .exitToOff else { return }
+        let scopeChanged = isSearchingAllWindows
         TilesPanel.shared.resetFrozenPosition()
         searchMode = .off
+        SwitcherSession.current?.searchAllWindows = false
         clearHover()
-        Windows.updateSearchQuery("")
+        Windows.updateSearchQuery("", scopeChanged: scopeChanged)
+        if scopeChanged, !Windows.updatesBeforeShowing() { App.hideUi(); return }
         App.refreshUi(true)
         focusSelectedTileIfPossible()
         takeTheCaretFromTheField()
@@ -183,6 +190,10 @@ class TilesView {
     }
 
     private static func configureSearchField() {
+        searchAllWindowsButton.refusesFirstResponder = true
+        searchAllWindowsButton.toolTip = NSLocalizedString("Search across all apps, desktops, and projects, including minimized and hidden windows.", comment: "All windows search help")
+        searchAllWindowsButton.setAccessibilityHelp(searchAllWindowsButton.toolTip)
+        searchAllWindowsButton.onAction = { _ in changeSearchScope() }
         searchField.placeholderString = NSLocalizedString("Search", comment: "")
         searchField.sendsSearchStringImmediately = true
         searchField.sendsWholeSearchString = true
@@ -205,6 +216,20 @@ class TilesView {
 
     @objc private static func searchFieldChanged(_ sender: NSSearchField) {
         updateSearchQuery(sender.stringValue)
+    }
+
+    private static func changeSearchScope() {
+        MainThreadStall.step()
+        guard isSearchEditing, let session = SwitcherSession.current else { return }
+        let allWindows = searchAllWindowsButton.state == .on
+        guard session.searchAllWindows != allWindows else { return }
+        session.searchAllWindows = allWindows
+        clearHover()
+        stopKeyRepeatTimers()
+        Windows.updateSearchQuery(session.searchQuery, scopeChanged: true)
+        guard Windows.updatesBeforeShowing() else { App.hideUi(); return }
+        App.refreshUi()
+        giveTheFieldTheCaret()
     }
 
     private static func updateSearchQuery(_ query: String) {
@@ -328,8 +353,10 @@ class TilesView {
         scrollView = ScrollView()
         if searchMode != .off {
             host.addSubview(searchField)
+            host.addSubview(searchAllWindowsButton)
         } else {
             searchField.removeFromSuperview()
+            searchAllWindowsButton.removeFromSuperview()
         }
         host.addSubview(scrollView)
         host.addSubview(noWindowLabel)
@@ -344,6 +371,7 @@ class TilesView {
         let host = newView.hostView
         if searchField.superview === contentView.hostView {
             host.addSubview(searchField)
+            host.addSubview(searchAllWindowsButton)
         }
         host.addSubview(scrollView)
         host.addSubview(noWindowLabel)
@@ -580,8 +608,9 @@ class TilesView {
         let searchBottomPadding = CGFloat(10)
         let searchReservedHeight = searchMode == .off ? 0 : searchBarHeight + searchBottomPadding
         let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight - ProjectContextHeader.height)
-        let minSearchWidth = min(widthMax, 320)
-        let minWidth = max(min(widthMax, 320), ProjectContextHeader.minimumContentWidth)
+        let searchScopeWidth = searchAllWindowsButton.intrinsicContentSize.width
+        let minSearchWidth = min(widthMax, 320 + searchScopeWidth + 10)
+        let minWidth = max(searchMode == .off ? min(widthMax, 320) : minSearchWidth, ProjectContextHeader.minimumContentWidth)
         TilesView.thumbnailsWidth = max(min(maxX, widthMax), minWidth)
         TilesView.thumbnailsHeight = min(maxY, heightMax)
         let appIconsBottomViewportPadding = appIconsBottomViewportPadding(maxY, heightMax, labelHeight)
@@ -607,14 +636,22 @@ class TilesView {
         if searchMode != .off {
             if searchField.superview !== host {
                 host.addSubview(searchField)
+                host.addSubview(searchAllWindowsButton)
             }
-            let searchWidth = minSearchWidth
+            let searchWidth = max(0, minSearchWidth - searchScopeWidth - 10)
             searchField.frame.size = NSSize(width: searchWidth, height: searchBarHeight)
-            let searchX = originX + (TilesView.thumbnailsWidth - searchWidth) * 0.5
+            let rowX = originX + (TilesView.thumbnailsWidth - minSearchWidth) * 0.5
+            let rightToLeft = App.shared.userInterfaceLayoutDirection == .rightToLeft
+            let searchX = rowX + (rightToLeft ? searchScopeWidth + 10 : 0)
             searchField.frame.origin = CGPoint(x: searchX, y: frameHeight - Appearance.windowPadding - searchBarHeight - ProjectContextHeader.height)
+            searchAllWindowsButton.state = isSearchingAllWindows ? .on : .off
+            let scopeHeight = searchAllWindowsButton.intrinsicContentSize.height
+            searchAllWindowsButton.frame = NSRect(x: rightToLeft ? rowX : searchField.frame.maxX + 10,
+                y: searchField.frame.midY - scopeHeight / 2, width: searchScopeWidth, height: scopeHeight)
             searchField.layoutSubtreeIfNeeded()
         } else if searchField.superview != nil {
             searchField.removeFromSuperview()
+            searchAllWindowsButton.removeFromSuperview()
         }
         if App.shared.userInterfaceLayoutDirection == .rightToLeft {
             let offset = TilesView.thumbnailsWidth - widthMax

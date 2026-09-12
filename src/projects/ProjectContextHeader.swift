@@ -210,6 +210,7 @@ enum ProjectContextHeader {
     }
 
     private static func contextTitle() -> String {
+        if TilesView.isSearchingAllWindows { return NSLocalizedString("All windows", comment: "Search scope") }
         if Projects.isEnabled, let project = Projects.active, project.isCustom {
             return String(format: NSLocalizedString("Project: %@", comment: "Window switcher context"), project.resolvedName)
         }

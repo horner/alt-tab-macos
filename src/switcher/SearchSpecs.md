@@ -23,6 +23,15 @@ and several regressions from real user screenshots — because the ranking is ea
 
 ## Behavior & edge cases
 
+- Search starts with the switcher's normal filters. The **All windows** checkbox beside the field
+  broadens the current search across apps, desktops, displays, and projects, including minimized,
+  fullscreen, and hidden windows. It also bypasses the one-window-per-app display limit.
+- Explicit hide exceptions, phantom exclusion, native-tab grouping, and the windowless-app preference
+  still apply. `WindowFilterResolverTests` covers these boundaries and restoring the normal scope.
+- Changing scope keeps the query and selects the best result in the new scope (or the default
+  selection for an empty query). Mouse clicks on either search control pass through to AppKit.
+- Clearing the query keeps the selected scope. Exiting search or dismissing the switcher resets it;
+  the next search uses the normal filters. The toggle does not change saved preferences or projects.
 - **Diacritics** fold both ways; highlight spans map back to the original (un-folded) string offsets.
 - **Word boundaries**: spaces, camelCase, `_`, `.`, `/`, `:`, emoji, and digit/letter transitions all
   start new words for prefix/acronym matching.

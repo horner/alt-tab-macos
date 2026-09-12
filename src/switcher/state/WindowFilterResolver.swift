@@ -1,17 +1,11 @@
 import Foundation
 
-/// Decides whether a single window is shown to the user in the switcher, given the per-shortcut
-/// filter preferences and the surrounding context. Pure kernel: takes the window's `WindowState`,
-/// the app's `ApplicationState`, the dropdown booleans (defaulted to `false` so tests only spell out
-/// what they exercise), the runtime context (frontmost pid, visible spaces, exceptions), and a
-/// **lazy** `isOnPreferredScreen` — the one fact that's irreducibly OS-coupled (`Window.isOnScreen`
-/// touches `Spaces.screenSpacesMap` + multi-screen quartz math). Everything else is a pure
-/// expression over the inputs, evaluated inline so `&&` short-circuits exactly like the original.
+/// Decides switcher visibility from window facts, preferences, and the current search scope.
+/// `isOnPreferredScreen` stays lazy because `Window.isOnScreen` reads display/Space geometry.
 enum WindowFilterResolver {
-    /// True iff the window passes every active filter;
-    /// `isOnPreferredScreen` is an `@autoclosure` so the (relatively expensive) OS call only fires
-    /// when the short-circuit reaches it — phantom / hidden / windowless windows never trigger it.
+    /// All-windows search keeps exclusions and tab/windowless preferences; normal scope applies every filter.
     static func shouldShow(_ s: WindowState, _ app: ApplicationState,
+                           searchAllWindows: Bool = false,
                            onlyFrontmostApp: Bool = false,       // appsToShow == .active
                            excludeFrontmostApp: Bool = false,    // appsToShow == .nonActive
                            hideHidden: Bool = false,             // showHiddenWindows == .hide
@@ -27,10 +21,13 @@ enum WindowFilterResolver {
                            exceptions: [ExceptionEntry] = [],
                            activeProjectMembers: Set<String>? = nil,
                            isOnPreferredScreen: @autoclosure () -> Bool) -> Bool {
-        !s.isPhantom &&
-            (activeProjectMembers?.contains(s.id) ?? true) &&
-            !ExceptionMatcher.hidesWindow(s, app, exceptions: exceptions,
-                activeAppOverride: onlyFrontmostApp && frontmostPid == app.pid) &&
+        guard !s.isPhantom,
+              !ExceptionMatcher.hidesWindow(s, app, exceptions: exceptions,
+                activeAppOverride: !searchAllWindows && onlyFrontmostApp && frontmostPid == app.pid) else { return false }
+        if searchAllWindows {
+            return s.isWindowlessApp ? !hideWindowless : separateTabs || !s.isTabbed
+        }
+        return (activeProjectMembers?.contains(s.id) ?? true) &&
             !(onlyFrontmostApp && !(frontmostPid == app.pid)) &&
             !(excludeFrontmostApp && frontmostPid == app.pid) &&
             !(hideHidden && app.isHidden) &&
@@ -38,13 +35,9 @@ enum WindowFilterResolver {
                 !s.isWindowlessApp &&
                 !(hideFullscreen && s.isFullscreen) &&
                 !(hideMinimized && s.isMinimized) &&
-                // A held tab (kept visible through the new-tab discovery gap) just backgrounded on the
-                // CURRENT visible Space, so it is Space-less yet belongs on-screen. `isPhantom` already
-                // exempts it, but these Space/screen gates are SEPARATE and would still hide it — the exact
-                // vanish that defeated the hold on the FIRST tab of a window, where no group exists yet to
-                // borrow it a Space (live capture 2026-07-24: `(h)…sp[]` dumped with a `-` prefix). Treat
-                // held as "on the visible Space and preferred screen": shows under `.visible`, hidden under
-                // `.nonVisible`, and never dropped by the preferred-screen gate.
+                // A held tab just backgrounded on the current Space but has already lost its Space IDs
+                // (live capture 2026-07-24). Treat it as visible and on-screen until discovery finishes;
+                // see testOnlyVisibleSpacesShowsSpacelessHeldTab and testOnlyPreferredScreenShowsHeldTab.
                 !(onlyVisibleSpaces && !s.isHeldVisibleForTab && !inAnyVisibleSpace(s, visibleSpaceIds)) &&
                 !(onlyNonVisibleSpaces && (s.isHeldVisibleForTab || inAnyVisibleSpace(s, visibleSpaceIds))) &&
                 !(onlyPreferredScreen && !s.isHeldVisibleForTab && !isOnPreferredScreen()) &&

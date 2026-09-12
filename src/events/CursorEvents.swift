@@ -5,7 +5,7 @@ class CursorEvents {
     private static var eventTap: CFMachPort!
     private static var shouldBeEnabled: Bool!
     private static var mouseDownTarget: AnyObject?
-    private static var mouseDownInsideSearchField = false
+    private static var mouseDownInsideSearchControls = false
     /// true once the tap has observed a leftMouseDown since the switcher showed (reset per gesture and on
     /// each show). A drag from another app started before the switcher showed, so its down was never seen —
     /// that is how `handleLeftMouseUp` recognizes a drop's up and yields it (see `DragAndDropResolver`).
@@ -77,11 +77,11 @@ class CursorEvents {
         if TilesView.hasMarkedText() || ContextMenuEvents.isMenuOpen { return Unmanaged.passUnretained(cgEvent) }
         if ProjectContextHeader.handleMouseButton(down: true, at: cgEvent.location) { return nil }
         if ProjectContextHeader.isPointerInsidePopover(at: cgEvent.location) { return Unmanaged.passUnretained(cgEvent) }
-        if isPointerInsideSearchField() {
-            mouseDownInsideSearchField = true
+        if isPointerInsideSearchControls() {
+            mouseDownInsideSearchControls = true
             return Unmanaged.passUnretained(cgEvent)
         }
-        mouseDownInsideSearchField = false
+        mouseDownInsideSearchControls = false
         guard isPointerInsideUi() else { return nil }
         mouseDownTarget = (findButtonUnderPointer() ?? findTileViewUnderPointer()) as AnyObject?
         return nil
@@ -100,8 +100,8 @@ class CursorEvents {
         if TilesView.hasMarkedText() || ContextMenuEvents.isMenuOpen { return Unmanaged.passUnretained(cgEvent) }
         if ProjectContextHeader.handleMouseButton(down: false, at: cgEvent.location) { return nil }
         if ProjectContextHeader.isPointerInsidePopover(at: cgEvent.location) { return Unmanaged.passUnretained(cgEvent) }
-        if mouseDownInsideSearchField || isPointerInsideSearchField() {
-            mouseDownInsideSearchField = false
+        if mouseDownInsideSearchControls || isPointerInsideSearchControls() {
+            mouseDownInsideSearchControls = false
             return Unmanaged.passUnretained(cgEvent)
         }
         guard isPointerInsideUi() else {
@@ -175,11 +175,13 @@ class CursorEvents {
         TilesPanel.shared.contentLayoutRect.contains(pointerLocationInWindow())
     }
 
-    private static func isPointerInsideSearchField() -> Bool {
-        let searchField = TilesView.searchField
-        if searchField.isHidden { return false }
-        let point = searchField.convert(pointerLocationInWindow(), from: nil)
-        return searchField.bounds.contains(point)
+    private static func isPointerInsideSearchControls() -> Bool {
+        guard TilesView.isSearchModeOn else { return false }
+        return [TilesView.searchField, TilesView.searchAllWindowsButton].contains { control in
+            guard control.window === TilesPanel.shared, !control.isHiddenOrHasHiddenAncestor else { return false }
+            let point = control.convert(pointerLocationInWindow(), from: nil)
+            return control.bounds.contains(point)
+        }
     }
 
     private static func pointerInOverlay() -> (TileOverView, NSPoint) {
