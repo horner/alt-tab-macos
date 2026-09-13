@@ -130,4 +130,72 @@ final class ProjectLifecycleResolverTests: XCTestCase {
         let result = try XCTUnwrap(ProjectLifecycleResolver.combined(source, into: entry("target")))
         XCTAssertEqual(result.members.count, 2)
     }
+
+    private func emptyAlias(of canonical: ProjectEntry, closed: Bool) -> ProjectEntry {
+        var alias = ProjectEntry(id: "desktop-" + canonical.labelUuid!, kind: "custom", spaceUuid: nil,
+            homeSpaceUuid: canonical.homeSpaceUuid, name: canonical.name, autoName: canonical.autoName, labelUuid: canonical.labelUuid, isClosed: closed)
+        alias.closedWindows = closed ? [] : nil
+        return alias
+    }
+
+    func testClosingEmptyDesktopAliasClosesOriginalWithoutLosingHistory() throws {
+        let canonical = entry()
+        let alias = emptyAlias(of: canonical, closed: true)
+        let repaired = ProjectLifecycleResolver.repairingEmptyDesktopAliases([canonical, alias])
+        let project = try XCTUnwrap(repaired.first)
+        XCTAssertEqual(repaired.count, 1)
+        XCTAssertEqual(project.id, canonical.id)
+        XCTAssertTrue(project.isClosed)
+        XCTAssertEqual(project.members, canonical.members)
+        XCTAssertEqual(project.memberPatterns, canonical.memberPatterns)
+        XCTAssertEqual(project.windowHistory, canonical.windowHistory)
+        let restored = ProjectLifecycleResolver.reopened(project, on: "desktop-13")
+        XCTAssertEqual(restored.homeSpaceUuid, "desktop-13")
+        XCTAssertEqual(restored.windowHistory, canonical.windowHistory)
+    }
+
+    func testAliasRepairRemovesClosedProjectDesktopClaims() {
+        let canonical = entry()
+        let alias = emptyAlias(of: canonical, closed: true)
+        var desktop = entry("desktop-record")
+        desktop.kind = "desktop"
+        desktop.linkedProjectIds = ["neighbor", canonical.id, alias.id]
+        let repaired = ProjectLifecycleResolver.repairingEmptyDesktopAliases([desktop, canonical, alias])
+        XCTAssertEqual(repaired[0].linkedProjectIds, ["neighbor"])
+        XCTAssertEqual(repaired[0].linkedProjectId, "neighbor")
+        XCTAssertEqual(ProjectLifecycleResolver.repairingEmptyDesktopAliases(repaired), repaired)
+    }
+
+    func testOpenAliasRepairKeepsOneOriginalDesktopClaim() {
+        let canonical = entry()
+        let alias = emptyAlias(of: canonical, closed: false)
+        var desktop = entry("desktop-record")
+        desktop.kind = "desktop"
+        desktop.linkedProjectIds = ["neighbor", alias.id, canonical.id]
+        let repaired = ProjectLifecycleResolver.repairingEmptyDesktopAliases([desktop, alias, canonical])
+        XCTAssertEqual(repaired[0].linkedProjectIds, ["neighbor", canonical.id])
+        XCTAssertFalse(repaired[1].isClosed)
+    }
+
+    func testAliasWithItsOwnHistoryIsNotDiscarded() {
+        let canonical = entry()
+        var alias = emptyAlias(of: canonical, closed: true)
+        alias.windowHistory = [pattern]
+        XCTAssertEqual(ProjectLifecycleResolver.repairingEmptyDesktopAliases([canonical, alias]), [canonical, alias])
+        alias.windowHistory = []
+        alias.excludedMembers = [identity]
+        XCTAssertEqual(ProjectLifecycleResolver.repairingEmptyDesktopAliases([canonical, alias]), [canonical, alias])
+    }
+
+    func testAliasRepairDoesNotGuessFromNamesOrAmbiguousLabelOwners() {
+        let canonical = entry()
+        var alias = emptyAlias(of: canonical, closed: true)
+        alias.labelUuid = "different-label"
+        XCTAssertEqual(ProjectLifecycleResolver.repairingEmptyDesktopAliases([canonical, alias]), [canonical, alias])
+        alias = emptyAlias(of: canonical, closed: true)
+        var other = canonical
+        other.id = "another-project"
+        let entries = [canonical, other, alias]
+        XCTAssertEqual(ProjectLifecycleResolver.repairingEmptyDesktopAliases(entries), entries)
+    }
 }

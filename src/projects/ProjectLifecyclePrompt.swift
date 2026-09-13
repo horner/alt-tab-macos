@@ -34,7 +34,7 @@ final class ProjectLifecyclePrompt: NSObject, NSWindowDelegate {
         guard Projects.isEnabled, Projects.byId[project.id] === project else { return }
         let alert = NSAlert()
         alert.messageText = String(format: NSLocalizedString("Close %@?", comment: "Close Project confirmation"), project.resolvedName)
-        alert.informativeText = NSLocalizedString("The Project will move to Closed Projects. Its name and history are saved for reopening. Application windows and the Desktop stay open.", comment: "Close Project explanation")
+        alert.informativeText = NSLocalizedString("The Project will move to the Project Attic. Its name, history and list of open windows are saved for restoring later. Application windows and the Desktop stay open.", comment: "Close Project explanation")
         alert.addButton(withTitle: NSLocalizedString("Close Project", comment: "Archive a Project")).keyEquivalent = ""
         alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "")).keyEquivalent = "\u{1b}"
         ProjectPrompt.present(alert, from: window) { response in
@@ -144,7 +144,7 @@ final class ProjectLifecyclePrompt: NSObject, NSWindowDelegate {
         let targetMembers = target.members
         let alert = NSAlert()
         alert.messageText = String(format: NSLocalizedString("Combine %@ with %@?", comment: "Project combine confirmation"), project.resolvedName, target.resolvedName)
-        alert.informativeText = String(format: NSLocalizedString("Open windows: %d. Saved history entries: %d.\n\nCombine %@ into %@, skipping duplicates. %@ will move to Closed Projects with its original history saved. Application windows stay open and remain on their current Desktops.", comment: "Project combine preview"), sourceMembers.count, sourceEntry.windowHistory.count, project.resolvedName, target.resolvedName, project.resolvedName)
+        alert.informativeText = String(format: NSLocalizedString("Open windows: %d. Saved history entries: %d.\n\nCombine %@ into %@, skipping duplicates. %@ will move to the Project Attic with its original history saved. Application windows stay open and remain on their current Desktops.", comment: "Project combine preview"), sourceMembers.count, sourceEntry.windowHistory.count, project.resolvedName, target.resolvedName, project.resolvedName)
         alert.addButton(withTitle: NSLocalizedString("Combine Projects", comment: "Confirm combining Projects")).keyEquivalent = ""
         alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "")).keyEquivalent = "\u{1b}"
         ProjectPrompt.present(alert, from: window) { response in

@@ -18,6 +18,7 @@ struct ProjectEntry: Codable, Equatable {
     var labelUuid: String?
     var isClosed = false
     var pendingDesktopRemoval = false
+    var closedWindows: [ProjectWindowPattern]?
 
     init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = [], memberPatterns: [ProjectWindowPattern] = [], excludedPatterns: [ProjectWindowPattern] = [], windowHistory: [ProjectWindowPattern] = [], linkedProjectIds: [String] = [], labelUuid: String? = nil, isClosed: Bool = false, pendingDesktopRemoval: Bool = false) {
         self.isClosed = isClosed
@@ -59,5 +60,6 @@ struct ProjectEntry: Codable, Equatable {
         labelUuid = try? c?.decode(String.self, forKey: .labelUuid)
         isClosed = (try? c?.decode(Bool.self, forKey: .isClosed)) ?? false
         pendingDesktopRemoval = (try? c?.decode(Bool.self, forKey: .pendingDesktopRemoval)) ?? false
+        closedWindows = try? c?.decode([ProjectWindowPattern].self, forKey: .closedWindows)
     }
 }

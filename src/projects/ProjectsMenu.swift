@@ -80,7 +80,7 @@ final class ProjectsMenu: NSObject {
         currentWindowItem = item(NSLocalizedString("Current window", comment: "Current app window menu"), nil)
         currentProjectItem = item("", nil)
         otherProjectsItem = item(NSLocalizedString("Other Projects", comment: "Other Project window lists"), nil)
-        closedProjectsItem = item(NSLocalizedString("Closed Projects", comment: "Archived Projects menu"), nil)
+        closedProjectsItem = item(NSLocalizedString("Project Attic", comment: "Archived Projects menu"), nil)
         restoreDesktopsItem = item(NSLocalizedString("Restore All Windows to Project Desktops", comment: "Restore all Project window locations"), #selector(restoreProjectDesktops))
         restoreDesktopsItem.toolTip = NSLocalizedString("Return open windows to their Projects' home Desktops. Windows without a clear destination are skipped.", comment: "Restore Project Desktops help")
         restoreResultsItem = item(NSLocalizedString("Show Last Desktop Restore Results", comment: "Review Desktop restore results"), #selector(showRestoreResults))
@@ -120,7 +120,7 @@ final class ProjectsMenu: NSObject {
         otherProjectsItem.isHidden = !Projects.isEnabled
         otherProjectsItem.submenu = Projects.isEnabled ? makeOtherProjectsMenu(excluding: project) : nil
         closedProjectsItem.isHidden = !Projects.isEnabled
-        closedProjectsItem.submenu = Projects.isEnabled ? makeClosedProjectsMenu() : nil
+        closedProjectsItem.submenu = Projects.isEnabled ? makeClosedProjectsMenu(on: desktopUuid) : nil
         restoreDesktopsItem.isHidden = !Projects.isEnabled
         restoreDesktopsItem.isEnabled = WindowDesktopRestore.isAvailable
         restoreDesktopsItem.title = WindowDesktopRestore.isRunning
@@ -230,19 +230,19 @@ final class ProjectsMenu: NSObject {
         return menu
     }
 
-    private static func makeClosedProjectsMenu() -> NSMenu {
+    private static func makeClosedProjectsMenu(on destinationUuid: String?) -> NSMenu {
         let menu = menu()
         for (index, project) in Projects.closedProjects.enumerated() {
             let name = ProjectNameResolver.resolved(name: project.name, autoName: project.autoName, desktopNumber: nil, projectNumber: index + 1)
             let contents = self.menu()
             addHeading(String(format: NSLocalizedString("%d saved history entries", comment: "Archived Project history count"), project.windowHistory.count), to: contents)
-            let reopen = item(NSLocalizedString("Reopen on This Desktop", comment: "Restore archived Project"), #selector(reopenProject))
-            reopen.representedObject = [project.id, desktopUuid ?? ""]
-            reopen.isEnabled = Projects.spaces.contains { $0.uuid == desktopUuid && $0.desktopNumber > 0 }
+            let reopen = item(NSLocalizedString("Restore on This Desktop…", comment: "Restore archived Project"), #selector(reopenProject))
+            reopen.representedObject = [project.id, destinationUuid ?? ""]
+            reopen.isEnabled = Projects.spaces.contains { $0.uuid == destinationUuid && $0.desktopNumber > 0 }
             contents.addItem(reopen)
             menu.addItem(submenu(name, contents))
         }
-        if menu.items.isEmpty { addHeading(NSLocalizedString("No Closed Projects", comment: "Empty archived Projects menu"), to: menu) }
+        if menu.items.isEmpty { addHeading(NSLocalizedString("No Projects in the Attic", comment: "Empty archived Projects menu"), to: menu) }
         return menu
     }
 
@@ -261,7 +261,8 @@ final class ProjectsMenu: NSObject {
 
     @objc private static func reopenProject(_ sender: NSMenuItem) {
         guard let selection = sender.representedObject as? [String], selection.count == 2 else { return }
-        DispatchQueue.main.async { Projects.reopen(id: selection[0], on: selection[1]) }
+        let parent = presentationWindow
+        DispatchQueue.main.async { ProjectAtticPrompt.present(id: selection[0], on: selection[1], from: parent) }
     }
 
     private static func makeCurrentProjectMenu(_ project: Project?, context: ProjectMenuResolver.Context) -> NSMenu {
@@ -390,12 +391,22 @@ final class ProjectsMenu: NSObject {
         popUp(makeHistoryMenu(project), from: view)
     }
 
+    static func showAttic(on desktopUuid: String, from view: NSView) {
+        guard Projects.isEnabled, Projects.spaces.contains(where: { $0.uuid == desktopUuid && $0.desktopNumber > 0 }) else { return }
+        let previous = presentationWindow
+        presentationWindow = view.window
+        defer { presentationWindow = previous }
+        Logger.debug { "projects attic menu destination=\(desktopUuid) count=\(Projects.closedProjects.count)" }
+        popUp(makeClosedProjectsMenu(on: desktopUuid), from: view)
+    }
+
     private static func popUp(_ menu: NSMenu, from view: NSView) {
         guard view.window?.isVisible == true else { return }
         menu.popUp(positioning: nil, at: NSPoint(x: view.bounds.minX, y: view.bounds.maxY), in: view)
     }
 
     static func rename(_ context: ProjectMenuResolver.Context, from window: NSWindow) {
+        Logger.debug { "projects rename requested project=\(context.projectId ?? "none") desktop=\(context.desktopUuid ?? "none") fromLabel=\(context.fromLabel)" }
         if let id = context.projectId {
             guard Projects.isEnabled, let project = Projects.byId[id], project.isCustom else { return }
             ProjectNamePrompt.rename(project, from: window)

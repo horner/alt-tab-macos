@@ -168,8 +168,11 @@ enum Projects {
 
     private static func mergeDesktop(_ sourceUuid: String, into destinationUuid: String) -> Bool {
         guard let source = byId["desktop-\(sourceUuid)"], !source.isCustom else { return false }
-        // A Desktop left empty by Close Project must not recreate that Project when the Desktop closes.
-        guard !linkedProjects(for: source).isEmpty || !closedProjects.contains(where: { $0.homeSpaceUuid == sourceUuid }) else { return false }
+        let incomingIds = ProjectDesktopResolver.removalProjects(sourceId: source.id, sourceUuid: sourceUuid,
+            linkedProjects: linkedProjects(for: source).map { $0.id },
+            savedLabelIds: Set(list.filter { $0.isCustom }.compactMap { $0.labelUuid } + closedProjects.compactMap { $0.labelUuid }),
+            closedDesktopUuids: Set(closedProjects.map { $0.homeSpaceUuid }))
+        guard !incomingIds.isEmpty else { return false }
         let destination = forSpace(uuid: destinationUuid)
         if linkedProjects(for: destination).isEmpty, !closedProjects.contains(where: { $0.homeSpaceUuid == destinationUuid }) {
             let resident = Project(id: UUID().uuidString, kind: .custom, homeSpaceUuid: destinationUuid)
@@ -701,6 +704,7 @@ enum Projects {
 
     static func close(_ project: Project) {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
+        Logger.debug { "projects close project=\(project.id) desktop=\(project.homeSpaceUuid) label=\(project.labelUuid ?? "none") history=\(project.windowHistory.count)" }
         archive(project)
         save()
         DispatchQueue.main.async { App.refreshOpenUiAfterExternalEvent([]) }
@@ -709,6 +713,7 @@ enum Projects {
     private static func archive(_ project: Project) {
         for id in project.members { _ = rememberPattern(id, in: project) }
         var snapshot = ProjectLifecycleResolver.closed(entry(for: project))
+        snapshot.closedWindows = Windows.list.filter { project.members.contains($0.tracked.id) }.compactMap { pattern(for: $0) }
         if snapshot.name == nil, snapshot.autoName == nil { snapshot.name = project.resolvedName }
         closedProjects.append(snapshot)
         for desktop in list { desktop.linkedProjectIds.removeAll { $0 == project.id } }
@@ -718,24 +723,38 @@ enum Projects {
         ProjectRestoreNotice.forgetQuestions(for: project.members)
     }
 
-    static func reopen(id: String, on desktopUuid: String) {
+    static func atticWindows(_ entry: ProjectEntry) -> [Window] {
+        Windows.list.filter { window in
+            ProjectAssignmentPrompt.canAssign(window) && ProjectAtticResolver.canBringBack(windowIdentities[window.tracked.id], from: entry,
+                hasOwner: list.contains { $0.isCustom && $0.members.contains(window.tracked.id) })
+        }
+    }
+
+    @discardableResult
+    static func reopen(id: String, on desktopUuid: String, bringWindows: Bool = false) -> Project? {
         guard isEnabled, byId[id] == nil, spaces.contains(where: { $0.uuid == desktopUuid && $0.desktopNumber > 0 }),
-              let index = closedProjects.firstIndex(where: { $0.id == id }) else { return }
+              let index = closedProjects.firstIndex(where: { $0.id == id }) else { return nil }
+        let live = atticWindows(closedProjects[index])
+        Logger.debug { "projects attic restore project=\(id) destination=\(desktopUuid) bringWindows=\(bringWindows) live=\(live.count)" }
         let saved = ProjectLifecycleResolver.reopened(closedProjects.remove(at: index), on: desktopUuid)
         isLoading = true
         let project = insert(project(from: saved, kind: .custom))
         let desktop = forSpace(uuid: desktopUuid)
         desktop.linkedProjectIds = ProjectDesktopResolver.merge(resident: desktop.linkedProjectIds, incoming: [id])
+        for window in live { _ = insertMember(window.tracked.id, into: project) }
         isLoading = false
         save()
         DispatchQueue.main.async {
-            guard byId[id] === project else { return }
+            guard isEnabled, byId[id] === project else { return }
+            if spaces.contains(where: { $0.uuid == desktopUuid && $0.isCurrent }) { active = project }
             SpaceLabelWindows.show(on: desktopUuid)
             for window in Windows.list where !list.contains(where: { $0.isCustom && $0.members.contains(window.tracked.id) }) {
                 restoreMembership(window)
             }
             App.refreshOpenUiAfterExternalEvent([])
+            if bringWindows { ProjectAssignmentPrompt.moveToDesktop(live, project: project, onlyUnshared: true) }
         }
+        return project
     }
 
     static func combine(_ source: Project, into destination: Project) {
@@ -760,8 +779,16 @@ enum Projects {
 
     private static func load() {
         isLoading = true
-        defer { isLoading = false }
-        for entry in Preferences.projects {
+        let saved = Preferences.projects
+        let repaired = ProjectLifecycleResolver.repairingEmptyDesktopAliases(saved)
+        defer {
+            isLoading = false
+            if repaired != saved {
+                Logger.debug { "projects repaired empty Desktop aliases removed=\(saved.count - repaired.count)" }
+                save()
+            }
+        }
+        for entry in repaired {
             guard byId[entry.id] == nil, !closedProjects.contains(where: { $0.id == entry.id }) else { continue }
             let kind: Project.Kind
             if entry.kind == "desktop", let uuid = entry.spaceUuid {

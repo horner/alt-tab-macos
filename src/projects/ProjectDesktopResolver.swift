@@ -1,6 +1,13 @@
 import Foundation
 
 enum ProjectDesktopResolver {
+    static func removalProjects(sourceId: String, sourceUuid: String, linkedProjects: [String],
+                                savedLabelIds: Set<String>, closedDesktopUuids: Set<String>) -> [String] {
+        guard linkedProjects.isEmpty else { return linkedProjects }
+        guard !savedLabelIds.contains(sourceUuid), !closedDesktopUuids.contains(sourceUuid) else { return [] }
+        return [sourceId]
+    }
+
     struct LabelLocation {
         let labelId: String
         let sourceUuid: String

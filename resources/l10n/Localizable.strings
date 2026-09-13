@@ -1546,3 +1546,69 @@
 
 /* Return to the previous Desktop and Project */
 "↩ Back to %@" = "↩ Back to %@";
+
+/* Project Attic duplicate page */
+"Already open" = "Already open";
+
+/* Project Attic live windows option */
+"Bring open windows to this Desktop (%d)" = "Bring open windows to this Desktop (%d)";
+
+/* Project Attic recovery failure */
+"Make sure the original browser is installed. Your saved pages remain in the Project’s Window History." = "Make sure the original browser is installed. Your saved pages remain in the Project’s Window History.";
+
+/* Empty archived Projects menu */
+"No Projects in the Attic" = "No Projects in the Attic";
+
+/* Project Attic empty recovery list */
+"No saved browser pages are available to reopen." = "No saved browser pages are available to reopen.";
+
+/* Project Attic historical page */
+"Older history" = "Older history";
+
+/* Project combine preview */
+"Open windows: %d. Saved history entries: %d.\n\nCombine %@ into %@, skipping duplicates. %@ will move to the Project Attic with its original history saved. Application windows stay open and remain on their current Desktops." = "Open windows: %1$d. Saved history entries: %2$d.\n\nCombine %3$@ into %4$@, skipping duplicates. %5$@ will move to the Project Attic with its original history saved. Application windows stay open and remain on their current Desktops.";
+
+/* Archived Projects menu */
+"Project Attic" = "Project Attic";
+
+/* Project Attic browser failure */
+"Project restored; some pages could not be opened" = "Project restored; some pages could not be opened";
+
+/* Project Attic page selection */
+"Reopen selected browser pages" = "Reopen selected browser pages";
+
+/* Project Attic restoration */
+"Restore %@ on Desktop %d?" = "Restore %1$@ on Desktop %2$d?";
+
+/* Restore archived Project */
+"Restore on This Desktop…" = "Restore on This Desktop…";
+
+/* Restore from Project Attic */
+"Restore Project" = "Restore Project";
+
+/* Project Attic window snapshot */
+"Saved at close" = "Saved at close";
+
+/* Project Attic recovery table */
+"Saved browser pages" = "Saved browser pages";
+
+/* Project Attic missing destination */
+"That Desktop is no longer available" = "That Desktop is no longer available";
+
+/* Close Project explanation */
+"The Project will move to the Project Attic. Its name, history and list of open windows are saved for restoring later. Application windows and the Desktop stay open." = "The Project will move to the Project Attic. Its name, history and list of open windows are saved for restoring later. Application windows and the Desktop stay open.";
+
+/* Project Attic destination recovery */
+"Your Project is still in the Project Attic. Restore it from another Desktop." = "Your Project is still in the Project Attic. Restore it from another Desktop.";
+
+/* Project Attic restoration explanation */
+"Your Project’s name and history are saved. Choose any browser pages to reopen below. Browsers decide whether pages open as tabs or windows; other app sessions must be reopened in those apps." = "Your Project’s name and history are saved. Choose any browser pages to reopen below. Browsers decide whether pages open as tabs or windows; other app sessions must be reopened in those apps.";
+
+/* Project Attic restoration without browser pages */
+"Your Project will return to this Desktop with its name and history. Windows that have been closed must be reopened in their apps." = "Your Project will return to this Desktop with its name and history. Windows that have been closed must be reopened in their apps.";
+
+/* Restore a Project from its Desktop label */
+"Restore from Attic…" = "Restore from Attic…";
+
+/* Project Attic label button help */
+"Restore a saved Project on this Desktop" = "Restore a saved Project on this Desktop";

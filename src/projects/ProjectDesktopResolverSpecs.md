@@ -4,7 +4,8 @@ A Desktop may link several Projects. Removing a Desktop carries all of its linke
 surviving Desktop temporarily, appending them after its resident Projects without merging their memberships.
 ProjectLifecycleResolverSpecs.md defines the subsequent Keep, Close or Combine choice.
 Project identities, names, history, label identities and user placements survive. A Desktop without
-a linked Project is preserved as a custom Project when it participates in a merge.
+a linked Project is preserved as a custom Project when it participates in a merge, unless its label
+UUID already belongs to a relocated or archived Project, or its Project was closed on that Desktop.
 
 The actual destination of a label window takes priority, followed by the destination receiving the
 most previously local member windows. Empty projects use the nearest surviving predecessor, then

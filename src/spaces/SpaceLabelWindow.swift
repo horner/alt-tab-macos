@@ -75,6 +75,8 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         ]
         addButton(NSLocalizedString("Rename…", comment: "Project label rename button"),
             help: NSLocalizedString("Rename this Project or Desktop", comment: "Project label button help"), action: #selector(rename(_:)))
+        addButton(NSLocalizedString("Restore from Attic…", comment: "Restore a Project from its Desktop label"),
+            help: NSLocalizedString("Restore a saved Project on this Desktop", comment: "Project Attic label button help"), action: #selector(restoreFromAttic(_:)))
         projectButtons.append(addButton(NSLocalizedString("Add All Visible Windows", comment: "Project assignment action"),
             help: NSLocalizedString("Add all visible windows on this Desktop to this Project", comment: "Project label button help"), action: #selector(addVisibleWindows(_:))))
         addButton(NSLocalizedString("Menu", comment: "AltTab menu button"),
@@ -213,6 +215,13 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         performFromLabel(sender) { context, button in
             guard let window = button.window else { return }
             ProjectsMenu.rename(context, from: window)
+        }
+    }
+
+    @objc private func restoreFromAttic(_ sender: NSButton) {
+        performFromLabel(sender) { context, button in
+            guard let uuid = context.desktopUuid else { return }
+            ProjectsMenu.showAttic(on: uuid, from: button)
         }
     }
 

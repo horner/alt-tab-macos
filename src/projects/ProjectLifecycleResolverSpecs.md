@@ -8,10 +8,18 @@ cancel makes no changes. Closed Projects persist across restarts and are availab
 An otherwise unlinked Desktop does not substitute a label for a closed Project or recreate it when
 that Desktop is subsequently removed.
 
-Closed Projects → Project name → Reopen on This Desktop restores the same Project identity and saved
+An unlinked Desktop record must not become a second Project when its label UUID is already owned
+by a relocated or archived Project. On loading saved state, an empty synthetic custom record whose
+ID is `desktop-<label UUID>` is consolidated only when exactly one other custom Project has that
+same label UUID and the same saved names. The original identity and records survive. A closed alias
+applies its close to the original and removes its Desktop claims. Aliases with their own records,
+exclusions or icon, and ambiguous matches, are retained. Names alone never establish identity.
+
+Project Attic → Project name → Restore on This Desktop… restores the same Project identity and saved
 history, appends its Desktop claim, and shows its label. Membership restoration uses the ordinary
-identity/evidence rules; an existing assignment to another open Project takes precedence. Reopening
-does not launch applications or move their windows. A missing or fullscreen destination is rejected.
+identity/evidence rules; an existing assignment to another open Project takes precedence. The restore
+preview offers to bring still-open windows and reopen selected browser pages, as specified in
+ProjectAtticResolverSpecs.md. A missing or fullscreen destination is rejected.
 
 Desktop removal uses ProjectDesktopResolver's stable UUID comparison, same-display destination and
 fullscreen/disconnection exclusions. The existing relocation preserves the Project temporarily, and

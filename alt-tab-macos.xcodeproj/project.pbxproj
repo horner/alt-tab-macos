@@ -531,6 +531,10 @@
 		E29C7DDB803C431A9FFB6936 /* AppUsageScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1584A29D0B8C498B83D2263F /* AppUsageScore.swift */; };
 		ED56D3ACBDD04CECB243DF69 /* AppUsageScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1584A29D0B8C498B83D2263F /* AppUsageScore.swift */; };
 		56D581CE24A745DF9D7884C2 /* AppUsageScoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4E2093A53024F47AA593432 /* AppUsageScoreTests.swift */; };
+		683B2027BA4C4D968EDC4A98 /* ProjectAtticResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71364711FE04B3A879D9DB8 /* ProjectAtticResolver.swift */; };
+		A22B1B332DFE4E4282166A0A /* ProjectAtticResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71364711FE04B3A879D9DB8 /* ProjectAtticResolver.swift */; };
+		BDD213BA8589468CA0E85DD8 /* ProjectAtticPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52124AEE43354E9DAAFEFD3F /* ProjectAtticPrompt.swift */; };
+		DD7CAEF22533481AAE78520A /* ProjectAtticResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2504A612BDA94D7BBF4CC853 /* ProjectAtticResolverTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1074,6 +1078,10 @@
 		1584A29D0B8C498B83D2263F /* AppUsageScore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUsageScore.swift; sourceTree = "<group>"; };
 		B4E2093A53024F47AA593432 /* AppUsageScoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUsageScoreTests.swift; sourceTree = "<group>"; };
 		E1A8C38F60A54859BBE5C459 /* AppUsageScoreSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AppUsageScoreSpecs.md; sourceTree = "<group>"; };
+		E71364711FE04B3A879D9DB8 /* ProjectAtticResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectAtticResolver.swift; sourceTree = "<group>"; };
+		52124AEE43354E9DAAFEFD3F /* ProjectAtticPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectAtticPrompt.swift; sourceTree = "<group>"; };
+		2504A612BDA94D7BBF4CC853 /* ProjectAtticResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectAtticResolverTests.swift; sourceTree = "<group>"; };
+		6044C0E7A14B4FEF98B852CE /* ProjectAtticResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectAtticResolverSpecs.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1167,6 +1175,10 @@
 				C4F5C6B59A374AAD9D852FCA /* ProjectLifecyclePrompt.swift */,
 				3A0259772F034EAF8CC12DCA /* ProjectLifecycleResolverTests.swift */,
 				77216ECF649F4AEBBF9B3799 /* ProjectLifecycleResolverSpecs.md */,
+				6044C0E7A14B4FEF98B852CE /* ProjectAtticResolverSpecs.md */,
+				2504A612BDA94D7BBF4CC853 /* ProjectAtticResolverTests.swift */,
+				52124AEE43354E9DAAFEFD3F /* ProjectAtticPrompt.swift */,
+				E71364711FE04B3A879D9DB8 /* ProjectAtticResolver.swift */,
 				E2EE59C3CF9C42F2AEC8DEFB /* ProjectDesktopResolver.swift */,
 				DCC7D86505C304207EADFAEC /* Projects.swift */,
 			);
@@ -2451,6 +2463,8 @@
 				259AD78E48EA4D96B008E136 /* ProjectVisibilityResolverTests.swift in Sources */,
 				41AC563017A0487583F3CADA /* ProjectEntry.swift in Sources */,
 				5ACAD585AEE24046856F4506 /* ProjectLifecycleResolver.swift in Sources */,
+				DD7CAEF22533481AAE78520A /* ProjectAtticResolverTests.swift in Sources */,
+				A22B1B332DFE4E4282166A0A /* ProjectAtticResolver.swift in Sources */,
 				D31F5E2F326D4A11AD09DDA2 /* ProjectLifecycleResolverTests.swift in Sources */,
 				9F27A1227432435393E7137D /* ProjectDesktopResolver.swift in Sources */,
 				093B44A0218B46498C180BC3 /* SpaceLabelResolver.swift in Sources */,
@@ -2638,6 +2652,8 @@
 				3C712152D278442DBFB72976 /* ProjectVisibilityResolver.swift in Sources */,
 				5935267E249A4AEDB5B5320F /* ProjectEntry.swift in Sources */,
 				618626B445544F6ABB64479D /* ProjectLifecycleResolver.swift in Sources */,
+				BDD213BA8589468CA0E85DD8 /* ProjectAtticPrompt.swift in Sources */,
+				683B2027BA4C4D968EDC4A98 /* ProjectAtticResolver.swift in Sources */,
 				6228FA42E4884D62997CE2FC /* ProjectLifecyclePrompt.swift in Sources */,
 				F771D56935E34BEA9AA14777 /* ProjectDesktopResolver.swift in Sources */,
 				26C4D4265CCFF5A4F1D70297 /* Projects.swift in Sources */,

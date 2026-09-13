@@ -1,6 +1,36 @@
 import Foundation
 
 enum ProjectLifecycleResolver {
+    static func repairingEmptyDesktopAliases(_ entries: [ProjectEntry]) -> [ProjectEntry] {
+        var result = entries
+        for alias in entries where isEmptyDesktopAlias(alias) {
+            let candidates = result.indices.filter { result[$0].kind == "custom" && result[$0].id != alias.id
+                && result[$0].labelUuid == alias.labelUuid && result[$0].name == alias.name && result[$0].autoName == alias.autoName }
+            guard candidates.count == 1, let index = candidates.first else { continue }
+            if alias.isClosed {
+                result[index] = closed(result[index])
+                result[index].closedWindows = result[index].closedWindows ?? alias.closedWindows
+            }
+            let canonical = result[index]
+            result.removeAll { $0.id == alias.id }
+            for index in result.indices {
+                result[index].linkedProjectIds = union([], result[index].linkedProjectIds.compactMap { id in
+                    if id == alias.id || id == canonical.id { return canonical.isClosed ? nil : canonical.id }
+                    return id
+                })
+                result[index].linkedProjectId = result[index].linkedProjectIds.first
+            }
+        }
+        return result
+    }
+
+    private static func isEmptyDesktopAlias(_ entry: ProjectEntry) -> Bool {
+        guard let label = entry.labelUuid, entry.id == "desktop-" + label, entry.kind == "custom" else { return false }
+        return entry.members.isEmpty && entry.memberPatterns.isEmpty && entry.windowHistory.isEmpty
+            && entry.excludedMembers.isEmpty && entry.excludedPatterns.isEmpty && (entry.closedWindows ?? []).isEmpty
+            && entry.linkedProjectIds.isEmpty && entry.iconFileName == nil
+    }
+
     static func closed(_ entry: ProjectEntry) -> ProjectEntry {
         var result = entry
         result.isClosed = true
@@ -13,6 +43,7 @@ enum ProjectLifecycleResolver {
         result.isClosed = false
         result.pendingDesktopRemoval = false
         result.homeSpaceUuid = desktop
+        result.windowHistory = patterns(result.windowHistory, entry.closedWindows ?? [])
         return result
     }
 

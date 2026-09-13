@@ -26,13 +26,14 @@ enum ProjectAssignmentPrompt {
         }
     }
 
-    static func moveToDesktop(_ windows: [Window], project: Project) {
+    static func moveToDesktop(_ windows: [Window], project: Project, onlyUnshared: Bool = false) {
         let home = project.homeSpaceUuid
         // Sheet completion may share the dismissal turn; let that frame commit before moving windows.
         DispatchQueue.main.async {
             guard Projects.isEnabled, Projects.byId[project.id] === project, project.homeSpaceUuid == home else { return }
             let live = windows.filter { window in
                 Windows.list.contains { $0 === window } && project.members.contains(window.tracked.id)
+                    && (!onlyUnshared || !Projects.list.contains { $0.isCustom && $0 !== project && $0.members.contains(window.tracked.id) })
             }
             let desktops = Dictionary(uniqueKeysWithValues: Projects.spaces.filter { $0.desktopNumber > 0 }.map { ($0.spaceId, $0.uuid) })
             var remaining = live.count
