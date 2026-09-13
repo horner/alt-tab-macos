@@ -28,7 +28,8 @@ nonactivating panel offers Keep on Desktop N, Close Project… and Combine…. K
 button) accepts the separate Project on its destination. Close asks for confirmation and archives it.
 Questions are serialized per Project; another removal updates the destination, and closing/deleting
 a Project invalidates its question. Disabling Projects hides the panel without discarding the question.
-Only future observed removals create questions; old relocations are not guessed from saved links.
+Only future observed removals of Desktops with linked Projects create questions; Desktops without
+Projects close without a question. Old relocations are not guessed from saved links.
 
 Combine is also available under Project → Manage… → Combine with for other open Projects on the same
 Desktop. Its confirmation previews source window and history counts. Combining adds memberships and

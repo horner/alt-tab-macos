@@ -168,40 +168,16 @@ enum Projects {
 
     private static func mergeDesktop(_ sourceUuid: String, into destinationUuid: String) -> Bool {
         guard let source = byId["desktop-\(sourceUuid)"], !source.isCustom else { return false }
-        let incomingIds = ProjectDesktopResolver.removalProjects(sourceId: source.id, sourceUuid: sourceUuid,
-            linkedProjects: linkedProjects(for: source).map { $0.id },
-            savedLabelIds: Set(list.filter { $0.isCustom }.compactMap { $0.labelUuid } + closedProjects.compactMap { $0.labelUuid }),
-            closedDesktopUuids: Set(closedProjects.map { $0.homeSpaceUuid }))
-        guard !incomingIds.isEmpty else { return false }
+        let incoming = linkedProjects(for: source)
+        guard !incoming.isEmpty else { return false }
         let destination = forSpace(uuid: destinationUuid)
-        if linkedProjects(for: destination).isEmpty, !closedProjects.contains(where: { $0.homeSpaceUuid == destinationUuid }) {
-            let resident = Project(id: UUID().uuidString, kind: .custom, homeSpaceUuid: destinationUuid)
-            resident.name = destination.name
-            resident.autoName = destination.autoName
-            resident.labelUuid = destinationUuid
-            insert(resident)
-            destination.linkedProjectIds = [resident.id]
-            for id in desktopWindowIds[destinationUuid] ?? [] where !list.contains(where: { $0.isCustom && $0 !== resident && $0.members.contains(id) }) {
-                _ = insertMember(id, into: resident)
-            }
-        }
-        var incoming = linkedProjects(for: source)
-        if incoming.isEmpty {
-            source.kind = .custom
-            source.labelUuid = sourceUuid
-            source.homeSpaceUuid = destinationUuid
-            for id in desktopWindowIds[sourceUuid] ?? [] where !list.contains(where: { $0.isCustom && $0 !== source && $0.members.contains(id) }) {
-                _ = insertMember(id, into: source)
-            }
-            incoming = [source]
-        }
         for project in incoming {
             project.labelUuid = project.labelUuid ?? sourceUuid
             project.homeSpaceUuid = destinationUuid
             project.pendingDesktopRemoval = isEnabled
         }
         destination.linkedProjectIds = ProjectDesktopResolver.merge(resident: destination.linkedProjectIds, incoming: incoming.map { $0.id })
-        if !source.isCustom { source.linkedProjectIds.removeAll() }
+        source.linkedProjectIds.removeAll()
         Logger.debug { "projects desktop removed source=\(sourceUuid) destination=\(destinationUuid) projects=\(incoming.map { $0.id })" }
         return true
     }

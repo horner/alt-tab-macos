@@ -1,20 +1,6 @@
 import XCTest
 
 final class ProjectDesktopResolverTests: XCTestCase {
-    func testRemovedPlaceholderDoesNotDuplicateRelocatedOrArchivedProject() {
-        XCTAssertEqual(ProjectDesktopResolver.removalProjects(sourceId: "desktop-original", sourceUuid: "original",
-            linkedProjects: [], savedLabelIds: ["original"], closedDesktopUuids: []), [])
-        XCTAssertEqual(ProjectDesktopResolver.removalProjects(sourceId: "desktop-original", sourceUuid: "original",
-            linkedProjects: [], savedLabelIds: [], closedDesktopUuids: ["original"]), [])
-    }
-
-    func testDesktopRemovalKeepsExplicitProjectsAndPromotesOnlyUnclaimedDesktop() {
-        XCTAssertEqual(ProjectDesktopResolver.removalProjects(sourceId: "desktop-original", sourceUuid: "original",
-            linkedProjects: ["first", "second"], savedLabelIds: ["original"], closedDesktopUuids: ["original"]), ["first", "second"])
-        XCTAssertEqual(ProjectDesktopResolver.removalProjects(sourceId: "desktop-new", sourceUuid: "new",
-            linkedProjects: [], savedLabelIds: ["original"], closedDesktopUuids: []), ["desktop-new"])
-    }
-
     func testMovedLabelUsesItsActualDesktopWhileBothDesktopsRemain() {
         let location = ProjectDesktopResolver.LabelLocation(labelId: "project", sourceUuid: "s2", spaceIds: [1])
         XCTAssertEqual(ProjectDesktopResolver.relocation(location, in: [space(1), space(2)]), space(1))
