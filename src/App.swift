@@ -60,10 +60,10 @@ class App: AppCenterApplication {
     }
 
     static func restart() {
-        // we use -n to open a new instance, to avoid calling applicationShouldHandleReopen
-        // we use Bundle.main.bundlePath in case of multiple AltTab versions on the machine
+        // The replacement waits on the instance lock until this process finishes capture draining and exits.
+        // -n bypasses reopen handling; the bundle path keeps the restart on the same build.
         printStackTrace()
-        Process.launchedProcess(launchPath: "/usr/bin/open", arguments: ["-n", Bundle.main.bundlePath])
+        Process.launchedProcess(launchPath: "/usr/bin/open", arguments: ["-n", Bundle.main.bundlePath, "--args", SingleInstance.restartArgument])
         App.shared.terminate(nil)
     }
 

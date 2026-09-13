@@ -5,6 +5,19 @@ if let command = CliClient.detectCommand() {
     CliClient.sendCommandAndProcessResponse(command)
 }
 
+// Reject duplicates before installing signal handlers: their emergency cleanup changes global hotkeys.
+let singleInstance: SingleInstance
+do {
+    singleInstance = try SingleInstance(url: SingleInstance.lockURL,
+        wait: CommandLine.arguments.contains(SingleInstance.restartArgument))
+} catch SingleInstance.Failure.alreadyRunning {
+    fputs("AltTab is already running; ignoring duplicate launch.\n", stderr)
+    exit(0)
+} catch {
+    fputs("AltTab could not acquire its instance lock: \(error)\n", stderr)
+    exit(1)
+}
+
 // - SIGTERM: if the app is quit/force-quit from Activity Monitor, it will receive SIGTERM and applicationWillTerminate won't be called
 // - SIGTRAP: if the app crashes in swift code (e.g. unexpected nil object), SIGTRAP is sent
 // - SIGINT/SIGHUP: if the app was launched from a terminal, ctrl-C reaches its whole process group and
@@ -34,7 +47,7 @@ NSSetUncaughtExceptionHandler { (exception) in
     emergencyExit("Exiting after receiving uncaught NSException", exception)
 }
 
-App.shared.run()
+withExtendedLifetime(singleInstance) { App.shared.run() }
 
 func printStackTrace() {
     let stackSymbols = Thread.callStackSymbols

@@ -131,8 +131,11 @@
 		5EA8E110000000000000DA03 /* DragAndDropResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA8E110000000000000DA01 /* DragAndDropResolver.swift */; };
 		5EA8E110000000000000DA12 /* DragAndDropResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA8E110000000000000DA11 /* DragAndDropResolverTests.swift */; };
 		5EA8E110000000000000F202 /* SchedulingPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA8E110000000000000F201 /* SchedulingPolicy.swift */; };
+		5EA8E110000000000000A902 /* SingleInstance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA8E110000000000000A901 /* SingleInstance.swift */; };
 		5EA8E110000000000000F203 /* SchedulingPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA8E110000000000000F201 /* SchedulingPolicy.swift */; };
+		5EA8E110000000000000A903 /* SingleInstance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA8E110000000000000A901 /* SingleInstance.swift */; };
 		5EA8E110000000000000F212 /* SchedulingPolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA8E110000000000000F211 /* SchedulingPolicyTests.swift */; };
+		5EA8E110000000000000A912 /* SingleInstanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EA8E110000000000000A911 /* SingleInstanceTests.swift */; };
 		5E5EA12C0000000000000002 /* SearchModeResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E5EA12C0000000000000001 /* SearchModeResolver.swift */; };
 		5E5EA12C0000000000000003 /* SearchModeResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E5EA12C0000000000000001 /* SearchModeResolver.swift */; };
 		5E5EA12C0000000000000102 /* SearchModeResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E5EA12C0000000000000101 /* SearchModeResolverTests.swift */; };
@@ -677,7 +680,9 @@
 		5EA8E110000000000000DA01 /* DragAndDropResolver.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DragAndDropResolver.swift; sourceTree = "<group>"; };
 		5EA8E110000000000000DA11 /* DragAndDropResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DragAndDropResolverTests.swift; sourceTree = "<group>"; };
 		5EA8E110000000000000F201 /* SchedulingPolicy.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SchedulingPolicy.swift; sourceTree = "<group>"; };
+		5EA8E110000000000000A901 /* SingleInstance.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SingleInstance.swift; sourceTree = "<group>"; };
 		5EA8E110000000000000F211 /* SchedulingPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulingPolicyTests.swift; sourceTree = "<group>"; };
+		5EA8E110000000000000A911 /* SingleInstanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SingleInstanceTests.swift; sourceTree = "<group>"; };
 		5E5EA12C0000000000000001 /* SearchModeResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModeResolver.swift; sourceTree = "<group>"; };
 		5E5EA12C0000000000000101 /* SearchModeResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModeResolverTests.swift; sourceTree = "<group>"; };
 		5E5EA12F0000000000000001 /* SearchFieldEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchFieldEditing.swift; sourceTree = "<group>"; };
@@ -1229,7 +1234,9 @@
 				AA0C8B000000000000000010 /* MoveToApplicationsFolder.swift */,
 				BF0C8A1E7D3F94B6E8C52A01 /* Throttler.swift */,
 				5EA8E110000000000000F201 /* SchedulingPolicy.swift */,
+				5EA8E110000000000000A901 /* SingleInstance.swift */,
 				5EA8E110000000000000F211 /* SchedulingPolicyTests.swift */,
+				5EA8E110000000000000A911 /* SingleInstanceTests.swift */,
 				AA0C8B000000000000000002 /* UsageStats.swift */,
 				AA0C8B000000000000000004 /* UsageStatsTestable.swift */,
 				5FA004000000000000000006 /* UsageStatsMessageTests.swift */,
@@ -2499,7 +2506,9 @@
 				5C5A1100000000000000E203 /* PublishedWindows.swift in Sources */,
 				5C5A1100000000000000E302 /* PublishedWindowsTests.swift in Sources */,
 				5EA8E110000000000000F203 /* SchedulingPolicy.swift in Sources */,
+				5EA8E110000000000000A903 /* SingleInstance.swift in Sources */,
 				5EA8E110000000000000F212 /* SchedulingPolicyTests.swift in Sources */,
+				5EA8E110000000000000A912 /* SingleInstanceTests.swift in Sources */,
 				5EA8E110000000000000DA03 /* DragAndDropResolver.swift in Sources */,
 				5EA8E110000000000000DA12 /* DragAndDropResolverTests.swift in Sources */,
 				5F4753072CEE5A2E002C6C5E /* AppearanceTestable.swift in Sources */,
@@ -2864,6 +2873,7 @@
 				BF0C80C69EFEF93C18539925 /* PreferencesMigrations.swift in Sources */,
 				BF0C8A2F6E4C85A7D9B63B12 /* Throttler.swift in Sources */,
 				5EA8E110000000000000F202 /* SchedulingPolicy.swift in Sources */,
+				5EA8E110000000000000A902 /* SingleInstance.swift in Sources */,
 				AA0C8A100000000000000001 /* AXCallScheduler.swift in Sources */,
 				AA0C8A1000000000000000B1 /* CGSCallScheduler.swift in Sources */,
 				AA0C8A1000000000000000B2 /* ProcessCallScheduler.swift in Sources */,
