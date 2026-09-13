@@ -6,6 +6,7 @@ struct ProjectWindowPattern: Codable, Equatable {
     var spaceUuid: String? = nil
     var lastSeenAt: Date? = nil
     var url: String? = nil
+    var confirmedAt: Date? = nil
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.bundleIdentifier == rhs.bundleIdentifier && lhs.title == rhs.title && lhs.spaceUuid == rhs.spaceUuid && lhs.url == rhs.url

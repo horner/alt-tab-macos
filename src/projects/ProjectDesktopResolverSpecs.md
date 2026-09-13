@@ -1,7 +1,8 @@
 # ProjectDesktopResolver
 
 A Desktop may link several Projects. Removing a Desktop carries all of its linked Projects to a
-surviving Desktop, appending them after its resident Projects without merging their memberships.
+surviving Desktop temporarily, appending them after its resident Projects without merging their memberships.
+ProjectLifecycleResolverSpecs.md defines the subsequent Keep, Close or Combine choice.
 Project identities, names, history, label identities and user placements survive. A Desktop without
 a linked Project is preserved as a custom Project when it participates in a merge.
 

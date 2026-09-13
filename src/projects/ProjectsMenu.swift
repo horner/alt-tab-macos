@@ -5,6 +5,7 @@ final class ProjectsMenu: NSObject {
     private static var currentWindowItem: NSMenuItem!
     private static var currentProjectItem: NSMenuItem!
     private static var otherProjectsItem: NSMenuItem!
+    private static var closedProjectsItem: NSMenuItem!
     private static var restoreDesktopsItem: NSMenuItem!
     private static var restoreResultsItem: NSMenuItem!
     private static var desktopLabelsItem: NSMenuItem!
@@ -79,6 +80,7 @@ final class ProjectsMenu: NSObject {
         currentWindowItem = item(NSLocalizedString("Current window", comment: "Current app window menu"), nil)
         currentProjectItem = item("", nil)
         otherProjectsItem = item(NSLocalizedString("Other Projects", comment: "Other Project window lists"), nil)
+        closedProjectsItem = item(NSLocalizedString("Closed Projects", comment: "Archived Projects menu"), nil)
         restoreDesktopsItem = item(NSLocalizedString("Restore All Windows to Project Desktops", comment: "Restore all Project window locations"), #selector(restoreProjectDesktops))
         restoreDesktopsItem.toolTip = NSLocalizedString("Return open windows to their Projects' home Desktops. Windows without a clear destination are skipped.", comment: "Restore Project Desktops help")
         restoreResultsItem = item(NSLocalizedString("Show Last Desktop Restore Results", comment: "Review Desktop restore results"), #selector(showRestoreResults))
@@ -86,6 +88,7 @@ final class ProjectsMenu: NSObject {
         menu.addItem(currentWindowItem)
         menu.addItem(currentProjectItem)
         menu.addItem(otherProjectsItem)
+        menu.addItem(closedProjectsItem)
         menu.addItem(restoreDesktopsItem)
         menu.addItem(restoreResultsItem)
         menu.addItem(desktopLabelsItem)
@@ -116,6 +119,8 @@ final class ProjectsMenu: NSObject {
         currentProjectItem.submenu = Projects.isEnabled ? makeCurrentProjectMenu(project, context: context) : nil
         otherProjectsItem.isHidden = !Projects.isEnabled
         otherProjectsItem.submenu = Projects.isEnabled ? makeOtherProjectsMenu(excluding: project) : nil
+        closedProjectsItem.isHidden = !Projects.isEnabled
+        closedProjectsItem.submenu = Projects.isEnabled ? makeClosedProjectsMenu() : nil
         restoreDesktopsItem.isHidden = !Projects.isEnabled
         restoreDesktopsItem.isEnabled = WindowDesktopRestore.isAvailable
         restoreDesktopsItem.title = WindowDesktopRestore.isRunning
@@ -225,6 +230,40 @@ final class ProjectsMenu: NSObject {
         return menu
     }
 
+    private static func makeClosedProjectsMenu() -> NSMenu {
+        let menu = menu()
+        for (index, project) in Projects.closedProjects.enumerated() {
+            let name = ProjectNameResolver.resolved(name: project.name, autoName: project.autoName, desktopNumber: nil, projectNumber: index + 1)
+            let contents = self.menu()
+            addHeading(String(format: NSLocalizedString("%d saved history entries", comment: "Archived Project history count"), project.windowHistory.count), to: contents)
+            let reopen = item(NSLocalizedString("Reopen on This Desktop", comment: "Restore archived Project"), #selector(reopenProject))
+            reopen.representedObject = [project.id, desktopUuid ?? ""]
+            reopen.isEnabled = Projects.spaces.contains { $0.uuid == desktopUuid && $0.desktopNumber > 0 }
+            contents.addItem(reopen)
+            menu.addItem(submenu(name, contents))
+        }
+        if menu.items.isEmpty { addHeading(NSLocalizedString("No Closed Projects", comment: "Empty archived Projects menu"), to: menu) }
+        return menu
+    }
+
+    @objc private static func closeProject(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String, let project = Projects.byId[id] else { return }
+        let parent = presentationWindow
+        DispatchQueue.main.async { ProjectLifecyclePrompt.close(project, from: parent) }
+    }
+
+    @objc private static func combineProjects(_ sender: NSMenuItem) {
+        guard let ids = sender.representedObject as? [String], ids.count == 2,
+              let source = Projects.byId[ids[0]], let target = Projects.byId[ids[1]] else { return }
+        let parent = presentationWindow
+        DispatchQueue.main.async { ProjectLifecyclePrompt.combine(source, into: target, from: parent) }
+    }
+
+    @objc private static func reopenProject(_ sender: NSMenuItem) {
+        guard let selection = sender.representedObject as? [String], selection.count == 2 else { return }
+        DispatchQueue.main.async { Projects.reopen(id: selection[0], on: selection[1]) }
+    }
+
     private static func makeCurrentProjectMenu(_ project: Project?, context: ProjectMenuResolver.Context) -> NSMenu {
         let menu = menu()
         let destination = moveDestination
@@ -254,6 +293,7 @@ final class ProjectsMenu: NSObject {
         menu.addItem(submenu(NSLocalizedString("New Project", comment: "Projects menu"), makeNewProjectMenu(context)))
         if !context.fromLabel {
             addProjects(to: menu, title: NSLocalizedString("Rename Project", comment: "Projects submenu"), action: #selector(renameProject))
+            addProjects(to: menu, title: NSLocalizedString("Close Project…", comment: "Archive a Project with confirmation"), action: #selector(closeProject))
             addProjects(to: menu, title: NSLocalizedString("Delete Project", comment: "Projects submenu"), action: #selector(deleteProject))
         }
         menu.addItem(.separator())
@@ -262,7 +302,17 @@ final class ProjectsMenu: NSObject {
         menu.addItem(heading)
         if context.fromLabel {
             addProjectAction(NSLocalizedString("Rename Project…", comment: "Projects menu"), #selector(renameProject), project, to: menu)
+            addProjectAction(NSLocalizedString("Close Project…", comment: "Archive a Project with confirmation"), #selector(closeProject), project, to: menu)
             addProjectAction(NSLocalizedString("Delete Project", comment: "Projects menu"), #selector(deleteProject), project, to: menu)
+        }
+        if let project {
+            let targets = self.menu()
+            for target in Projects.list where target.isCustom && target !== project && target.homeSpaceUuid == project.homeSpaceUuid {
+                let option = item(target.resolvedName, #selector(combineProjects))
+                option.representedObject = [project.id, target.id]
+                targets.addItem(option)
+            }
+            if !targets.items.isEmpty { menu.addItem(submenu(NSLocalizedString("Combine with", comment: "Combine target label"), targets)) }
         }
         addProjectAction(NSLocalizedString("Add Windows…", comment: "Project window picker action"), #selector(chooseWindows), project, to: menu)
         menu.addItem(.separator())

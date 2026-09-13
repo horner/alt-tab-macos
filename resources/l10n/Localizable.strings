@@ -1,3 +1,6 @@
+/* Desktop removal choices */
+"%@ is temporarily on Desktop %d. Keep it as a separate Project, close it with its history saved, or combine it with another Project there. Application windows stay open." = "%1$@ is temporarily on Desktop %2$d. Keep it as a separate Project, close it with its history saved, or combine it with another Project there. Application windows stay open.";
+
 /* No comment provided by engineer. */
 "%@ now has a Pro tier" = "%@ now has a Pro tier";
 
@@ -6,6 +9,12 @@
 
 /* Historical browser window and last seen age */
 "%@ — Reopen (%@)" = "%1$@ — Reopen (%2$@)";
+
+/* Desktop removal question */
+"%@’s Desktop was closed." = "%@’s Desktop was closed.";
+
+/* Archived Project history count */
+"%d saved history entries" = "%d saved history entries";
 
 /* No comment provided by engineer. */
 "%d selected window(s) already belong to: %@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships." = "%1$d selected window(s) already belong to: %2$@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships.";
@@ -283,14 +292,41 @@
 /* Menubar option */
 "Check permissions…" = "Check permissions…";
 
+/* Close Project confirmation */
+"Close %@?" = "Close %@?";
+
 /* Close all Project labels button */
 "Close All" = "Close All";
 
 /* Project label menu action */
 "Close All Project Labels" = "Close All Project Labels";
 
+/* Archive a Project */
+"Close Project" = "Close Project";
+
+/* Archive a Project with confirmation */
+"Close Project…" = "Close Project…";
+
 /* No comment provided by engineer. */
 "Close window" = "Close window";
+
+/* Archived Projects menu */
+"Closed Projects" = "Closed Projects";
+
+/* Project combine confirmation */
+"Combine %@ with %@?" = "Combine %1$@ with %2$@?";
+
+/* Confirm combining Projects */
+"Combine Projects" = "Combine Projects";
+
+/* Combine target label */
+"Combine with" = "Combine with";
+
+/* Combine target picker */
+"Combine with Project" = "Combine with Project";
+
+/* Preview combining Projects */
+"Combine…" = "Combine…";
 
 /* No comment provided by engineer. */
 "Conflicting shortcut" = "Conflicting shortcut";
@@ -539,6 +575,9 @@
 /* Project membership action */
 "Keep in Both" = "Keep in Both";
 
+/* Keep relocated Project */
+"Keep on Desktop %d" = "Keep on Desktop %d";
+
 /* No comment provided by engineer. */
 "Language" = "Language";
 
@@ -653,6 +692,9 @@
 /* No comment provided by engineer. */
 "No Active Project" = "No Active Project";
 
+/* Empty archived Projects menu */
+"No Closed Projects" = "No Closed Projects";
+
 /* No eligible app window */
 "No current window" = "No current window";
 
@@ -719,6 +761,9 @@
 /* No comment provided by engineer. */
 "Open Trackpad Settings…" = "Open Trackpad Settings…";
 
+/* Project combine preview */
+"Open windows: %d. Saved history entries: %d.\n\nCombine %@ into %@, skipping duplicates. %@ will move to Closed Projects with its original history saved. Application windows stay open and remain on their current Desktops." = "Open windows: %1$d. Saved history entries: %2$d.\n\nCombine %3$@ into %4$@, skipping duplicates. %5$@ will move to Closed Projects with its original history saved. Application windows stay open and remain on their current Desktops.";
+
 /* No comment provided by engineer. */
 "Order spaces by" = "Order spaces by";
 
@@ -779,6 +824,9 @@
 /* Unnamed custom Project */
 "Project %d" = "Project %d";
 
+/* Desktop removal choice window */
+"Project Desktop Closed" = "Project Desktop Closed";
+
 /* Project label controls */
 "Project labels" = "Project labels";
 
@@ -823,6 +871,9 @@
 
 /* Projects submenu */
 "Rename Project" = "Rename Project";
+
+/* Restore archived Project */
+"Reopen on This Desktop" = "Reopen on This Desktop";
 
 /* No comment provided by engineer. */
 "Report a bug" = "Report a bug";
@@ -1067,6 +1118,9 @@
 
 /* No comment provided by engineer. */
 "The application needs to restart to apply the language change." = "The application needs to restart to apply the language change.";
+
+/* Close Project explanation */
+"The Project will move to Closed Projects. Its name and history are saved for reopening. Application windows and the Desktop stay open." = "The Project will move to Closed Projects. Its name and history are saved for reopening. Application windows and the Desktop stay open.";
 
 /* No comment provided by engineer. */
 "The server didn't accept the submission. Check your internet connection and try again — your draft is preserved." = "The server didn't accept the submission. Check your internet connection and try again — your draft is preserved.";

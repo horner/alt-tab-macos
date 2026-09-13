@@ -25,6 +25,7 @@ final class Project {
     var linkedProjectIds = [String]()
     var linkedProjectId: String? { linkedProjectIds.first }
     var labelUuid: String?
+    var pendingDesktopRemoval = false
     var iconSource = IconSource.mostRecent { didSet { Projects.save() } }
 
     init(id: String, kind: Kind, homeSpaceUuid: String) {
@@ -40,6 +41,7 @@ final class Project {
 enum Projects {
     static private(set) var list = [Project]()
     static private(set) var byId = [String: Project]()
+    static private(set) var closedProjects = [ProjectEntry]()
     static var active: Project? {
         didSet {
             guard !isLoading, active?.id != oldValue?.id else { return }
@@ -70,6 +72,7 @@ enum Projects {
         Logger.debug { "projects startup enabled=\(isEnabled)" }
         let savedActiveId = UserDefaults.standard.string(forKey: "projectsActiveId")
         load()
+        ProjectLifecyclePrompt.start()
         ProjectVisibility.start()
         refreshSpaces()
         SpaceLabelWindows.start()
@@ -131,6 +134,7 @@ enum Projects {
         if !movedProjects.isEmpty { DispatchQueue.main.async { App.refreshOpenUiAfterExternalEvent([]) } }
         if previousDesktop != desktop?.homeSpaceUuid { ProjectVisibility.selectionChanged() }
         ProjectVisibility.refresh()
+        ProjectLifecyclePrompt.refresh()
     }
 
     private static func relocateLabel(_ labelId: String, from sourceUuid: String, to destinationUuid: String) -> Project? {
@@ -152,8 +156,10 @@ enum Projects {
 
     private static func mergeDesktop(_ sourceUuid: String, into destinationUuid: String) -> Bool {
         guard let source = byId["desktop-\(sourceUuid)"], !source.isCustom else { return false }
+        // A Desktop left empty by Close Project must not recreate that Project when the Desktop closes.
+        guard !linkedProjects(for: source).isEmpty || !closedProjects.contains(where: { $0.homeSpaceUuid == sourceUuid }) else { return false }
         let destination = forSpace(uuid: destinationUuid)
-        if linkedProjects(for: destination).isEmpty {
+        if linkedProjects(for: destination).isEmpty, !closedProjects.contains(where: { $0.homeSpaceUuid == destinationUuid }) {
             let resident = Project(id: UUID().uuidString, kind: .custom, homeSpaceUuid: destinationUuid)
             resident.name = destination.name
             resident.autoName = destination.autoName
@@ -177,6 +183,7 @@ enum Projects {
         for project in incoming {
             project.labelUuid = project.labelUuid ?? sourceUuid
             project.homeSpaceUuid = destinationUuid
+            project.pendingDesktopRemoval = isEnabled
         }
         destination.linkedProjectIds = ProjectDesktopResolver.merge(resident: destination.linkedProjectIds, incoming: incoming.map { $0.id })
         if !source.isCustom { source.linkedProjectIds.removeAll() }
@@ -188,7 +195,10 @@ enum Projects {
         spaces.flatMap { space in
             guard let desktop = byId["desktop-\(space.uuid)"] else { return [SpaceLabelResolver.Label(space: space, name: nil)] }
             let projects = linkedProjects(for: desktop)
-            guard !projects.isEmpty else { return [SpaceLabelResolver.Label(space: space, name: desktop.name ?? desktop.autoName)] }
+            guard !projects.isEmpty else {
+                if closedProjects.contains(where: { $0.homeSpaceUuid == space.uuid }) { return [] }
+                return [SpaceLabelResolver.Label(space: space, name: desktop.name ?? desktop.autoName)]
+            }
             return projects.enumerated().map { index, project in
                 SpaceLabelResolver.Label(space: space, name: project.resolvedName, identity: project.labelUuid ?? project.id, stackIndex: index)
             }
@@ -567,7 +577,10 @@ enum Projects {
 
     private static func recordPattern(_ pattern: ProjectWindowPattern, in history: inout [ProjectWindowPattern]) {
         if let index = history.firstIndex(of: pattern) {
-            if (pattern.lastSeenAt ?? .distantPast) > (history[index].lastSeenAt ?? .distantPast) { history[index] = pattern }
+            var updated = pattern
+            updated.lastSeenAt = max(pattern.lastSeenAt ?? .distantPast, history[index].lastSeenAt ?? .distantPast)
+            updated.confirmedAt = pattern.confirmedAt ?? history[index].confirmedAt
+            history[index] = updated
         } else {
             history.append(pattern)
         }
@@ -596,11 +609,86 @@ enum Projects {
         save()
     }
 
+    static func entry(for project: Project) -> ProjectEntry {
+        let uuid: String?
+        if case .desktop(let spaceUuid) = project.kind { uuid = spaceUuid } else { uuid = nil }
+        return ProjectEntry(id: project.id, kind: project.isCustom ? "custom" : "desktop", spaceUuid: uuid,
+            homeSpaceUuid: project.homeSpaceUuid, name: project.name, autoName: project.autoName,
+            iconFileName: iconFileNames[project.id], members: project.memberIdentities, linkedProjectId: project.linkedProjectId,
+            excludedMembers: project.excludedMembers, memberPatterns: project.memberPatterns, excludedPatterns: project.excludedPatterns,
+            windowHistory: project.windowHistory, linkedProjectIds: project.linkedProjectIds, labelUuid: project.labelUuid,
+            pendingDesktopRemoval: project.pendingDesktopRemoval)
+    }
+
+    static func keepAfterDesktopRemoval(_ project: Project) {
+        guard isEnabled, byId[project.id] === project else { return }
+        project.pendingDesktopRemoval = false
+        save()
+    }
+
+    static func close(_ project: Project) {
+        guard isEnabled, project.isCustom, byId[project.id] === project else { return }
+        archive(project)
+        save()
+        DispatchQueue.main.async { App.refreshOpenUiAfterExternalEvent([]) }
+    }
+
+    private static func archive(_ project: Project) {
+        for id in project.members { _ = rememberPattern(id, in: project) }
+        var snapshot = ProjectLifecycleResolver.closed(entry(for: project))
+        if snapshot.name == nil, snapshot.autoName == nil { snapshot.name = project.resolvedName }
+        closedProjects.append(snapshot)
+        for desktop in list { desktop.linkedProjectIds.removeAll { $0 == project.id } }
+        if active === project { active = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) } }
+        byId.removeValue(forKey: project.id)
+        list.removeAll { $0 === project }
+    }
+
+    static func reopen(id: String, on desktopUuid: String) {
+        guard isEnabled, byId[id] == nil, spaces.contains(where: { $0.uuid == desktopUuid && $0.desktopNumber > 0 }),
+              let index = closedProjects.firstIndex(where: { $0.id == id }) else { return }
+        let saved = ProjectLifecycleResolver.reopened(closedProjects.remove(at: index), on: desktopUuid)
+        isLoading = true
+        let project = insert(project(from: saved, kind: .custom))
+        let desktop = forSpace(uuid: desktopUuid)
+        desktop.linkedProjectIds = ProjectDesktopResolver.merge(resident: desktop.linkedProjectIds, incoming: [id])
+        isLoading = false
+        save()
+        DispatchQueue.main.async {
+            guard byId[id] === project else { return }
+            SpaceLabelWindows.show(on: desktopUuid)
+            for window in Windows.list where !list.contains(where: { $0.isCustom && $0.members.contains(window.tracked.id) }) {
+                restoreMembership(window)
+            }
+            App.refreshOpenUiAfterExternalEvent([])
+        }
+    }
+
+    static func combine(_ source: Project, into destination: Project) {
+        guard isEnabled, byId[source.id] === source, byId[destination.id] === destination,
+              spaces.contains(where: { $0.uuid == source.homeSpaceUuid && $0.desktopNumber > 0 }),
+              let merged = ProjectLifecycleResolver.combined(entry(for: source), into: entry(for: destination)) else { return }
+        let members = source.members.union(destination.members)
+        let wasActive = active === source
+        archive(source)
+        destination.members = members
+        destination.memberIdentities = merged.members
+        destination.memberPatterns = merged.memberPatterns
+        destination.windowHistory = merged.windowHistory
+        destination.excludedMembers = merged.excludedMembers
+        destination.excludedPatterns = merged.excludedPatterns
+        destination.excludedWindowIds.formUnion(source.excludedWindowIds)
+        destination.excludedWindowIds.subtract(members)
+        if wasActive { active = destination }
+        save()
+        DispatchQueue.main.async { App.refreshOpenUiAfterExternalEvent([]) }
+    }
+
     private static func load() {
         isLoading = true
         defer { isLoading = false }
         for entry in Preferences.projects {
-            guard byId[entry.id] == nil else { continue }
+            guard byId[entry.id] == nil, !closedProjects.contains(where: { $0.id == entry.id }) else { continue }
             let kind: Project.Kind
             if entry.kind == "desktop", let uuid = entry.spaceUuid {
                 kind = .desktop(spaceUuid: uuid)
@@ -610,23 +698,32 @@ enum Projects {
                 retainedEntries.append(entry)
                 continue
             }
-            let project = Project(id: entry.id, kind: kind, homeSpaceUuid: entry.homeSpaceUuid)
-            project.windowHistory = entry.windowHistory
-            for pattern in entry.memberPatterns { recordPattern(pattern, in: &project.windowHistory) }
-            project.memberPatterns = entry.memberPatterns
-            project.excludedPatterns = entry.excludedPatterns
-            project.memberIdentities = entry.members
-            project.excludedMembers = entry.excludedMembers
-            project.linkedProjectIds = entry.linkedProjectIds
-            project.labelUuid = entry.labelUuid
-            project.name = entry.name
-            project.autoName = entry.autoName
-            iconFileNames[project.id] = entry.iconFileName
-            insert(project)
+            if entry.isClosed, entry.kind == "custom" {
+                closedProjects.append(entry)
+                continue
+            }
+            insert(project(from: entry, kind: kind))
         }
         for desktop in list where !desktop.isCustom {
             for project in linkedProjects(for: desktop) { project.labelUuid = project.labelUuid ?? desktop.homeSpaceUuid }
         }
+    }
+
+    private static func project(from entry: ProjectEntry, kind: Project.Kind) -> Project {
+        let project = Project(id: entry.id, kind: kind, homeSpaceUuid: entry.homeSpaceUuid)
+        project.windowHistory = entry.windowHistory
+        for pattern in entry.memberPatterns { recordPattern(pattern, in: &project.windowHistory) }
+        project.memberPatterns = entry.memberPatterns
+        project.excludedPatterns = entry.excludedPatterns
+        project.memberIdentities = entry.members
+        project.excludedMembers = entry.excludedMembers
+        project.linkedProjectIds = entry.linkedProjectIds
+        project.labelUuid = entry.labelUuid
+        project.name = entry.name
+        project.autoName = entry.autoName
+        iconFileNames[project.id] = entry.iconFileName
+        project.pendingDesktopRemoval = entry.pendingDesktopRemoval
+        return project
     }
 
     static func save() {
@@ -635,17 +732,9 @@ enum Projects {
         for project in list where project.isCustom {
             for id in project.members { _ = rememberPattern(id, in: project) }
         }
-        let entries = list.map { project -> ProjectEntry in
-            let uuid: String?
-            if case .desktop(let spaceUuid) = project.kind { uuid = spaceUuid } else { uuid = nil }
-            return ProjectEntry(id: project.id, kind: project.isCustom ? "custom" : "desktop", spaceUuid: uuid,
-                homeSpaceUuid: project.homeSpaceUuid, name: project.name, autoName: project.autoName,
-                iconFileName: iconFileNames[project.id], members: project.memberIdentities, linkedProjectId: project.linkedProjectId, excludedMembers: project.excludedMembers,
-                memberPatterns: project.memberPatterns, excludedPatterns: project.excludedPatterns, windowHistory: project.windowHistory,
-                linkedProjectIds: project.linkedProjectIds, labelUuid: project.labelUuid)
-        }
-        Preferences.set("projects", entries + retainedEntries, false)
+        Preferences.set("projects", list.map { entry(for: $0) } + closedProjects + retainedEntries, false)
         SpaceLabelWindows.refreshNames()
+        ProjectLifecyclePrompt.refresh()
     }
 
     @discardableResult
