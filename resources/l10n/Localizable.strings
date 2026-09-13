@@ -1475,3 +1475,27 @@
 
 /* App picker error */
 "The application is no longer available." = "The application is no longer available.";
+
+/* Ambiguous restoration count */
+"%d windows match more than one Project." = "%d windows match more than one Project.";
+
+/* Optional desktop move when resolving restoration */
+"Also move to the Project’s Desktop" = "Also move to the Project’s Desktop";
+
+/* Ambiguous restoration explanation */
+"Choose where each window belongs." = "Choose where each window belongs.";
+
+/* Decline restoration for this window */
+"Leave unassigned" = "Leave unassigned";
+
+/* Choose another Project for a restored window */
+"Other Project…" = "Other Project…";
+
+/* Ambiguous restoration heading */
+"Review Project assignments" = "Review Project assignments";
+
+/* Review ambiguous windows */
+"Review windows…" = "Review windows…";
+
+/* Ambiguous restoration question */
+"Which Project for this window?" = "Which Project for this window?";

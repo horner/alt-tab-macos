@@ -640,6 +640,7 @@ extension App: NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        Projects.flushPendingSave()
         // symbolic hotkeys state persist after the app is quit; we restore this shortcut before quitting
         setNativeCommandTabEnabled(true)
         // usage counters are appended in memory and written back on a debounce; land the pending ones

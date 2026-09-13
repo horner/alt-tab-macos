@@ -59,6 +59,12 @@ enum ProjectRestoreNotice {
 
     private typealias Assignment = (windowName: String, projectName: String, differentDesktop: Bool, target: WindowTarget)
     private typealias Summary = (title: String, rows: [Row])
+    private struct Question {
+        let id: String
+        let target: WindowTarget
+        let pattern: ProjectWindowPattern
+        let projectIds: Set<String>
+    }
     private static var pending = [String: Assignment]()
     private static var queued = [Assignment]()
     private static var summaries = [Summary]()
@@ -66,13 +72,43 @@ enum ProjectRestoreNotice {
     private static var hideWork: DispatchWorkItem?
     private static var panel: NSPanel?
     private static var isHovered = false
+    private static var questions = [String: Question]()
+    private static var reviewStarted = false
+    private static var reviewing = false
 
-    static func record(window: Window, windowName: String, projectName: String, differentDesktop: Bool) {
-        pending[window.tracked.id + "\u{0}" + projectName] = (windowName, projectName, differentDesktop, WindowTarget(window))
+    static func ask(window: Window, pattern: ProjectWindowPattern, projectIds: Set<String>) {
+        let id = window.tracked.id
+        if let existing = questions[id], existing.target.liveWindow === window,
+           ProjectReattachResolver.sameEvidence(existing.pattern, pattern), existing.projectIds == projectIds { return }
+        questions[id] = Question(id: id, target: WindowTarget(window), pattern: pattern, projectIds: projectIds)
+        if reviewing { refreshReview(); return }
+        scheduleShow()
+    }
+
+    static func forgetQuestions(for ids: Set<String>) {
+        let changed = ids.reduce(false) { (questions.removeValue(forKey: $1) != nil) || $0 }
+        if changed && reviewing { refreshReview() }
+    }
+
+    private static func refreshReview() {
+        DispatchQueue.main.async {
+            guard reviewing else { return }
+            panel?.orderOut(nil)
+            reviewing = false
+            DispatchQueue.main.async { showNext() }
+        }
+    }
+
+    private static func scheduleShow() {
         guard showWork == nil else { return }
         let work = DispatchWorkItem { flush() }
         showWork = work
         DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
+    }
+
+    static func record(window: Window, windowName: String, projectName: String, differentDesktop: Bool) {
+        pending[window.tracked.id + "\u{0}" + projectName] = (windowName, projectName, differentDesktop, WindowTarget(window))
+        scheduleShow()
     }
 
     static func showSummary(title: String, rows: [Row]) {
@@ -88,7 +124,7 @@ enum ProjectRestoreNotice {
 
     private static func flush() {
         showWork = nil
-        guard !pending.isEmpty, Projects.isEnabled else { pending.removeAll(); return }
+        guard Projects.isEnabled else { dismiss(); return }
         let assignments = pending.values.sorted { ($0.projectName, $0.windowName) < ($1.projectName, $1.windowName) }
         pending.removeAll()
         queued.append(contentsOf: assignments)
@@ -99,6 +135,9 @@ enum ProjectRestoreNotice {
     private static func showNext() {
         guard panel?.isVisible != true else { return }
         guard Projects.isEnabled else { queued.removeAll(); summaries.removeAll(); return }
+        questions = questions.filter { $0.value.target.liveWindow != nil }
+        if !questions.isEmpty { showQuestions(); return }
+        reviewStarted = false
         if !summaries.isEmpty {
             let summary = summaries.removeFirst()
             show(title: summary.title, rows: summary.rows)
@@ -119,8 +158,10 @@ enum ProjectRestoreNotice {
         show(title: NSLocalizedString("Restored Project assignments", comment: "Project restoration notice"), rows: rows)
     }
 
-    private static func show(title: String, rows: [Row]) {
-        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+    @discardableResult
+    private static func show(title: String, rows: [Row], actionHeight: CGFloat = 0) -> NSView? {
+        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return nil }
+        reviewing = actionHeight > 0
         hideWork?.cancel()
         let window = panel ?? Panel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel = window
@@ -131,7 +172,7 @@ enum ProjectRestoreNotice {
         window.isOpaque = false
         window.backgroundColor = .clear
         window.hasShadow = true
-        let height = CGFloat(52 + rows.count * 48)
+        let height = CGFloat(52 + rows.count * 48) + actionHeight
         let view = ContentView(frame: NSRect(x: 0, y: 0, width: 380, height: height))
         view.material = .hudWindow
         view.state = .active
@@ -155,6 +196,80 @@ enum ProjectRestoreNotice {
         isHovered = false
         view.refreshHover()
         scheduleHide(after: 4)
+        return view
+    }
+
+    private static func showQuestions() {
+        let ordered = questions.values.sorted { $0.id < $1.id }
+        guard let question = ordered.first else { return }
+        if ordered.count > 1 && !reviewStarted {
+            let detail = String(format: NSLocalizedString("%d windows match more than one Project.", comment: "Ambiguous restoration count"), ordered.count)
+            guard let view = show(title: NSLocalizedString("Review Project assignments", comment: "Ambiguous restoration heading"),
+                rows: [Row(title: detail, detail: NSLocalizedString("Choose where each window belongs.", comment: "Ambiguous restoration explanation"))], actionHeight: 40) else { return }
+            addAction(NSLocalizedString("Review windows…", comment: "Review ambiguous windows"), y: 14, in: view) {
+                reviewStarted = true
+                refreshReview()
+            }
+            return
+        }
+        let candidates = question.projectIds.compactMap { Projects.byId[$0] }.filter { $0.isCustom }.sorted { $0.resolvedName < $1.resolvedName }
+        let displayed = Array(candidates.prefix(3))
+        let app = question.target.liveWindow?.application.localizedName ?? question.pattern.bundleIdentifier
+        let title = question.target.liveWindow?.title ?? question.pattern.title
+        let heading = NSLocalizedString("Which Project for this window?", comment: "Ambiguous restoration question")
+        guard let view = show(title: heading, rows: [Row(title: "\(app) — \(title)", detail: question.pattern.url ?? question.pattern.title, target: question.target)],
+            actionHeight: CGFloat(92 + displayed.count * 30)) else { return }
+        let move = NoticeButton(checkboxWithTitle: NSLocalizedString("Also move to the Project’s Desktop", comment: "Optional desktop move when resolving restoration"), target: nil, action: nil)
+        move.frame = NSRect(x: 16, y: 75, width: 348, height: 22)
+        move.font = .systemFont(ofSize: 12)
+        view.addSubview(move)
+        for (index, project) in displayed.enumerated() {
+            addAction(project.resolvedName, y: CGFloat(106 + (displayed.count - index - 1) * 30), in: view) {
+                finishQuestion(question, project: project, move: move.state == .on)
+            }
+        }
+        let other = NSPopUpButton(frame: NSRect(x: 16, y: 43, width: 348, height: 26), pullsDown: true)
+        other.addItem(withTitle: NSLocalizedString("Other Project…", comment: "Choose another Project for a restored window"))
+        for project in Projects.list.filter({ $0.isCustom }).sorted(by: { $0.resolvedName < $1.resolvedName }) {
+            let item = NSMenuItem(title: project.resolvedName, action: nil, keyEquivalent: "")
+            item.representedObject = project
+            other.menu?.addItem(item)
+        }
+        other.onAction = { sender in
+            guard let project = (sender as? NSPopUpButton)?.selectedItem?.representedObject as? Project else { return }
+            finishQuestion(question, project: project, move: move.state == .on)
+        }
+        view.addSubview(other)
+        addAction(NSLocalizedString("Leave unassigned", comment: "Decline restoration for this window"), y: 13, in: view) {
+            finishQuestion(question, project: nil, move: false)
+        }
+    }
+
+    private static func finishQuestion(_ question: Question, project: Project?, move: Bool) {
+        questions.removeValue(forKey: question.id)
+        panel?.orderOut(nil)
+        reviewing = false
+        DispatchQueue.main.async {
+            if let window = question.target.liveWindow {
+                if let project {
+                    Projects.resolveRestoration(window, expected: question.pattern, candidates: question.projectIds, project: project, move: move)
+                } else {
+                    Projects.declineRestoration(window)
+                }
+            }
+            showNext()
+        }
+    }
+
+    private static func addAction(_ title: String, y: CGFloat, in view: NSView, action: @escaping () -> Void) {
+        let button = NoticeButton(frame: NSRect(x: 16, y: y, width: 348, height: 26))
+        button.title = title
+        button.bezelStyle = .rounded
+        button.font = .systemFont(ofSize: 12)
+        button.cell?.lineBreakMode = .byTruncatingTail
+        button.toolTip = title
+        button.onAction = { _ in action() }
+        view.addSubview(button)
     }
 
     private static func setHovered(_ hovered: Bool, for view: NSView) {
@@ -167,7 +282,7 @@ enum ProjectRestoreNotice {
     private static func scheduleHide(after delay: TimeInterval) {
         hideWork?.cancel()
         hideWork = nil
-        guard let window = panel, window.isVisible, !isHovered else { return }
+        guard let window = panel, window.isVisible, !isHovered, !reviewing else { return }
         let work = DispatchWorkItem {
             guard window.isVisible, !isHovered else { return }
             window.orderOut(nil)
@@ -179,6 +294,12 @@ enum ProjectRestoreNotice {
     }
 
     private static func dismiss() {
+        for question in questions.values {
+            if let window = question.target.liveWindow { Projects.declineRestoration(window) }
+        }
+        questions.removeAll()
+        reviewing = false
+        reviewStarted = false
         hideWork?.cancel()
         hideWork = nil
         showWork?.cancel()

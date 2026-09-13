@@ -66,6 +66,18 @@ enum Projects {
     private static var desktopAssignmentQueued = false
     private static var desktopTopology = [SpaceLabelResolver.Space]()
     private static var desktopWindowIds = [String: Set<String>]()
+    private struct CreationContext {
+        let isNew: Bool
+        let observedAt: Date
+        let spaceId: UInt64
+        let project: Project?
+        var onCreationDesktop = false
+    }
+    private static var creationContexts = [String: CreationContext]()
+    private static var identityReads = Set<String>()
+    private static var declinedRestorations = Set<String>()
+    private static var metadataUpdates = [String: DispatchWorkItem]()
+    private static var saveWork: DispatchWorkItem?
 
     static func startObservingSpaceChanges() {
         guard spaceObserver == nil else { return }
@@ -290,95 +302,139 @@ enum Projects {
         // discoveryLanded consumes the WindowServer creation marker after appendWindow returns.
         // Capture it now so startup discovery and re-admission never count as a new window.
         let isNew = window.cgWindowId.map { Windows.recentlyCreatedWindows.contains($0) } ?? false
-        let creationProject = isEnabled && isNew ? active : nil
+        creationContexts[window.tracked.id] = CreationContext(isNew: isEnabled && isNew, observedAt: Date(), spaceId: Spaces.currentSpaceId, project: active)
         DispatchQueue.main.async { [weak window] in
             guard let window, !window.isWindowlessApp, Windows.list.contains(where: { $0 === window }) else { return }
+            if let context = creationContexts[window.tracked.id] { creationContexts[window.tracked.id]?.onCreationDesktop = window.spaceIds.contains(context.spaceId) }
             Logger.debug { "projects discovered window=\(window.tracked.id) spaces=\(window.spaceIds) phantom=\(window.isPhantom) active=\(active?.id ?? "none")" }
-            ProjectBrowserURLs.refresh(window) {
-                restoreMembership(window) { applicationAge in
-                    let savedOwners = owners(of: window.tracked.id)
-                    let onCurrentDesktop = window.spaceIds.contains(Spaces.currentSpaceId)
-                    if !window.isPhantom, pattern(for: window.tracked.id) != nil, let project = creationProject, project.isCustom,
-                       ProjectReattachResolver.allowsActiveAssignment(isNew: isNew, applicationAge: applicationAge,
-                           onCurrentDesktop: onCurrentDesktop, hasSavedOwner: !savedOwners.isEmpty || list.contains { $0.members.contains(window.tracked.id) }) {
-                        Logger.debug { "projects auto-add source=window-created project=\(project.id) window=\(window.tracked.id)" }
-                        addAutomatically(windowId: window.tracked.id, to: project)
-                    } else {
-                        Logger.debug { "projects auto-add skipped window=\(window.tracked.id) new=\(isNew) target=\(creationProject?.id ?? "none") phantom=\(window.isPhantom)" }
-                    }
-                    if isEnabled, let project = active, project.isCustom {
-                        claimName(window.application.localizedName, for: project)
-                    }
-                }
-            }
+            restoreMembership(window)
+            ProjectBrowserURLs.refresh(window) { restoreMembership(window) }
         }
     }
 
+    static func windowTitleChanged(_ window: Window) {
+        guard isEnabled, Windows.list.contains(where: { $0 === window }) else { return }
+        let id = window.tracked.id
+        ProjectBrowserURLs.invalidate(window)
+        metadataUpdates[id]?.cancel()
+        let work = DispatchWorkItem { [weak window] in
+            metadataUpdates.removeValue(forKey: id)
+            guard let window, Windows.list.contains(where: { $0 === window }) else { return }
+            ProjectBrowserURLs.refresh(window) { browserURLUpdated(window, restoreIfUnassigned: true) }
+        }
+        metadataUpdates[id] = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
+    }
+
     static func browserURLUpdated(_ window: Window, restoreIfUnassigned: Bool) {
-        guard isEnabled else { return }
+        guard isEnabled, metadataUpdates[window.tracked.id] == nil else { return }
         if list.contains(where: { $0.isCustom && $0.members.contains(window.tracked.id) }) {
-            save()
+            for project in list where project.isCustom && project.members.contains(window.tracked.id) { _ = rememberPattern(window.tracked.id, in: project) }
+            scheduleSave()
         } else if restoreIfUnassigned {
             restoreMembership(window)
         }
     }
 
-    private static func restoreMembership(_ window: Window, completion: ((TimeInterval) -> Void)? = nil) {
-        guard !WindowDesktopMove.preservesMembership(window) else { completion?(0); return }
-        guard !window.isWindowlessApp,
-              SpaceLabelWindows.switcherVisibility(windowId: window.cgWindowId, pid: window.application.pid) == nil else { return }
+    private static func restoreMembership(_ window: Window) {
+        guard canBelongToProject(window), !WindowDesktopMove.preservesMembership(window) else { return }
+        if let identity = windowIdentities[window.tracked.id] { applyRestoration(window, identity: identity); return }
+        guard identityReads.insert(window.tracked.id).inserted else { return }
         let application = window.application.runningApplication
         DispatchQueue.global(qos: .utility).async { [weak window] in
             let launchDate = application.launchDate
             DispatchQueue.main.async {
                 guard let window, Windows.list.contains(where: { $0 === window }) else { return }
-                guard !WindowDesktopMove.preservesMembership(window) else { completion?(0); return }
-                guard let launchDate else {
-                    restoredWindows.insert(window.tracked.id)
-                    captureLinkedDesktopWindow(window)
-                    completion?(0)
-                    if SwitcherSession.isActive { App.refreshOpenUiAfterExternalEvent([]) }
-                    return
-                }
-                let identity = ProjectWindowIdentity(windowId: window.tracked.id, pid: window.application.pid, processLaunchedAt: launchDate)
-                windowIdentities[identity.windowId] = identity
-                ProjectVisibility.register(window, identity)
-                let savedOwners = owners(of: identity.windowId)
-                if savedOwners.count > 1 { Logger.debug { "projects restoration ambiguous window=\(identity.windowId) projects=\(savedOwners.sorted())" } }
-                var changed = false
-                for project in list where project.isCustom {
-                    if project.excludedMembers.contains(identity) { project.excludedWindowIds.insert(identity.windowId) }
-                    if project.excludedWindowIds.contains(identity.windowId), !project.excludedMembers.contains(identity) {
-                        project.excludedMembers.append(identity)
-                        changed = true
-                    }
-                    let candidate = pattern(for: identity.windowId)
-                    let patternExcluded = candidate.map { pattern in project.excludedPatterns.contains { ProjectReattachResolver.matchesObservation($0, pattern) && ($0.spaceUuid == nil || pattern.spaceUuid == nil || $0.spaceUuid == pattern.spaceUuid) } } ?? false
-                    if ProjectReattachResolver.shouldRestore(hasLiveIdentity: project.memberIdentities.contains(identity),
-                        identityExcluded: project.excludedMembers.contains(identity) || project.excludedWindowIds.contains(identity.windowId),
-                        patternExcluded: patternExcluded, isUniquePatternOwner: savedOwners.count == 1 && savedOwners.contains(project.id)) {
-                        let inserted = project.members.insert(identity.windowId).inserted
-                        changed = changed || inserted
-                        if isEnabled, inserted, !project.memberIdentities.contains(identity), let candidate {
-                            let origins = Set(project.memberPatterns.filter { ProjectReattachResolver.matchesObservation($0, candidate) }.compactMap { $0.spaceUuid })
-                            let elsewhere = candidate.spaceUuid.map { !origins.isEmpty && !origins.contains($0) } ?? false
-                            ProjectRestoreNotice.record(window: window, windowName: ProjectNameResolver.normalized(window.title) ?? window.application.localizedName ?? candidate.bundleIdentifier, projectName: project.resolvedName, differentDesktop: elsewhere)
-                        }
-                        Logger.debug { "projects restored project=\(project.id) window=\(identity.windowId) pid=\(identity.pid)" }
-                    }
-                    if project.members.contains(identity.windowId), !project.memberIdentities.contains(identity) {
-                        Logger.debug { "projects identity saved project=\(project.id) window=\(identity.windowId)" }
-                        project.memberIdentities.append(identity)
-                        changed = true
-                    }
-                }
-                restoredWindows.insert(window.tracked.id)
-                if changed { save() }
-                captureLinkedDesktopWindow(window)
-                completion?(Date().timeIntervalSince(launchDate))
-                if changed || SwitcherSession.isActive { App.refreshOpenUiAfterExternalEvent([]) }
+                identityReads.remove(window.tracked.id)
+                let identity = launchDate.map { ProjectWindowIdentity(windowId: window.tracked.id, pid: window.application.pid, processLaunchedAt: $0) }
+                if let identity { windowIdentities[identity.windowId] = identity; ProjectVisibility.register(window, identity) }
+                applyRestoration(window, identity: identity)
             }
         }
+    }
+
+    private static func applyRestoration(_ window: Window, identity: ProjectWindowIdentity?) {
+        guard canBelongToProject(window), !WindowDesktopMove.preservesMembership(window) else { return }
+        let id = window.tracked.id
+        if let context = creationContexts.removeValue(forKey: id), let identity,
+           ProjectReattachResolver.allowsActiveAssignment(isNew: context.isNew,
+               applicationAge: context.observedAt.timeIntervalSince(identity.processLaunchedAt), onCurrentDesktop: context.onCreationDesktop),
+           !declinedRestorations.contains(id),
+           !list.contains(where: { $0.isCustom && $0.members.contains(id) }) {
+            if let project = context.project, project.isCustom, byId[project.id] === project {
+                Logger.debug { "projects assignment source=window-created project=\(project.id) window=\(id)" }
+                add(windowId: id, to: project)
+                claimName(window.application.localizedName, for: project)
+            } else {
+                declinedRestorations.insert(id)
+            }
+        }
+        let liveOwners = Set(list.filter { $0.isCustom && $0.members.contains(id) }.map { $0.id })
+        let identityOwners = Set(list.filter { project in
+            project.isCustom && (identity.map { project.memberIdentities.contains($0) && !project.excludedMembers.contains($0) && !project.excludedWindowIds.contains(id) } ?? false)
+        }.map { $0.id })
+        let ready = metadataUpdates[id] == nil && ProjectBrowserURLs.isReady(window)
+        let savedOwners = isEnabled && liveOwners.isEmpty && identityOwners.isEmpty && !declinedRestorations.contains(id) && ready ? owners(of: id) : []
+        let candidates = ProjectReattachResolver.restorationCandidates(liveOwners: liveOwners, identityOwners: identityOwners,
+            savedOwners: savedOwners, declined: declinedRestorations.contains(id))
+        var changed = false
+        for project in list where project.isCustom {
+            if let identity {
+                if project.excludedMembers.contains(identity) { project.excludedWindowIds.insert(id) }
+                if project.excludedWindowIds.contains(id), !project.excludedMembers.contains(identity) {
+                    project.excludedMembers.append(identity)
+                    changed = true
+                }
+            }
+            let identityOwner = identityOwners.contains(project.id)
+            if candidates.contains(project.id), ProjectReattachResolver.shouldRestore(hasLiveIdentity: identityOwner,
+                identityExcluded: project.excludedWindowIds.contains(id) || (identity.map { project.excludedMembers.contains($0) } ?? false),
+                patternExcluded: isExcluded(id, from: project), isUniquePatternOwner: savedOwners == [project.id]) {
+                if project.members.insert(id).inserted {
+                    changed = true
+                    if !identityOwner, let candidate = pattern(for: window) {
+                        let origins = Set(project.memberPatterns.filter { ProjectReattachResolver.matchesObservation($0, candidate) }.compactMap { $0.spaceUuid })
+                        let elsewhere = candidate.spaceUuid.map { !origins.isEmpty && !origins.contains($0) } ?? false
+                        ProjectRestoreNotice.record(window: window, windowName: window.title, projectName: project.resolvedName, differentDesktop: elsewhere)
+                    }
+                }
+            }
+            if project.members.contains(id), let identity, !project.memberIdentities.contains(identity) {
+                project.memberIdentities.append(identity)
+                changed = true
+            }
+        }
+        restoredWindows.insert(id)
+        if savedOwners.count > 1, let candidate = pattern(for: window) {
+            ProjectRestoreNotice.ask(window: window, pattern: candidate, projectIds: savedOwners)
+        } else {
+            ProjectRestoreNotice.forgetQuestions(for: [id])
+        }
+        if changed { save() }
+        captureLinkedDesktopWindow(window)
+        if changed || SwitcherSession.isActive { App.refreshOpenUiAfterExternalEvent([]) }
+    }
+
+    static func declineRestoration(_ window: Window) {
+        guard Windows.list.contains(where: { $0 === window }) else { return }
+        declinedRestorations.insert(window.tracked.id)
+        ProjectRestoreNotice.forgetQuestions(for: [window.tracked.id])
+    }
+
+    static func resolveRestoration(_ window: Window, expected: ProjectWindowPattern, candidates: Set<String>, project: Project, move: Bool) {
+        let id = window.tracked.id
+        guard isEnabled, Windows.list.contains(where: { $0 === window }), canBelongToProject(window),
+              byId[project.id] === project, project.isCustom, !WindowDesktopMove.preservesMembership(window),
+              !list.contains(where: { $0.isCustom && $0.members.contains(id) }), !declinedRestorations.contains(id),
+              metadataUpdates[id] == nil, ProjectBrowserURLs.isReady(window), let current = pattern(for: window),
+              ProjectReattachResolver.sameEvidence(expected, current), owners(of: id) == candidates,
+              var evidence = ProjectReattachResolver.evidence(current) else { restoreMembership(window); return }
+        evidence.confirmedAt = Date()
+        recordPattern(evidence, in: &project.memberPatterns)
+        add(windowId: id, to: project)
+        save()
+        App.refreshOpenUiAfterExternalEvent([])
+        if move { ProjectAssignmentPrompt.moveToDesktop([window], project: project) }
     }
 
     private static func captureLinkedDesktopWindow(_ window: Window) {
@@ -401,6 +457,13 @@ enum Projects {
         let ids = Set(windows.map { $0.tracked.id })
         Logger.debug { "projects tracking removal windows=\(ids.sorted())" }
         ids.forEach { windowIdentities.removeValue(forKey: $0) }
+        for id in ids {
+            creationContexts.removeValue(forKey: id)
+            metadataUpdates.removeValue(forKey: id)?.cancel()
+        }
+        identityReads.subtract(ids)
+        declinedRestorations.subtract(ids)
+        ProjectRestoreNotice.forgetQuestions(for: ids)
         restoredWindows.subtract(ids)
         var changed = false
         let spaceIds = Set(windows.filter { !$0.isWindowlessApp }.flatMap { $0.spaceIds })
@@ -408,8 +471,8 @@ enum Projects {
             project.excludedWindowIds.subtract(ids)
             if project.isCustom {
                 for window in windows where project.members.contains(window.tracked.id) {
-                    if let pattern = pattern(for: window), !pattern.title.isEmpty {
-                        recordPattern(pattern, in: &project.memberPatterns)
+                    if let pattern = pattern(for: window), ProjectBrowserURLs.isReady(window) {
+                        if let evidence = ProjectReattachResolver.evidence(pattern) { recordPattern(evidence, in: &project.memberPatterns) }
                         recordPattern(pattern, in: &project.windowHistory)
                         changed = true
                     }
@@ -420,7 +483,7 @@ enum Projects {
                 project.members.subtract(ids)
                 let count = project.memberIdentities.count
                 project.memberIdentities.removeAll { ids.contains($0.windowId) }
-                changed = changed || count != project.memberIdentities.count
+                changed = changed || hadMember || count != project.memberIdentities.count
                 if hadMember { project.autoName = ProjectNameResolver.forget(autoName: project.autoName, hasLiveWindows: !project.members.isEmpty) }
             } else if let space = spaces.first(where: { "desktop-\($0.uuid)" == project.id }), spaceIds.contains(space.spaceId) {
                 let hasLiveWindows = Windows.list.contains { !$0.isWindowlessApp && $0.spaceIds.contains(space.spaceId) }
@@ -503,6 +566,8 @@ enum Projects {
 
     static func add(windowId: String, to project: Project) {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
+        declinedRestorations.remove(windowId)
+        ProjectRestoreNotice.forgetQuestions(for: [windowId])
         let wasExcluded = project.excludedWindowIds.remove(windowId) != nil || project.excludedMembers.contains { $0.windowId == windowId }
         project.excludedMembers.removeAll { $0.windowId == windowId }
         if let pattern = pattern(for: windowId) { project.excludedPatterns.removeAll { ProjectReattachResolver.matchesObservation($0, pattern) } }
@@ -525,8 +590,9 @@ enum Projects {
     }
 
     private static func permitsAutomaticAssignment(_ windowId: String, to project: Project) -> Bool {
-        guard restoredWindows.contains(windowId),
+        guard restoredWindows.contains(windowId), !declinedRestorations.contains(windowId), metadataUpdates[windowId] == nil,
               let window = Windows.list.first(where: { $0.tracked.id == windowId }), ProjectBrowserURLs.isReady(window),
+              let pattern = pattern(for: window), ProjectReattachResolver.evidence(pattern) != nil,
               !WindowDesktopMove.preservesMembership(window),
               SpaceLabelWindows.switcherVisibility(windowId: window.cgWindowId, pid: window.application.pid) == nil,
               !isExcluded(windowId, from: project) else { return false }
@@ -537,7 +603,11 @@ enum Projects {
 
     private static func addAutomatically(windowId: String, to project: Project) {
         guard isEnabled, project.isCustom, byId[project.id] === project, permitsAutomaticAssignment(windowId, to: project) else { return }
-        if insertMember(windowId, into: project) { save(); App.refreshOpenUiAfterExternalEvent([]) }
+        if insertMember(windowId, into: project) {
+            Logger.debug { "projects assignment source=desktop-capture project=\(project.id) window=\(windowId)" }
+            save()
+            App.refreshOpenUiAfterExternalEvent([])
+        }
     }
 
     static func assign(_ windowIds: Set<String>, to project: Project, move: Bool) {
@@ -568,10 +638,12 @@ enum Projects {
 
     @discardableResult
     private static func rememberPattern(_ windowId: String, in project: Project) -> Bool {
-        guard let pattern = pattern(for: windowId), (!pattern.title.isEmpty || pattern.url != nil) else { return false }
-        let inserted = !project.memberPatterns.contains(pattern)
-        recordPattern(pattern, in: &project.memberPatterns)
+        guard metadataUpdates[windowId] == nil, let window = Windows.list.first(where: { $0.tracked.id == windowId }),
+              ProjectBrowserURLs.isReady(window), let pattern = pattern(for: window), (!pattern.title.isEmpty || pattern.url != nil) else { return false }
         recordPattern(pattern, in: &project.windowHistory)
+        guard let evidence = ProjectReattachResolver.evidence(pattern) else { return false }
+        let inserted = !project.memberPatterns.contains(evidence)
+        recordPattern(evidence, in: &project.memberPatterns)
         return inserted
     }
 
@@ -596,11 +668,12 @@ enum Projects {
 
     static func remove(windowId: String, from project: Project) {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
+        declinedRestorations.insert(windowId)
         Logger.debug { "projects explicit remove project=\(project.id) window=\(windowId) wasMember=\(project.members.contains(windowId))" }
         if let pattern = pattern(for: windowId) {
             recordPattern(pattern, in: &project.windowHistory)
             project.memberPatterns.removeAll { ProjectReattachResolver.matchesObservation($0, pattern) }
-            if !project.excludedPatterns.contains(pattern) { project.excludedPatterns.append(pattern) }
+            if let evidence = ProjectReattachResolver.evidence(pattern), !project.excludedPatterns.contains(evidence) { project.excludedPatterns.append(evidence) }
         }
         project.excludedWindowIds.insert(windowId)
         if let identity = windowIdentities[windowId], !project.excludedMembers.contains(identity) { project.excludedMembers.append(identity) }
@@ -642,6 +715,7 @@ enum Projects {
         if active === project { active = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) } }
         byId.removeValue(forKey: project.id)
         list.removeAll { $0 === project }
+        ProjectRestoreNotice.forgetQuestions(for: project.members)
     }
 
     static func reopen(id: String, on desktopUuid: String) {
@@ -713,8 +787,8 @@ enum Projects {
         let project = Project(id: entry.id, kind: kind, homeSpaceUuid: entry.homeSpaceUuid)
         project.windowHistory = entry.windowHistory
         for pattern in entry.memberPatterns { recordPattern(pattern, in: &project.windowHistory) }
-        project.memberPatterns = entry.memberPatterns
-        project.excludedPatterns = entry.excludedPatterns
+        project.memberPatterns = entry.memberPatterns.compactMap { ProjectReattachResolver.evidence($0) }
+        project.excludedPatterns = entry.excludedPatterns.compactMap { ProjectReattachResolver.evidence($0) }
         project.memberIdentities = entry.members
         project.excludedMembers = entry.excludedMembers
         project.linkedProjectIds = entry.linkedProjectIds
@@ -726,8 +800,22 @@ enum Projects {
         return project
     }
 
+    private static func scheduleSave() {
+        guard saveWork == nil else { return }
+        let work = DispatchWorkItem { save() }
+        saveWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
+    }
+
+    static func flushPendingSave() {
+        guard saveWork != nil else { return }
+        save()
+    }
+
     static func save() {
         guard !isLoading else { return }
+        saveWork?.cancel()
+        saveWork = nil
         ProjectVisibility.refresh()
         for project in list where project.isCustom {
             for id in project.members { _ = rememberPattern(id, in: project) }

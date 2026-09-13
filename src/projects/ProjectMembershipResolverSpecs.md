@@ -18,7 +18,8 @@ tabs deliberately start without a Space. Switcher rendering uses cached membersh
 defers assignment of eligible local windows to the active Project. Deferred work rechecks the active
 Project, current Space and live ownership; identity restoration must finish first so a still-pending
 saved assignment cannot be overwritten. Unique saved owners and explicit exclusions are respected;
-the linked or active Project can resolve ambiguous history when it is among the possible owners.
+ambiguous history requires a user choice in the restoration notification. Pending metadata and
+explicitly declined restoration cannot be captured by the linked or active Project.
 Explicitly excluded local windows remain accessible through the fallback without being reassigned.
 QA snapshots use the same per-window filter as the live switcher and never perform assignment.
 

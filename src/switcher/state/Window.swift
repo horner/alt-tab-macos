@@ -80,10 +80,12 @@ class Window {
     /// may not (the source window can be gone by then).
     func adopt(_ record: TrackedWindow) {
         let previousSpaces = tracked.spaceIds
+        let previousTitle = tracked.title
         let wasMinimized = tracked.isMinimized
         let wasFullscreen = tracked.isFullscreen
         tracked = record
         tracked.hasThumbnail = thumbnail != nil
+        if tracked.title != previousTitle { Projects.windowTitleChanged(self) }
         if tracked.spaceIds != previousSpaces { Projects.windowSpaceChanged(self) }
         if wasMinimized != tracked.isMinimized { ProjectVisibility.minimizedChanged(self) }
         if wasFullscreen != tracked.isFullscreen { ProjectVisibility.refresh() }
@@ -143,7 +145,9 @@ class Window {
     }
 
     func updateFromAxAttributes(_ title: String?, _ size: CGSize?, _ position: CGPoint?, _ isFullscreen: Bool?, _ isMinimized: Bool?) {
+        let previousTitle = self.title
         self.title = bestEffortTitle(title)
+        if self.title != previousTitle { Projects.windowTitleChanged(self) }
         self.size = size
         self.position = position
         self.isFullscreen = isFullscreen ?? false

@@ -1,5 +1,11 @@
 # Project restoration notice
 
+Ordinary new-window assignment and linked-Desktop capture are silent. Their assignment source,
+window ID and Project ID are available in debug logs, without a notification. The heading
+“Restored Project assignments” is reserved for membership recovered from saved historical
+patterns. Retaining a live identity, changing a title/URL, and explicitly assigning a Project
+do not produce a restoration notice. Ambiguous historical matches still offer a choice.
+
 Restore All Windows to Project Desktops uses the same non-activating panel for its completion
 summary. A summary waits for any visible page to finish, then appears before queued assignment
 pages. Its rows report move counts followed by individual window names and skip/failure reasons.
@@ -33,3 +39,27 @@ first click while another app is active and does not take keyboard focus from th
 
 The localized heading reserves space for the close button. The button has a localized tooltip
 and accessibility label. Canceled timers must not hide a later page or reopen a dismissed batch.
+
+## Ambiguous restoration
+
+Useful observations matching multiple Projects enter a one-second batch in this same panel.
+Placeholder-only windows wait for metadata without a question or restoration notice. Several
+ambiguous windows produce one count and a “Review windows…” button; review proceeds one window
+at a time. A single window opens its choices directly. The panel remains non-activating and does
+not expire while a choice is pending. New questions wait in the same queue.
+
+Each question shows the app, current window title, and URL when available. Up to three candidate
+Projects have direct buttons; “Other Project…” lists all custom Projects. “Leave unassigned” skips
+one window; closing the panel skips all queued questions. Both suppress automatic assignment and
+re-prompting for those live windows. Window links retain their existing explicit focus behavior;
+focusing from a question dismisses the questions and leaves them unassigned.
+
+Choosing a Project changes membership. “Also move to the Project’s Desktop” is unchecked by default
+and explicitly opts into the existing asynchronous physical move path. The notice closes before
+assignment/move work runs. A choice revalidates the original live Window object, metadata readiness,
+meaningful URL/title evidence, Desktop, candidate set, current ownership, and original destination
+Project object. Stale choices are discarded and restoration reconsidered. Closed windows or reused
+IDs cannot substitute for the original target. Manual assignments remove pending questions.
+
+Useful confirmed observations are persisted; generic titles never become rules. Multiple confirmed
+owners of indistinguishable evidence still require a choice on a future restoration.

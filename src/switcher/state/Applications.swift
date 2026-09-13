@@ -993,7 +993,7 @@ class Applications {
                     let semantic = SemanticSurface(title: newTitle, subrole: a.subrole, role: a.role, isMain: a.isMain)
                     guard Windows.reevaluateAdmission(window, semantic) else { return }
                     let changed = window.title != newTitle
-                    if changed { window.title = newTitle; window.lastSearchQuery = nil }
+                    if changed { window.title = newTitle; window.lastSearchQuery = nil; Projects.windowTitleChanged(window) }
                     window.isMainWindow = a.isMain ?? false
                     TrackedWindowStateBridge.dispatch(.titleAndTabsRead(wid: wid, tabGroup: tabObservation,
                         reconcileTabs: reconcileTabs, changedSoFar: changed))
@@ -1018,6 +1018,7 @@ class Applications {
             guard window.title != newTitle else { return }
             window.title = newTitle
             window.lastSearchQuery = nil
+            Projects.windowTitleChanged(window)
             TrackedWindowStateBridge.dispatch(.titleAndTabsRead(wid: wid, tabGroup: .unknown,
                 reconcileTabs: false, changedSoFar: true))
         }
