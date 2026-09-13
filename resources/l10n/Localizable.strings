@@ -1,3 +1,12 @@
+/* Restoration notice page */
+"%@ (%d/%d)" = "%1$@ (%2$d/%3$d)";
+
+/* Project name and home Desktop number */
+"%@ (D%d)" = "%1$@ (D%2$d)";
+
+/* App picker error */
+"%@ could not perform %@. Its menu command may be unavailable." = "%1$@ could not perform %2$@. Its menu command may be unavailable.";
+
 /* Desktop removal choices */
 "%@ is temporarily on Desktop %d. Keep it as a separate Project, close it with its history saved, or combine it with another Project there. Application windows stay open." = "%1$@ is temporarily on Desktop %2$d. Keep it as a separate Project, close it with its history saved, or combine it with another Project there. Application windows stay open.";
 
@@ -13,11 +22,20 @@
 /* Desktop removal question */
 "%@’s Desktop was closed." = "%@’s Desktop was closed.";
 
+/* Desktop restoration counts */
+"%d moved · %d already home" = "%1$d moved · %2$d already home";
+
 /* Archived Project history count */
 "%d saved history entries" = "%d saved history entries";
 
 /* No comment provided by engineer. */
-"%d selected window(s) already belong to: %@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships." = "%1$d selected window(s) already belong to: %2$@. Move removes them from those Projects. Keep in Both adds them without removing existing memberships.";
+"%d selected window(s) already belong to: %@. Move removes them from those Projects and moves them to this Project's Desktop. Keep in Both adds them without changing their Desktop or existing memberships." = "%1$d selected window(s) already belong to: %2$@. Move removes them from those Projects and moves them to this Project's Desktop. Keep in Both adds them without changing their Desktop or existing memberships.";
+
+/* Desktop restoration counts */
+"%d skipped · %d could not be moved" = "%1$d skipped · %2$d could not be moved";
+
+/* Ambiguous restoration count */
+"%d windows match more than one Project." = "%d windows match more than one Project.";
 
 /* Project label reveal duration help */
 "0 ms disables the automatic reveal. Closed or minimized labels stay hidden." = "0 ms disables the automatic reveal. Closed or minimized labels stay hidden.";
@@ -53,9 +71,6 @@
 "Activate" = "Activate";
 
 /* No comment provided by engineer. */
-"Activate Project" = "Activate Project";
-
-/* No comment provided by engineer. */
 "Activate your Pro license" = "Activate your Pro license";
 
 /* No comment provided by engineer. */
@@ -65,28 +80,16 @@
 "Active app" = "Active app";
 
 /* No comment provided by engineer. */
-"Active Project: %@" = "Active Project: %@";
-
-/* No comment provided by engineer. */
 "Active screen" = "Active screen";
+
+/* Project window picker action */
+"Add" = "Add";
 
 /* No comment provided by engineer. */
 "Add a pattern" = "Add a pattern";
 
 /* No comment provided by engineer. */
 "Add a running app" = "Add a running app";
-
-/* Projects submenu */
-"Add active window to" = "Add active window to";
-
-/* No comment provided by engineer. */
-"Add active window to: %@" = "Add active window to: %@";
-
-/* No comment provided by engineer. */
-"Add active window to: No Active Project" = "Add active window to: No Active Project";
-
-/* No comment provided by engineer. */
-"Add all visible to: %@" = "Add all visible to: %@";
 
 /* Project assignment action */
 "Add All Visible Windows" = "Add All Visible Windows";
@@ -98,13 +101,16 @@
 "Add All Visible Windows to %@" = "Add All Visible Windows to %@";
 
 /* No comment provided by engineer. */
-"Add all visible to: No Active Project" = "Add all visible to: No Active Project";
-
-/* No comment provided by engineer. */
 "Add an app from disk" = "Add an app from disk";
 
-/* Projects submenu */
-"Add this Window to Project" = "Add this Window to Project";
+/* Choose a Project for manual assignment */
+"Add Windows to" = "Add Windows to";
+
+/* Project window picker */
+"Add Windows to %@" = "Add Windows to %@";
+
+/* Project window picker action */
+"Add Windows…" = "Add Windows…";
 
 /* No comment provided by engineer. */
 "Additional controls" = "Additional controls";
@@ -144,6 +150,9 @@
 
 /* No comment provided by engineer. */
 "Alphabetical Order" = "Alphabetical Order";
+
+/* Optional desktop move when resolving restoration */
+"Also move to the Project’s Desktop" = "Also move to the Project’s Desktop";
 
 /* No comment provided by engineer. */
 "AltTab crashed last time you used it. Sending a crash report will help get the issue fixed" = "AltTab crashed last time you used it. Sending a crash report will help get the issue fixed";
@@ -223,6 +232,9 @@
 /* No comment provided by engineer. */
 "Application Name - Window Title" = "Application Name - Window Title";
 
+/* App picker results */
+"Applications" = "Applications";
+
 /* No comment provided by engineer. */
 "Applies in other Appearances" = "Applies in other Appearances";
 
@@ -237,6 +249,9 @@
 
 /* No comment provided by engineer. */
 "Ask whether to send crash reports" = "Ask whether to send crash reports";
+
+/* Project Desktop move failure */
+"Assigned to %@; Desktop move incomplete" = "Assigned to %@; Desktop move incomplete";
 
 /* No comment provided by engineer. */
 "Auto" = "Auto";
@@ -262,11 +277,11 @@
 /* Raise all Project labels button */
 "Bring All to Front" = "Bring All to Front";
 
-/* Project label button help */
-"Bring open Project labels to the front and restore minimized labels." = "Bring open Project labels to the front and restore minimized labels.";
-
 /* Project label menu action */
 "Bring Project Labels to Front" = "Bring Project Labels to Front";
+
+/* Move a window to the current Desktop */
+"Bring to This Desktop" = "Bring to This Desktop";
 
 /* No comment provided by engineer. */
 "Bundle ID" = "Bundle ID";
@@ -292,6 +307,12 @@
 /* Menubar option */
 "Check permissions…" = "Check permissions…";
 
+/* Project window picker */
+"Choose the windows to add. Windows from other Desktops are included." = "Choose the windows to add. Windows from other Desktops are included.";
+
+/* Ambiguous restoration explanation */
+"Choose where each window belongs." = "Choose where each window belongs.";
+
 /* Close Project confirmation */
 "Close %@?" = "Close %@?";
 
@@ -300,6 +321,9 @@
 
 /* Project label menu action */
 "Close All Project Labels" = "Close All Project Labels";
+
+/* Dismiss the Project restoration notice */
+"Close notification" = "Close notification";
 
 /* Archive a Project */
 "Close Project" = "Close Project";
@@ -328,6 +352,9 @@
 /* Preview combining Projects */
 "Combine…" = "Combine…";
 
+/* Conflicting Project homes */
+"Conflict: %@" = "Conflict: %@";
+
 /* No comment provided by engineer. */
 "Conflicting shortcut" = "Conflicting shortcut";
 
@@ -336,6 +363,12 @@
 
 /* No comment provided by engineer. */
 "Controls" = "Controls";
+
+/* Desktop move error */
+"Could not bring window to this Desktop" = "Could not bring window to this Desktop";
+
+/* App picker error */
+"Could not complete the action" = "Could not complete the action";
 
 /* LetsMove replacement alert */
 "Could not move to Applications folder" = "Could not move to Applications folder";
@@ -403,7 +436,8 @@
 /* Menubar option */
 "Debug tools" = "Debug tools";
 
-/* Projects submenu */
+/* Projects menu
+   Projects submenu */
 "Delete Project" = "Delete Project";
 
 /* No comment provided by engineer. */
@@ -412,8 +446,20 @@
 /* Spaces switcher tile label */
 "Desktop %d" = "Desktop %d";
 
+/* Desktop restore skip reason */
+"Desktop location not confirmed" = "Desktop location not confirmed";
+
+/* Project Desktop move failure */
+"Desktop move could not be confirmed" = "Desktop move could not be confirmed";
+
+/* Project Desktop move failure */
+"Desktop move unavailable for this window" = "Desktop move unavailable for this window";
+
 /* No comment provided by engineer. */
 "Desktop order" = "Desktop order";
+
+/* Desktop restoration summary */
+"Desktop restore finished" = "Desktop restore finished";
 
 /* Current Desktop menu */
 "Desktop: %@" = "Desktop: %@";
@@ -441,6 +487,9 @@
 
 /* No comment provided by engineer. */
 "e.g. Debug" = "e.g. Debug";
+
+/* New Project menu */
+"Empty Project…" = "Empty Project…";
 
 /* No comment provided by engineer. */
 "Enable Projects" = "Enable Projects";
@@ -475,18 +524,33 @@
 /* No comment provided by engineer. */
 "Filtering" = "Filtering";
 
+/* App picker loading */
+"Finding applications…" = "Finding applications…";
+
 /* No comment provided by engineer. */
 "Focus" = "Focus";
 
 /* No comment provided by engineer. */
 "Focus selected window" = "Focus selected window";
 
+/* Restoration result window link */
+"Focus this window" = "Focus this window";
+
 /* No comment provided by engineer. */
 "Free" = "Free";
+
+/* New Project menu */
+"From Active Window…" = "From Active Window…";
+
+/* New Project menu */
+"From All Visible Windows…" = "From All Visible Windows…";
 
 /* Desktop navigation destination
    Spaces switcher tile label */
 "Fullscreen" = "Fullscreen";
+
+/* Desktop restore skip reason */
+"Fullscreen window" = "Fullscreen window";
 
 /* Fullscreen Project label number */
 "Fullscreen · Space %d" = "Fullscreen · Space %d";
@@ -518,6 +582,9 @@
 /* No comment provided by engineer. */
 "Group tabs" = "Group tabs";
 
+/* Menubar option */
+"Help" = "Help";
+
 /* No comment provided by engineer. */
 "Help improve AltTab" = "Help improve AltTab";
 
@@ -547,6 +614,9 @@
 
 /* No comment provided by engineer. */
 "Hold key conflicts with %@. Choose a different hold key or use the layout preset." = "Hold key conflicts with %@. Choose a different hold key or use the layout preset.";
+
+/* Desktop restore skip reason */
+"Home Desktop unavailable: %@" = "Home Desktop unavailable: %@";
 
 /* No comment provided by engineer. */
 "I already have a license key" = "I already have a license key";
@@ -596,6 +666,9 @@
 /* No comment provided by engineer. */
 "Later" = "Later";
 
+/* Decline restoration for this window */
+"Leave unassigned" = "Leave unassigned";
+
 /* No comment provided by engineer. */
 "License doesn't cover this version" = "License doesn't cover this version";
 
@@ -607,6 +680,9 @@
 
 /* No comment provided by engineer. */
 "Machine %@" = "Machine %@";
+
+/* Desktop move error */
+"macOS did not confirm the move. The window may have closed or its Desktop may no longer be available." = "macOS did not confirm the move. The window may have closed or its Desktop may no longer be available.";
 
 /* No comment provided by engineer. */
 "macOS reserves ⌘⌥⎋, ⌘⌥⇧⎋, and ⌘⌥⇧⌃⎋ for Force Quit and they cannot be unbound. AltTab cannot use them.\n\nYour change would assign one of these to: %@." = "macOS reserves ⌘⌥⎋, ⌘⌥⇧⎋, and ⌘⌥⇧⌃⎋ for Force Quit and they cannot be unbound. AltTab cannot use them.\n\nYour change would assign one of these to: %@.";
@@ -653,6 +729,12 @@
 /* Project membership action */
 "Move" = "Move";
 
+/* Desktop restore failure */
+"Move could not be confirmed" = "Move could not be confirmed";
+
+/* Bring window help */
+"Move this window here and keep its Project membership. Available for individual windows on another regular Desktop." = "Move this window here and keep its Project membership. Available for individual windows on another regular Desktop.";
+
 /* LetsMove replacement alert */
 "Move to Applications Folder" = "Move to Applications Folder";
 
@@ -672,6 +754,9 @@
 "My Account" = "My Account";
 
 /* Desktop menu action */
+"Name This Desktop…" = "Name This Desktop…";
+
+/* Desktop menu action */
 "Name this Desktop…" = "Name this Desktop…";
 
 /* No comment provided by engineer. */
@@ -679,6 +764,15 @@
 
 /* No comment provided by engineer. */
 "Never send crash reports" = "Never send crash reports";
+
+/* App picker title */
+"New app window or message" = "New app window or message";
+
+/* App picker action */
+"New Message" = "New Message";
+
+/* Projects menu */
+"New Project" = "New Project";
 
 /* No comment provided by engineer. */
 "New Project from All Visible Windows…" = "New Project from All Visible Windows…";
@@ -689,7 +783,10 @@
 /* No comment provided by engineer. */
 "New Project…" = "New Project…";
 
-/* No comment provided by engineer. */
+/* App picker action */
+"New Window" = "New Window";
+
+/* Projects menu */
 "No Active Project" = "No Active Project";
 
 /* Empty archived Projects menu */
@@ -698,11 +795,17 @@
 /* No eligible app window */
 "No current window" = "No current window";
 
+/* App picker empty state */
+"No matching applications" = "No matching applications";
+
 /* No comment provided by engineer. */
 "No Open Windows" = "No Open Windows";
 
 /* Empty Other Projects menu */
 "No other projects" = "No other projects";
+
+/* Desktop restore skip reason */
+"No Project assigned" = "No Project assigned";
 
 /* No comment provided by engineer. */
 "No response from server." = "No response from server.";
@@ -716,14 +819,14 @@
 /* Project window history */
 "No window history yet" = "No window history yet";
 
-/* No active Project */
-"None" = "None";
-
 /* No comment provided by engineer. */
 "Non-active apps" = "Non-active apps";
 
 /* No comment provided by engineer. */
 "Non-visible Spaces" = "Non-visible Spaces";
+
+/* No active Project */
+"None" = "None";
 
 /* No comment provided by engineer. */
 "Not allowed" = "Not allowed";
@@ -746,6 +849,9 @@
 /* No comment provided by engineer. */
 "Only on different screen" = "Only on different screen";
 
+/* App picker action */
+"Open" = "Open";
+
 /* No comment provided by engineer. */
 "Open Accessibility Settings…" = "Open Accessibility Settings…";
 
@@ -757,6 +863,12 @@
 
 /* AltTab menu button help */
 "Open the AltTab menu" = "Open the AltTab menu";
+
+/* Project label button help */
+"Open this project's window history" = "Open this project's window history";
+
+/* Project label button help */
+"Open this project's window list" = "Open this project's window list";
 
 /* No comment provided by engineer. */
 "Open Trackpad Settings…" = "Open Trackpad Settings…";
@@ -776,8 +888,11 @@
 /* Window switcher context */
 "Other Desktops" = "Other Desktops";
 
-/* No comment provided by engineer. */
+/* Other Project window lists */
 "Other Projects" = "Other Projects";
+
+/* Choose another Project for a restored window */
+"Other Project…" = "Other Project…";
 
 /* No comment provided by engineer. */
 "Overridden in Shortcut:" = "Overridden in Shortcut:";
@@ -827,23 +942,37 @@
 /* Desktop removal choice window */
 "Project Desktop Closed" = "Project Desktop Closed";
 
+/* Project Desktop move failure */
+"Project Desktop unavailable" = "Project Desktop unavailable";
+
+/* Project label menu section */
+"Project Labels" = "Project Labels";
+
 /* Project label controls */
 "Project labels" = "Project labels";
+
+/* Desktop restore failure */
+"Project or Desktop changed during restore" = "Project or Desktop changed during restore";
+
+/* Project windows menu */
+"Project Windows" = "Project Windows";
 
 /* Whether Project label windows appear in the window switcher */
 "Project windows in switcher" = "Project windows in switcher";
 
-/* Window switcher context */
+/* Current Project menu
+   Window Project membership
+   Window switcher context */
 "Project: %@" = "Project: %@";
-
-/* Projects menu */
-"Projects" = "Projects";
 
 /* Multiple Projects linked to one Desktop */
 "Projects on this Desktop" = "Projects on this Desktop";
 
 /* No comment provided by engineer. */
 "Projects switcher" = "Projects switcher";
+
+/* Desktop restore failure */
+"Projects were disabled" = "Projects were disabled";
 
 /* No comment provided by engineer. */
 "Projects…" = "Projects…";
@@ -872,6 +1001,15 @@
 /* Projects submenu */
 "Rename Project" = "Rename Project";
 
+/* Projects menu */
+"Rename Project…" = "Rename Project…";
+
+/* Project label button help */
+"Rename this Project or Desktop" = "Rename this Project or Desktop";
+
+/* Project label rename button */
+"Rename…" = "Rename…";
+
 /* Restore archived Project */
 "Reopen on This Desktop" = "Reopen on This Desktop";
 
@@ -890,9 +1028,23 @@
 /* No comment provided by engineer. */
 "Restart Now" = "Restart Now";
 
+/* Restore all Project window locations */
+"Restore All Windows to Project Desktops" = "Restore All Windows to Project Desktops";
+
 /* Project restoration notice */
 "Restored Project assignments" = "Restored Project assignments";
-"Close notification" = "Close notification";
+
+/* Desktop restoration in progress */
+"Restoring Project Desktops…" = "Restoring Project Desktops…";
+
+/* Restore Project Desktops help */
+"Return open windows to their Projects' home Desktops. Windows without a clear destination are skipped." = "Return open windows to their Projects' home Desktops. Windows without a clear destination are skipped.";
+
+/* Ambiguous restoration heading */
+"Review Project assignments" = "Review Project assignments";
+
+/* Review ambiguous windows */
+"Review windows…" = "Review windows…";
 
 /* Project name prompt */
 "Save" = "Save";
@@ -914,6 +1066,9 @@
 
 /* All windows search help */
 "Search across all apps, desktops, and projects, including minimized and hidden windows." = "Search across all apps, desktops, and projects, including minimized and hidden windows.";
+
+/* App picker placeholder */
+"Search apps" = "Search apps";
 
 /* No comment provided by engineer. */
 "Search is a Pro feature." = "Search is a Pro feature.";
@@ -984,14 +1139,11 @@
 /* No comment provided by engineer. */
 "Shortcuts when active…" = "Shortcuts when active…";
 
-/* Menubar option */
+/* No comment provided by engineer. */
 "Show" = "Show";
 
 /* Show all Project labels button */
 "Show All" = "Show All";
-
-/* Project label button help */
-"Show all Project labels, including individually closed labels." = "Show all Project labels, including individually closed labels.";
 
 /* No comment provided by engineer. */
 "Show all windows" = "Show all windows";
@@ -1020,6 +1172,9 @@
 /* Project label reveal duration setting */
 "Show label after switching Spaces" = "Show label after switching Spaces";
 
+/* Review Desktop restore results */
+"Show Last Desktop Restore Results" = "Show Last Desktop Restore Results";
+
 /* No comment provided by engineer. */
 "Show minimized windows" = "Show minimized windows";
 
@@ -1040,6 +1195,12 @@
 
 /* No comment provided by engineer. */
 "Show titles" = "Show titles";
+
+/* Focus a Project window */
+"Show Window" = "Show Window";
+
+/* Menubar option */
+"Show Windows" = "Show Windows";
 
 /* No comment provided by engineer. */
 "Show windows from applications" = "Show windows from applications";
@@ -1098,6 +1259,9 @@
 /* No comment provided by engineer. */
 "Switch between 3 different styles. You can customize them." = "Switch between 3 different styles. You can customize them.";
 
+/* Projects menu */
+"Switch Project" = "Switch Project";
+
 /* Window tile Desktop destination tooltip */
 "Switches to %@" = "Switches to %@";
 
@@ -1112,6 +1276,18 @@
 
 /* No comment provided by engineer. */
 "The App Icons style is a Pro feature." = "The App Icons style is a Pro feature.";
+
+/* App picker error */
+"The application could not be opened." = "The application could not be opened.";
+
+/* App picker error */
+"The application did not confirm the action. Check it before trying again." = "The application did not confirm the action. Check it before trying again.";
+
+/* App picker timeout */
+"The application did not respond. Check whether it completed the action before trying again." = "The application did not respond. Check whether it completed the action before trying again.";
+
+/* App picker error */
+"The application is no longer available." = "The application is no longer available.";
 
 /* No comment provided by engineer. */
 "The application needs to restart to apply the imported settings." = "The application needs to restart to apply the imported settings.";
@@ -1130,6 +1306,9 @@
 
 /* No comment provided by engineer. */
 "Theme" = "Theme";
+
+/* Project window picker empty state */
+"There are no other open windows to add to this project." = "There are no other open windows to add to this project.";
 
 /* No comment provided by engineer. */
 "This license is already activated elsewhere" = "This license is already activated elsewhere";
@@ -1179,8 +1358,20 @@
 /* No comment provided by engineer. */
 "Unassign existing shortcut and continue" = "Unassign existing shortcut and continue";
 
+/* Window without a Project */
+"Unassigned" = "Unassigned";
+
 /* No comment provided by engineer. */
 "Unexpected response from server." = "Unexpected response from server.";
+
+/* Unknown Desktop */
+"Unknown" = "Unknown";
+
+/* Desktop restore window app */
+"Unknown app" = "Unknown app";
+
+/* Project Desktop move failure */
+"Unknown window" = "Unknown window";
 
 /* No comment provided by engineer. */
 "Unlock extra shortcuts with Pro" = "Unlock extra shortcuts with Pro";
@@ -1211,12 +1402,6 @@
 
 /* No comment provided by engineer. */
 "Use Desktop (No Project)" = "Use Desktop (No Project)";
-
-/* Window without a Project */
-"Unassigned" = "Unassigned";
-
-/* Unknown Desktop */
-"Unknown" = "Unknown";
 
 /* No comment provided by engineer. */
 "Use the app without this permission. Thumbnails won’t show." = "Use the app without this permission. Thumbnails won’t show.";
@@ -1260,6 +1445,15 @@
 /* No comment provided by engineer. */
 "When no open window" = "When no open window";
 
+/* Ambiguous restoration question */
+"Which Project for this window?" = "Which Project for this window?";
+
+/* Desktop restore skip reason */
+"Window belongs to a tab group" = "Window belongs to a tab group";
+
+/* Desktop restore failure */
+"Window closed" = "Window closed";
+
 /* No comment provided by engineer. */
 "Window is fullscreen" = "Window is fullscreen";
 
@@ -1268,6 +1462,9 @@
 
 /* No comment provided by engineer. */
 "Window is on every Space" = "Window is on every Space";
+
+/* Desktop restore skip reason */
+"Window is on multiple Desktops" = "Window is on multiple Desktops";
 
 /* No comment provided by engineer. */
 "Window is on Space %d" = "Window is on Space %d";
@@ -1287,8 +1484,8 @@
 /* No comment provided by engineer. */
 "Window title contains" = "Window title contains";
 
-/* No comment provided by engineer. */
-"Windows without a Project" = "Windows without a Project";
+/* Desktop restore skip reason */
+"Window unavailable" = "Window unavailable";
 
 /* No comment provided by engineer. */
 "You can’t undo this action." = "You can’t undo this action.";
@@ -1349,153 +1546,3 @@
 
 /* Return to the previous Desktop and Project */
 "↩ Back to %@" = "↩ Back to %@";
-
-/* Focus a Project window */
-"Show Window" = "Show Window";
-
-/* Move a window to the current Desktop */
-"Bring to This Desktop" = "Bring to This Desktop";
-
-/* Bring window help */
-"Move this window here and keep its Project membership. Available for individual windows on another regular Desktop." = "Move this window here and keep its Project membership. Available for individual windows on another regular Desktop.";
-
-/* Desktop move error */
-"Could not bring window to this Desktop" = "Could not bring window to this Desktop";
-
-/* Desktop move error */
-"macOS did not confirm the move. The window may have closed or its Desktop may no longer be available." = "macOS did not confirm the move. The window may have closed or its Desktop may no longer be available.";
-
-/* Project Desktop restoration */
-"Restore All Windows to Project Desktops" = "Restore All Windows to Project Desktops";
-
-/* Project Desktop restoration */
-"Return open windows to their Projects' home Desktops. Windows without a clear destination are skipped." = "Return open windows to their Projects' home Desktops. Windows without a clear destination are skipped.";
-
-/* Project Desktop restoration */
-"Restoring Project Desktops…" = "Restoring Project Desktops…";
-
-/* Project Desktop restoration */
-"Desktop restore finished" = "Desktop restore finished";
-
-/* Project Desktop restoration */
-"%d moved · %d already home" = "%d moved · %d already home";
-
-/* Project Desktop restoration */
-"%d skipped · %d could not be moved" = "%d skipped · %d could not be moved";
-
-/* Desktop restore details */
-"Show Last Desktop Restore Results" = "Show Last Desktop Restore Results";
-
-/* Desktop restore details */
-"Projects were disabled" = "Projects were disabled";
-
-/* Desktop restore details */
-"Window closed" = "Window closed";
-
-/* Desktop restore details */
-"Project or Desktop changed during restore" = "Project or Desktop changed during restore";
-
-/* Desktop restore details */
-"Move could not be confirmed" = "Move could not be confirmed";
-
-/* Desktop restore details */
-"Unknown app" = "Unknown app";
-
-/* Desktop restore details */
-"No Project assigned" = "No Project assigned";
-
-/* Desktop restore details */
-"%@ (D%d)" = "%@ (D%d)";
-
-/* Desktop restore details */
-"Conflict: %@" = "Conflict: %@";
-
-/* Desktop restore details */
-"Home Desktop unavailable: %@" = "Home Desktop unavailable: %@";
-
-/* Desktop restore details */
-"Fullscreen window" = "Fullscreen window";
-
-/* Desktop restore details */
-"Window belongs to a tab group" = "Window belongs to a tab group";
-
-/* Desktop restore details */
-"Window unavailable" = "Window unavailable";
-
-/* Desktop restore details */
-"Window is on multiple Desktops" = "Window is on multiple Desktops";
-
-/* Desktop restore details */
-"Desktop location not confirmed" = "Desktop location not confirmed";
-
-/* Desktop restore details */
-"%@ (%d/%d)" = "%@ (%d/%d)";
-
-/* Restoration result window link */
-"Focus this window" = "Focus this window";
-
-/* App picker error */
-"%@ could not perform %@. Its menu command may be unavailable." = "%1$@ could not perform %2$@. Its menu command may be unavailable.";
-
-/* App picker results */
-"Applications" = "Applications";
-
-/* App picker error */
-"Could not complete the action" = "Could not complete the action";
-
-/* App picker loading */
-"Finding applications…" = "Finding applications…";
-
-/* App picker action */
-"New Message" = "New Message";
-
-/* App picker action */
-"New Window" = "New Window";
-
-/* App picker title */
-"New app window or message" = "New app window or message";
-
-/* App picker empty state */
-"No matching applications" = "No matching applications";
-
-/* App picker action */
-"Open" = "Open";
-
-/* App picker placeholder */
-"Search apps" = "Search apps";
-
-/* App picker error */
-"The application could not be opened." = "The application could not be opened.";
-
-/* App picker error */
-"The application did not confirm the action. Check it before trying again." = "The application did not confirm the action. Check it before trying again.";
-
-/* App picker timeout */
-"The application did not respond. Check whether it completed the action before trying again." = "The application did not respond. Check whether it completed the action before trying again.";
-
-/* App picker error */
-"The application is no longer available." = "The application is no longer available.";
-
-/* Ambiguous restoration count */
-"%d windows match more than one Project." = "%d windows match more than one Project.";
-
-/* Optional desktop move when resolving restoration */
-"Also move to the Project’s Desktop" = "Also move to the Project’s Desktop";
-
-/* Ambiguous restoration explanation */
-"Choose where each window belongs." = "Choose where each window belongs.";
-
-/* Decline restoration for this window */
-"Leave unassigned" = "Leave unassigned";
-
-/* Choose another Project for a restored window */
-"Other Project…" = "Other Project…";
-
-/* Ambiguous restoration heading */
-"Review Project assignments" = "Review Project assignments";
-
-/* Review ambiguous windows */
-"Review windows…" = "Review windows…";
-
-/* Ambiguous restoration question */
-"Which Project for this window?" = "Which Project for this window?";
