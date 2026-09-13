@@ -24,7 +24,8 @@ final class ProjectsSheet: SheetWindow {
     private static let windowsInSwitcher = NSLocalizedString("Project windows in switcher", comment: "Whether Project label windows appear in the window switcher")
     private static let showWindows = NSLocalizedString("Show", comment: "")
     private static let hideWindows = NSLocalizedString("Hide", comment: "")
-    static let searchableStrings = [title, enable, scope, allLocations, currentLocation, followDesktop, minimizeInactive, minimizeInactiveHelp, hold, next, previous, style, preset, spaceLabels, showLabels, raiseLabels, minimizeLabels, closeLabels, revealLabels, revealHelp, windowsInSwitcher, showWindows, hideWindows] + ShortcutStylePreference.allCases.map { $0.localizedString }
+    private static let projectFiles = NSLocalizedString("Project files", comment: "Project folder controls")
+    static let searchableStrings = [title, enable, projectFiles, ProjectPersistence.openProjectsFolderTitle, ProjectPersistence.openDiagnosticsFolderTitle, scope, allLocations, currentLocation, followDesktop, minimizeInactive, minimizeInactiveHelp, hold, next, previous, style, preset, spaceLabels, showLabels, raiseLabels, minimizeLabels, closeLabels, revealLabels, revealHelp, windowsInSwitcher, showWindows, hideWindows] + ShortcutStylePreference.allCases.map { $0.localizedString }
     private var groups: NSStackView?
     private var warning: NSTextField?
     private var warningRow: TableGroupView.RowInfo?
@@ -88,8 +89,24 @@ final class ProjectsSheet: SheetWindow {
             addRecorder(table, Self.previous, ProjectSwitcher.previousShortcutId)
             _ = table.addRow(TableGroupView.Row(leftTitle: Self.style, rightViews: [LabelAndControl.makeDropdown("projectsShortcutStyle", ShortcutStylePreference.allCases)]))
         }
+        addFolderButtons(table)
         let preset = NSButton(title: Self.preset, target: self, action: #selector(applyPreset))
         groups.addArrangedSubview(TableGroupSetView(originalViews: [table], toolsViews: Projects.isEnabled ? [preset] : [], padding: 0))
+    }
+
+    private func addFolderButtons(_ table: TableGroupView) {
+        let projects = NSButton(title: ProjectPersistence.openProjectsFolderTitle, target: self, action: #selector(openProjectsFolder))
+        let diagnostics = NSButton(title: ProjectPersistence.openDiagnosticsFolderTitle, target: self, action: #selector(openDiagnosticsFolder))
+        _ = table.addRow(TableGroupView.Row(leftTitle: Self.projectFiles, rightViews: [projects]))
+        _ = table.addRow(leftViews: [], rightViews: [diagnostics])
+    }
+
+    @objc private func openProjectsFolder() {
+        ProjectPersistence.openFolder(.projects)
+    }
+
+    @objc private func openDiagnosticsFolder() {
+        ProjectPersistence.openFolder(.diagnostics)
     }
 
     private func addRecorder(_ table: TableGroupView, _ label: String, _ key: String) {

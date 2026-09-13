@@ -538,6 +538,20 @@
 		A22B1B332DFE4E4282166A0A /* ProjectAtticResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = E71364711FE04B3A879D9DB8 /* ProjectAtticResolver.swift */; };
 		BDD213BA8589468CA0E85DD8 /* ProjectAtticPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52124AEE43354E9DAAFEFD3F /* ProjectAtticPrompt.swift */; };
 		DD7CAEF22533481AAE78520A /* ProjectAtticResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2504A612BDA94D7BBF4CC853 /* ProjectAtticResolverTests.swift */; };
+		E176DD353C4C40039F378832 /* ProjectFileDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA41F900715045AAB5CA0C14 /* ProjectFileDocument.swift */; };
+		12C10C037F7D4C16BF9D2D86 /* ProjectFileDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA41F900715045AAB5CA0C14 /* ProjectFileDocument.swift */; };
+		EC0C7FC4DBFD40BD85D327E8 /* ProjectYAML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6FC0496EED4DC5B04622F6 /* ProjectYAML.swift */; };
+		EE8F65F8FB6348739F075AF2 /* ProjectYAML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6FC0496EED4DC5B04622F6 /* ProjectYAML.swift */; };
+		C79478AB647A4C0BBACF5F64 /* ProjectFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA9A6EE07FA4932B29B1172 /* ProjectFileStore.swift */; };
+		633C4D9360D9443C86146ACB /* ProjectFileStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA9A6EE07FA4932B29B1172 /* ProjectFileStore.swift */; };
+		7E53BBF25D3F45E597E17CE4 /* ProjectDirectoryObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D5ED99C4E354569BE1B2295 /* ProjectDirectoryObserver.swift */; };
+		9AB5FDA3CDF14F89B19115A6 /* ProjectDirectoryObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D5ED99C4E354569BE1B2295 /* ProjectDirectoryObserver.swift */; };
+		E46FCCD9C542421896BDC4D8 /* ProjectDiagnosticSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87FB068B9D214720827FCF0F /* ProjectDiagnosticSnapshot.swift */; };
+		66E7D5855C1A4160B2E1D742 /* ProjectDiagnosticSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87FB068B9D214720827FCF0F /* ProjectDiagnosticSnapshot.swift */; };
+		199C3823DEDD4F8A8BE30BB7 /* ProjectPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBAAF759C2FF4F088113BB26 /* ProjectPersistence.swift */; };
+		B608FA3BEE4E4C3AB193DD2D /* ProjectFileStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DC544BA95DA4197A7F0AC98 /* ProjectFileStoreTests.swift */; };
+		7A2F25D0205C4AD08636473D /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 786520B0031E4110AB89B31D /* Yams */; };
+		CBA4DC4859734A62B1505A0C /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 786520B0031E4110AB89B31D /* Yams */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1087,6 +1101,14 @@
 		52124AEE43354E9DAAFEFD3F /* ProjectAtticPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectAtticPrompt.swift; sourceTree = "<group>"; };
 		2504A612BDA94D7BBF4CC853 /* ProjectAtticResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectAtticResolverTests.swift; sourceTree = "<group>"; };
 		6044C0E7A14B4FEF98B852CE /* ProjectAtticResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectAtticResolverSpecs.md; sourceTree = "<group>"; };
+		DA41F900715045AAB5CA0C14 /* ProjectFileDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFileDocument.swift; sourceTree = "<group>"; };
+		7E6FC0496EED4DC5B04622F6 /* ProjectYAML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectYAML.swift; sourceTree = "<group>"; };
+		AEA9A6EE07FA4932B29B1172 /* ProjectFileStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFileStore.swift; sourceTree = "<group>"; };
+		3D5ED99C4E354569BE1B2295 /* ProjectDirectoryObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDirectoryObserver.swift; sourceTree = "<group>"; };
+		87FB068B9D214720827FCF0F /* ProjectDiagnosticSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectDiagnosticSnapshot.swift; sourceTree = "<group>"; };
+		DBAAF759C2FF4F088113BB26 /* ProjectPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectPersistence.swift; sourceTree = "<group>"; };
+		4DC544BA95DA4197A7F0AC98 /* ProjectFileStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFileStoreTests.swift; sourceTree = "<group>"; };
+		475B7DF5252F439FB577CA7B /* ProjectFileStoreSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectFileStoreSpecs.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1094,6 +1116,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7A2F25D0205C4AD08636473D /* Yams in Frameworks */,
 				5FDF9EAB2FB357F600703843 /* ShortcutRecorder in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1102,6 +1125,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CBA4DC4859734A62B1505A0C /* Yams in Frameworks */,
 				4807A6C623A9CD190052A53E /* SkyLight.framework in Frameworks */,
 				5FDF9EB02FB3582300703843 /* AppCenterCrashes in Frameworks */,
 				5FDF9EA92FB3577600703843 /* ShortcutRecorder in Frameworks */,
@@ -1124,6 +1148,7 @@
 		34692E3B015FCA62616A9F30 /* projects */ = {
 			isa = PBXGroup;
 			children = (
+				5D1239D1A5FE4815BF0381E1 /* storage */,
 				D321EE5B746943519D192558 /* ProjectVisibility.swift */,
 				9061AD1D1C784F188EA2E0A3 /* ProjectVisibilityResolver.swift */,
 				6FB345F7344D49E49C0873A1 /* ProjectVisibilityResolverTests.swift */,
@@ -2219,6 +2244,21 @@
 			path = "app-launcher";
 			sourceTree = "<group>";
 		};
+		5D1239D1A5FE4815BF0381E1 /* storage */ = {
+			isa = PBXGroup;
+			children = (
+				DA41F900715045AAB5CA0C14 /* ProjectFileDocument.swift */,
+				7E6FC0496EED4DC5B04622F6 /* ProjectYAML.swift */,
+				AEA9A6EE07FA4932B29B1172 /* ProjectFileStore.swift */,
+				3D5ED99C4E354569BE1B2295 /* ProjectDirectoryObserver.swift */,
+				87FB068B9D214720827FCF0F /* ProjectDiagnosticSnapshot.swift */,
+				DBAAF759C2FF4F088113BB26 /* ProjectPersistence.swift */,
+				4DC544BA95DA4197A7F0AC98 /* ProjectFileStoreTests.swift */,
+				475B7DF5252F439FB577CA7B /* ProjectFileStoreSpecs.md */,
+			);
+			path = storage;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -2296,6 +2336,7 @@
 			);
 			mainGroup = D04BA1463D2A17038222BB84;
 			packageReferences = (
+				83AADCA1C51D41C9BC2FF14D /* XCRemoteSwiftPackageReference "Yams" */,
 				5FDF9EA42FB3575B00703843 /* XCLocalSwiftPackageReference "vendor/Sparkle" */,
 				5FDF9EA72FB3577600703843 /* XCLocalSwiftPackageReference "vendor/ShortcutRecorder" */,
 				5FDF9EAC2FB3582300703843 /* XCLocalSwiftPackageReference "vendor/AppCenter" */,
@@ -2431,6 +2472,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				12C10C037F7D4C16BF9D2D86 /* ProjectFileDocument.swift in Sources */,
+				EE8F65F8FB6348739F075AF2 /* ProjectYAML.swift in Sources */,
+				633C4D9360D9443C86146ACB /* ProjectFileStore.swift in Sources */,
+				9AB5FDA3CDF14F89B19115A6 /* ProjectDirectoryObserver.swift in Sources */,
+				66E7D5855C1A4160B2E1D742 /* ProjectDiagnosticSnapshot.swift in Sources */,
+				B608FA3BEE4E4C3AB193DD2D /* ProjectFileStoreTests.swift in Sources */,
 				D5CD24AF12C94AE6B6260D52 /* AppCatalog.swift in Sources */,
 				56D581CE24A745DF9D7884C2 /* AppUsageScoreTests.swift in Sources */,
 				ED56D3ACBDD04CECB243DF69 /* AppUsageScore.swift in Sources */,
@@ -2618,6 +2665,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E176DD353C4C40039F378832 /* ProjectFileDocument.swift in Sources */,
+				EC0C7FC4DBFD40BD85D327E8 /* ProjectYAML.swift in Sources */,
+				C79478AB647A4C0BBACF5F64 /* ProjectFileStore.swift in Sources */,
+				7E53BBF25D3F45E597E17CE4 /* ProjectDirectoryObserver.swift in Sources */,
+				E46FCCD9C542421896BDC4D8 /* ProjectDiagnosticSnapshot.swift in Sources */,
+				199C3823DEDD4F8A8BE30BB7 /* ProjectPersistence.swift in Sources */,
 				94BDD09E2589436FB14D81D0 /* AppPicker.swift in Sources */,
 				26B7FE96425146F59EFD9D55 /* AppPickerRow.swift in Sources */,
 				5EF6229B757E4A818EC40746 /* AppUsage.swift in Sources */,
@@ -3531,6 +3584,17 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		83AADCA1C51D41C9BC2FF14D /* XCRemoteSwiftPackageReference "Yams" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jpsim/Yams.git";
+			requirement = {
+				kind = exactVersion;
+				version = 6.2.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
 		5FDF9EA52FB3575B00703843 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -3553,6 +3617,7 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = AppCenterCrashes;
 		};
+		786520B0031E4110AB89B31D /* Yams */ = {isa = XCSwiftPackageProductDependency; package = 83AADCA1C51D41C9BC2FF14D /* XCRemoteSwiftPackageReference "Yams" */; productName = Yams; };
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = D04BA59EB5ED6F005E8F4407 /* Project object */;

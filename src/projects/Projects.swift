@@ -51,6 +51,7 @@ enum Projects {
             DispatchQueue.main.async {
                 guard (active?.id ?? "") == id else { return }
                 Preferences.set("projectsActiveId", id, false)
+                ProjectPersistence.scheduleSnapshot()
             }
         }
     }
@@ -58,6 +59,8 @@ enum Projects {
     static private(set) var spaces = [SpaceItem]()
     private static var spaceObserver: NSObjectProtocol?
     private static var isLoading = false
+    private static var storageReady = false
+    private static var storageStarted = false
     private static var windowIdentities = [String: ProjectWindowIdentity]()
     private static var retainedEntries = [ProjectEntry]()
     private static var iconFileNames = [String: String]()
@@ -80,10 +83,22 @@ enum Projects {
     private static var saveWork: DispatchWorkItem?
 
     static func startObservingSpaceChanges() {
-        guard spaceObserver == nil else { return }
+        guard !storageStarted else { return }
+        storageStarted = true
         Logger.debug { "projects startup enabled=\(isEnabled)" }
+        ProjectPersistence.start(legacy: Preferences.projects) { entries, initial in
+            if initial {
+                load(entries)
+                storageReady = true
+                finishStarting()
+            } else {
+                applyFileChanges(entries)
+            }
+        }
+    }
+
+    private static func finishStarting() {
         let savedActiveId = UserDefaults.standard.string(forKey: "projectsActiveId")
-        load()
         ProjectLifecyclePrompt.start()
         ProjectVisibility.start()
         refreshSpaces()
@@ -188,7 +203,7 @@ enum Projects {
             let projects = linkedProjects(for: desktop)
             guard !projects.isEmpty else {
                 if closedProjects.contains(where: { $0.homeSpaceUuid == space.uuid }) { return [] }
-                return [SpaceLabelResolver.Label(space: space, name: desktop.name ?? desktop.autoName)]
+                return [SpaceLabelResolver.Label(space: space, name: ProjectNameResolver.normalized(desktop.name))]
             }
             return projects.enumerated().map { index, project in
                 SpaceLabelResolver.Label(space: space, name: project.resolvedName, identity: project.labelUuid ?? project.id, stackIndex: index)
@@ -244,6 +259,7 @@ enum Projects {
     }
 
     static func windowSpaceChanged(_ window: Window) {
+        ProjectPersistence.scheduleSnapshot()
         WindowDesktopMove.spaceChanged(window)
         ProjectVisibility.refresh()
         guard isEnabled, !window.isWindowlessApp, pendingSpaceUpdates.insert(window.tracked.id).inserted else { return }
@@ -278,6 +294,7 @@ enum Projects {
 
     /// Discovery applies the real Space after appendWindow, in the same main-queue turn.
     static func windowAdded(_ window: Window) {
+        ProjectPersistence.scheduleSnapshot()
         // discoveryLanded consumes the WindowServer creation marker after appendWindow returns.
         // Capture it now so startup discovery and re-admission never count as a new window.
         let isNew = window.cgWindowId.map { Windows.recentlyCreatedWindows.contains($0) } ?? false
@@ -292,6 +309,7 @@ enum Projects {
     }
 
     static func windowTitleChanged(_ window: Window) {
+        ProjectPersistence.scheduleSnapshot()
         guard isEnabled, Windows.list.contains(where: { $0 === window }) else { return }
         let id = window.tracked.id
         ProjectBrowserURLs.invalidate(window)
@@ -333,6 +351,7 @@ enum Projects {
     }
 
     private static func applyRestoration(_ window: Window, identity: ProjectWindowIdentity?) {
+        ProjectPersistence.scheduleSnapshot()
         guard canBelongToProject(window), !WindowDesktopMove.preservesMembership(window) else { return }
         let id = window.tracked.id
         if let context = creationContexts.removeValue(forKey: id), let identity,
@@ -420,7 +439,6 @@ enum Projects {
         guard canBelongToProject(window) else { return }
         for space in spaces where window.spaceIds.contains(space.spaceId) {
             let desktop = forSpace(uuid: space.uuid)
-            claimName(window.application.localizedName, for: desktop)
             desktopWindowIds[space.uuid, default: []].insert(window.tracked.id)
             if isEnabled, let project = defaultProject(for: desktop) { addAutomatically(windowId: window.tracked.id, to: project) }
         }
@@ -431,6 +449,7 @@ enum Projects {
     }
 
     static func windowsRemoved(_ windows: [Window]) {
+        ProjectPersistence.scheduleSnapshot()
         WindowDesktopMove.forget(windows)
         ProjectVisibility.forget(windows)
         let ids = Set(windows.map { $0.tracked.id })
@@ -481,7 +500,21 @@ enum Projects {
 
     static func createCustom(homeSpaceUuid: String) -> Project? {
         guard isEnabled else { return nil }
-        return insert(Project(id: UUID().uuidString, kind: .custom, homeSpaceUuid: homeSpaceUuid))
+        let project = Project(id: UUID().uuidString, kind: .custom, homeSpaceUuid: homeSpaceUuid)
+        project.name = availableProjectName("Project")
+        return insert(project)
+    }
+
+    static func projectNames(excluding id: String? = nil) -> [String] {
+        var names = ProjectPersistence.projectNames
+        for project in list where project.isCustom { names[project.id] = project.resolvedName }
+        for entry in closedProjects + retainedEntries where entry.kind == "custom" { names[entry.id] = entry.name ?? entry.autoName }
+        if let id { names[id] = nil }
+        return Array(names.values)
+    }
+
+    static func availableProjectName(_ proposed: String, excluding id: String? = nil) -> String {
+        ProjectNameResolver.available(proposed, existing: projectNames(excluding: id))
     }
 
     static func linkedProject(for desktop: Project) -> Project? {
@@ -753,14 +786,18 @@ enum Projects {
         DispatchQueue.main.async { App.refreshOpenUiAfterExternalEvent([]) }
     }
 
-    private static func load() {
+    private static func load(_ saved: [ProjectEntry]) {
         isLoading = true
-        let saved = Preferences.projects
-        let repaired = ProjectLifecycleResolver.repairingEmptyDesktopAliases(saved)
+        list = []
+        byId = [:]
+        closedProjects = []
+        retainedEntries = []
+        iconFileNames = [:]
+        let repaired = ProjectLifecycleResolver.repairingUnlinkedProjects(ProjectLifecycleResolver.repairingEmptyDesktopAliases(saved))
         defer {
             isLoading = false
             if repaired != saved {
-                Logger.debug { "projects repaired empty Desktop aliases removed=\(saved.count - repaired.count)" }
+                Logger.debug { "projects repaired saved Desktop links and aliases removed=\(saved.count - repaired.count)" }
                 save()
             }
         }
@@ -810,22 +847,88 @@ enum Projects {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
     }
 
-    static func flushPendingSave() {
-        guard saveWork != nil else { return }
-        save()
+    static func finishPendingSave(_ completion: @escaping () -> Void) {
+        if saveWork != nil { save() }
+        ProjectPersistence.finishPendingSave(completion)
     }
 
     static func save() {
-        guard !isLoading else { return }
+        guard !isLoading, storageReady else { return }
         saveWork?.cancel()
         saveWork = nil
         ProjectVisibility.refresh()
         for project in list where project.isCustom {
             for id in project.members { _ = rememberPattern(id, in: project) }
         }
-        Preferences.set("projects", list.map { entry(for: $0) } + closedProjects + retainedEntries, false)
+        ProjectPersistence.scheduleSnapshot()
         SpaceLabelWindows.refreshNames()
         ProjectLifecyclePrompt.refresh()
+    }
+
+    static func persistSnapshot() {
+        guard storageReady, !isLoading else { return }
+        let entries = list.map { entry(for: $0) } + closedProjects + retainedEntries
+        let windows = Windows.list.map { window -> ProjectDiagnosticSnapshot.Window in
+            let id = window.tracked.id
+            let projectIds = list.filter { $0.isCustom && $0.members.contains(id) }.map(\.id).sorted()
+            let candidates = owners(of: id).sorted()
+            let status: String
+            if !isEnabled { status = "projects-disabled" }
+            else if window.isWindowlessApp || window.isPhantom { status = "ineligible-window" }
+            else if declinedRestorations.contains(id) { status = "restoration-declined" }
+            else if !projectIds.isEmpty { status = "assigned" }
+            else if identityReads.contains(id) { status = "waiting-for-process-identity" }
+            else if !ProjectBrowserURLs.isReady(window) { status = "waiting-for-browser-metadata" }
+            else if candidates.count > 1 { status = "ambiguous-project-match" }
+            else if candidates.isEmpty { status = "no-saved-project-match" }
+            else { status = "match-not-restored-or-excluded" }
+            return .init(id: id, pid: window.application.pid, bundleIdentifier: window.application.bundleIdentifier,
+                title: window.title, spaceIds: window.spaceIds, isMinimized: window.isMinimized, isFullscreen: window.isFullscreen,
+                position: window.position, size: window.size, projectIds: projectIds, candidateProjectIds: candidates,
+                identity: windowIdentities[id], restorationStatus: status)
+        }.sorted { $0.id < $1.id }
+        let desktops = spaces.map { ProjectDiagnosticSnapshot.Desktop(spaceId: $0.spaceId, uuid: $0.uuid, number: $0.desktopNumber, isCurrent: $0.isCurrent) }
+        ProjectPersistence.save(entries, windows: windows, desktops: desktops, activeId: active?.id)
+    }
+
+    private static func applyFileChanges(_ entries: [ProjectEntry]) {
+        let activeId = active?.id
+        let existing = byId
+        load(entries)
+        isLoading = true
+        for index in list.indices {
+            let loaded = list[index]
+            guard let project = existing[loaded.id] else { continue }
+            let previous = ProjectFileDocument.durable(entry(for: project))
+            let rulesChanged = previous.memberPatterns != loaded.memberPatterns || previous.excludedPatterns != loaded.excludedPatterns
+            project.kind = loaded.kind
+            project.homeSpaceUuid = loaded.homeSpaceUuid
+            project.name = loaded.name
+            project.autoName = loaded.autoName
+            project.windowHistory = loaded.windowHistory
+            project.memberPatterns = loaded.memberPatterns
+            project.excludedPatterns = loaded.excludedPatterns
+            project.linkedProjectIds = loaded.linkedProjectIds
+            project.labelUuid = loaded.labelUuid
+            if rulesChanged {
+                project.members = []
+                project.memberIdentities = []
+                project.excludedMembers = []
+                project.excludedWindowIds = []
+            }
+            list[index] = project
+            byId[project.id] = project
+        }
+        active = activeId.flatMap { byId[$0] }
+        isLoading = false
+        restoredWindows.removeAll()
+        Windows.list.forEach { restoreMembership($0) }
+        refreshSpaces()
+        SpaceLabelWindows.refreshNames()
+        ProjectLifecyclePrompt.refresh()
+        ProjectVisibility.refresh()
+        App.refreshOpenUiAfterExternalEvent([])
+        ProjectPersistence.scheduleSnapshot()
     }
 
     @discardableResult

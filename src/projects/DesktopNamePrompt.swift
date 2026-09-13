@@ -92,6 +92,14 @@ enum DesktopNamePrompt {
             let name = ProjectNameResolver.normalized(field.stringValue)
             let ids = choices.filter { $0.state == .on }.compactMap { $0.identifier?.rawValue }
             let shouldCreate = create.state == .on
+            let projectName = name ?? desktop.resolvedName
+            if shouldCreate, let error = ProjectNameResolver.validationError(projectName, existing: Projects.projectNames()) {
+                let alert = NSAlert()
+                alert.messageText = NSLocalizedString("Choose a different project name", comment: "Duplicate project name")
+                alert.informativeText = error
+                alert.beginSheetModal(for: self)
+                return
+            }
             close()
             DispatchQueue.main.async { [desktop] in
                 guard Projects.byId[desktop.id] === desktop, !desktop.isCustom,
@@ -100,7 +108,7 @@ enum DesktopNamePrompt {
                 var selected = ids.compactMap { Projects.byId[$0] }
                 if !selected.isEmpty || shouldCreate { Preferences.set("projectsEnabled", "true") }
                 let created = shouldCreate ? Projects.createCustom(homeSpaceUuid: desktop.homeSpaceUuid) : nil
-                if let created { created.name = desktop.resolvedName; selected.append(created) }
+                if let created { created.name = Projects.availableProjectName(projectName, excluding: created.id); selected.append(created) }
                 guard Projects.link(desktop, toProjects: selected) else {
                     if let created { Projects.delete(id: created.id) }
                     return

@@ -92,6 +92,9 @@ final class ProjectsMenu: NSObject {
         menu.addItem(restoreDesktopsItem)
         menu.addItem(restoreResultsItem)
         menu.addItem(desktopLabelsItem)
+        menu.addItem(.separator())
+        menu.addItem(item(ProjectPersistence.openProjectsFolderTitle, #selector(openProjectsFolder)))
+        menu.addItem(item(ProjectPersistence.openDiagnosticsFolderTitle, #selector(openDiagnosticsFolder)))
         refresh(menu)
     }
 
@@ -240,6 +243,8 @@ final class ProjectsMenu: NSObject {
             reopen.representedObject = [project.id, destinationUuid ?? ""]
             reopen.isEnabled = Projects.spaces.contains { $0.uuid == destinationUuid && $0.desktopNumber > 0 }
             contents.addItem(reopen)
+            contents.addItem(.separator())
+            addOpenFolder(project.id, to: contents)
             menu.addItem(submenu(name, contents))
         }
         if menu.items.isEmpty { addHeading(NSLocalizedString("No Projects in the Attic", comment: "Empty archived Projects menu"), to: menu) }
@@ -270,6 +275,8 @@ final class ProjectsMenu: NSObject {
         let destination = moveDestination
         if let project {
             addWindows(of: project, to: menu, destination: destination)
+            menu.addItem(.separator())
+            addOpenFolder(project.id, to: menu)
         } else {
             addHeading(NSLocalizedString("No Active Project", comment: "Projects menu"), to: menu)
         }
@@ -365,6 +372,7 @@ final class ProjectsMenu: NSObject {
         let name = item(NSLocalizedString("Name This Desktop…", comment: "Desktop menu action"), #selector(nameDesktop))
         name.isEnabled = currentDesktop != nil
         menu.addItem(name)
+        menu.addItem(item(NSLocalizedString("Show Desktops File in Finder", comment: "Reveal Desktop settings YAML"), #selector(showDesktopsFile)))
         guard Projects.isEnabled else { return menu }
         menu.addItem(.separator())
         let heading = item(NSLocalizedString("Project Labels", comment: "Project label menu section"), nil)
@@ -453,6 +461,29 @@ final class ProjectsMenu: NSObject {
         return item
     }
 
+    private static func addOpenFolder(_ projectId: String, to menu: NSMenu) {
+        let entry = item(ProjectPersistence.openProjectFolderTitle, #selector(openProjectFolder(_:)))
+        entry.representedObject = projectId
+        menu.addItem(entry)
+    }
+
+    @objc private static func openProjectFolder(_ sender: NSMenuItem) {
+        guard let id = sender.representedObject as? String else { return }
+        ProjectPersistence.openFolder(.project(id))
+    }
+
+    @objc private static func showDesktopsFile() {
+        ProjectPersistence.openFolder(.desktops)
+    }
+
+    @objc private static func openProjectsFolder() {
+        ProjectPersistence.openFolder(.projects)
+    }
+
+    @objc private static func openDiagnosticsFolder() {
+        ProjectPersistence.openFolder(.diagnostics)
+    }
+
     @objc private static func nameDesktop() {
         logMenu("nameDesktop", "requested")
         defer { logMenu("nameDesktop", "finished") }
@@ -479,6 +510,10 @@ final class ProjectsMenu: NSObject {
     private static func makeWindowsMenu(_ project: Project?, destination: WindowDesktopMove.Destination?) -> NSMenu {
         let menu = menu()
         addWindows(of: project, to: menu, destination: destination)
+        if let project {
+            menu.addItem(.separator())
+            addOpenFolder(project.id, to: menu)
+        }
         return menu
     }
 
@@ -720,10 +755,19 @@ final class ProjectsMenu: NSObject {
     private static func createNamedProject(with windows: [Window], title: String, desktopUuid: String, from parent: NSWindow?) {
         guard Projects.isEnabled, Projects.spaces.contains(where: { $0.uuid == desktopUuid }),
               let project = Projects.createCustom(homeSpaceUuid: desktopUuid) else { return }
-        project.autoName = windows.first.flatMap { ProjectNameResolver.claim(name: nil, autoName: nil, appName: $0.application.localizedName) }
+        project.name = Projects.availableProjectName(windows.first?.application.localizedName ?? "Project", excluding: project.id)
         ProjectNamePrompt.present(project, title: title, from: parent) { saved in
             guard saved else { Projects.delete(id: project.id); return }
             guard Projects.isEnabled, Projects.byId[project.id] === project else { return }
+            guard Projects.spaces.contains(where: { $0.uuid == desktopUuid && $0.desktopNumber > 0 }) else {
+                Projects.delete(id: project.id)
+                return
+            }
+            let desktop = Projects.forSpace(uuid: desktopUuid)
+            guard Projects.link(desktop, toProjects: Projects.linkedProjects(for: desktop) + [project]) else {
+                Projects.delete(id: project.id)
+                return
+            }
             for window in windows where Windows.list.contains(where: { $0 === window }) && ProjectAssignmentPrompt.canAssign(window) {
                 Projects.add(windowId: window.tracked.id, to: project)
             }

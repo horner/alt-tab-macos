@@ -61,6 +61,7 @@ enum ProjectVisibility {
     }
 
     static func minimizedChanged(_ window: Window) {
+        ProjectPersistence.scheduleSnapshot()
         guard identities[window.tracked.id] != nil else { return }
         session.observed(window.tracked.id, minimized: window.isMinimized)
         persist(window.tracked.id)
@@ -181,6 +182,7 @@ enum ProjectVisibility {
         DispatchQueue.main.async {
             persistenceQueued = false
             Preferences.set("projectsAutoMinimizedWindows", saved, false)
+            ProjectPersistence.scheduleSnapshot()
         }
     }
 }

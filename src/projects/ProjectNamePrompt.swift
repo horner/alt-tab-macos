@@ -10,9 +10,23 @@ extension Project {
 
 enum ProjectNamePrompt {
     static func present(_ project: Project, title: String, from window: NSWindow?, completion: @escaping (Bool) -> Void) {
-        let alert = makeAlert(project, title: title)
+        present(project, title: title, value: project.resolvedName, error: nil, from: window, completion: completion)
+    }
+
+    private static func present(_ project: Project, title: String, value: String, error: String?, from window: NSWindow?, completion: @escaping (Bool) -> Void) {
+        let alert = makeAlert(title: title, value: value, error: error)
         ProjectPrompt.present(alert, from: window) { response in
-            completion(save(project, from: alert, response: response))
+            guard response == .alertFirstButtonReturn, Projects.isEnabled, Projects.byId[project.id] === project,
+                  let field = alert.accessoryView as? NSTextField else { completion(false); return }
+            let proposed = field.stringValue
+            if let error = ProjectNameResolver.validationError(proposed, existing: Projects.projectNames(excluding: project.id)) {
+                DispatchQueue.main.async {
+                    present(project, title: title, value: proposed, error: error, from: window, completion: completion)
+                }
+                return
+            }
+            project.name = ProjectNameResolver.normalized(proposed)
+            completion(true)
         }
     }
 
@@ -21,11 +35,12 @@ enum ProjectNamePrompt {
         present(project, title: NSLocalizedString("Rename Project", comment: "Projects submenu"), from: window) { _ in }
     }
 
-    private static func makeAlert(_ project: Project, title: String) -> NSAlert {
+    private static func makeAlert(title: String, value: String, error: String?) -> NSAlert {
         let alert = NSAlert()
         alert.messageText = title
+        alert.informativeText = error ?? ""
         let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-        field.stringValue = project.resolvedName
+        field.stringValue = value
         alert.accessoryView = field
         alert.window.initialFirstResponder = field
         alert.addButton(withTitle: NSLocalizedString("Save", comment: "Project name prompt"))
@@ -33,13 +48,6 @@ enum ProjectNamePrompt {
         return alert
     }
 
-    private static func save(_ project: Project, from alert: NSAlert, response: NSApplication.ModalResponse) -> Bool {
-        Logger.debug { "projects name prompt response=\(response.rawValue)" }
-        guard response == .alertFirstButtonReturn, Projects.isEnabled, Projects.byId[project.id] === project,
-              let field = alert.accessoryView as? NSTextField else { return false }
-        project.name = ProjectNameResolver.normalized(field.stringValue)
-        return true
-    }
 }
 
 enum ProjectPrompt {

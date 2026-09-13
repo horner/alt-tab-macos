@@ -1,6 +1,24 @@
 import Foundation
 
 enum ProjectLifecycleResolver {
+    static func repairingUnlinkedProjects(_ entries: [ProjectEntry]) -> [ProjectEntry] {
+        var result = entries
+        let linkedIds = Set(entries.flatMap { $0.linkedProjectIds })
+        for index in result.indices where result[index].kind == "desktop" {
+            result[index].autoName = nil
+            guard let uuid = result[index].spaceUuid, result[index].linkedProjectIds.isEmpty else { continue }
+            let candidates = entries.indices.filter { entries[$0].kind == "custom" && !entries[$0].isClosed
+                && entries[$0].homeSpaceUuid == uuid && !linkedIds.contains(entries[$0].id) }
+            // A label identity survives explicit unlinking; only repair a sole Project that has never claimed a Desktop.
+            guard candidates.count == 1, let projectIndex = candidates.first, entries[projectIndex].labelUuid == nil else { continue }
+            let id = entries[projectIndex].id
+            result[index].linkedProjectIds = [id]
+            result[index].linkedProjectId = id
+            result[projectIndex].labelUuid = entries.contains { $0.labelUuid == uuid } ? id : uuid
+        }
+        return result
+    }
+
     static func repairingEmptyDesktopAliases(_ entries: [ProjectEntry]) -> [ProjectEntry] {
         var result = entries
         for alias in entries where isEmptyDesktopAlias(alias) {

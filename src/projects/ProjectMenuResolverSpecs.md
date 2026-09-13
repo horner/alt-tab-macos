@@ -117,3 +117,11 @@ Desktop snapshot. Menus opened from labels omit creation from the active window.
   conflict prompt; neither should change membership.
 - Verify direct window/history selection still focuses across Spaces, and label Show All
   restores individual closures while Bring All to Front preserves them.
+
+Open Project Folder opens the selected Project's files from its current/other Project
+menu, a label's Project Windows list or the Attic. The Desktop menu instead reveals
+the shared desktops.yaml through Show Desktops File in Finder. Each Project action uses
+the captured Project ID rather than whichever Project is active when the action runs.
+The main menu and Projects settings also provide Open Projects Folder and Open Diagnostics
+Folder, including when Projects is disabled. Folder resolution and Finder opening are
+deferred until after menu dismissal and run on the storage queue.
