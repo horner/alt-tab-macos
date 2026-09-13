@@ -128,6 +128,11 @@ class TilesViewMock {
     func handleSearchEditingKeyDown(_ event: NSEvent) -> SearchKeyResult { return .passToField }
 }
 
+enum AppPicker {
+    static var isActive = false
+    static func handleKeyDown(_ event: NSEvent?) -> Bool { false }
+}
+
 class TilesPanelMock {
     var tilesView = TilesViewMock()
     var isKeyWindow = false

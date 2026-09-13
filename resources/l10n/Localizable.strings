@@ -1379,3 +1379,45 @@
 
 /* Restoration result window link */
 "Focus this window" = "Focus this window";
+
+/* App picker error */
+"%@ could not perform %@. Its menu command may be unavailable." = "%1$@ could not perform %2$@. Its menu command may be unavailable.";
+
+/* App picker results */
+"Applications" = "Applications";
+
+/* App picker error */
+"Could not complete the action" = "Could not complete the action";
+
+/* App picker loading */
+"Finding applications…" = "Finding applications…";
+
+/* App picker action */
+"New Message" = "New Message";
+
+/* App picker action */
+"New Window" = "New Window";
+
+/* App picker title */
+"New app window or message" = "New app window or message";
+
+/* App picker empty state */
+"No matching applications" = "No matching applications";
+
+/* App picker action */
+"Open" = "Open";
+
+/* App picker placeholder */
+"Search apps" = "Search apps";
+
+/* App picker error */
+"The application could not be opened." = "The application could not be opened.";
+
+/* App picker error */
+"The application did not confirm the action. Check it before trying again." = "The application did not confirm the action. Check it before trying again.";
+
+/* App picker timeout */
+"The application did not respond. Check whether it completed the action before trying again." = "The application did not respond. Check whether it completed the action before trying again.";
+
+/* App picker error */
+"The application is no longer available." = "The application is no longer available.";

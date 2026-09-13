@@ -82,6 +82,7 @@ class WindowServerEvents {
                 // An app the user just went to is worth one more subscription attempt if its earlier ones
                 // were refused: it is demonstrably alive and it is the app whose semantics matter next.
                 AxObserverRegistry.shared.recover(pid, .processBecameFrontmost)
+                AppUsage.record(frontmostApp?.bundleURL)
             }
         }
         center.addObserver(forName: NSWorkspace.didHideApplicationNotification, object: nil, queue: .main) { note in
