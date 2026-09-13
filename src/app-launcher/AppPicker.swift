@@ -25,9 +25,10 @@ final class AppPicker: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSW
     private var duplicateNames = Set<String>()
     private var revision = 0
     private var loading = true
-    private var filtering = false
+    private var filtering = true
     private var pendingChoice: Int?
     private var recentlyUsed = [URL: TimeInterval]()
+    private var frequencyScores = [URL: Double]()
     private var requestedIcons = Set<URL>()
     private var userSelectedResult = false
 
@@ -183,7 +184,8 @@ final class AppPicker: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSW
                 guard let self, Self.current === self else { return }
                 self.loading = false
                 self.items = apps
-                self.recentlyUsed = usage
+                self.recentlyUsed = usage.lastUsed
+                self.frequencyScores = usage.frequency
                 self.filter(preserveSelection: true)
             }
         }
@@ -204,8 +206,9 @@ final class AppPicker: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSW
         let query = field.stringValue
         let snapshot = items
         let usage = recentlyUsed
+        let frequencies = frequencyScores
         Self.worker.async { [weak self] in
-            let matches = AppCatalog.matching(query, in: snapshot, recentlyUsed: usage)
+            let matches = AppCatalog.matching(query, in: snapshot, recentlyUsed: usage, frequencyScores: frequencies)
             DispatchQueue.main.async {
                 guard let self, Self.current === self, self.revision == request else { return }
                 let shouldChoose = self.pendingChoice == request
@@ -267,7 +270,7 @@ final class AppPicker: NSObject, NSTableViewDataSource, NSTableViewDelegate, NSW
         dismiss()
         DispatchQueue.main.async {
             AppAction.perform(item) { error in
-                if error == nil { AppUsage.record(item.url) }
+                if error == nil { AppUsage.record(item.url, pickerOpen: true) }
                 guard let error, Self.generation == request, !Self.isActive, !SwitcherSession.isActive else { return }
                 let alert = NSAlert()
                 alert.messageText = NSLocalizedString("Could not complete the action", comment: "App picker error")

@@ -96,6 +96,16 @@ final class AppCatalogTests: XCTestCase {
             [second.url, first.url])
     }
 
+    func testTrendingFrequencyRanksMatchingAppsAheadOfRecency() {
+        let chrome = item("Google Chrome", "com.google.Chrome")
+        let canary = item("Google Chrome Canary", "com.google.Chrome.canary")
+        let safari = item("Safari", "com.apple.Safari")
+        let matches = AppCatalog.matching("C", in: [chrome, canary, safari],
+            recentlyUsed: [chrome.url: 200, canary.url: 100],
+            frequencyScores: [chrome.url: 2, canary.url: 5, safari.url: 100])
+        XCTAssertEqual(matches.map { $0.url }, [canary.url, chrome.url])
+    }
+
     private func item(_ name: String, _ bundle: String?) -> AppCatalogItem {
         AppCatalogItem(url: URL(fileURLWithPath: "/Applications/\(name).app"), name: name, bundleIdentifier: bundle)
     }

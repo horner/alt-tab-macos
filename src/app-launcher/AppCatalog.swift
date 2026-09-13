@@ -41,7 +41,8 @@ enum AppCatalog {
             ?? canonical.deletingPathExtension().lastPathComponent, bundleIdentifier: bundle.bundleIdentifier)
     }
 
-    static func matching(_ query: String, in items: [AppCatalogItem], recentlyUsed: [URL: TimeInterval] = [:]) -> [AppCatalogItem] {
+    static func matching(_ query: String, in items: [AppCatalogItem], recentlyUsed: [URL: TimeInterval] = [:],
+        frequencyScores: [URL: Double] = [:]) -> [AppCatalogItem] {
         let empty = SearchTestable.normalize(query).text.isEmpty
         return items.compactMap { item -> (AppCatalogItem, Int)? in
             if empty { return (item, 0) }
@@ -49,6 +50,9 @@ enum AppCatalog {
             guard let score = texts.compactMap({ SearchTestable.tierMatch(query: query, text: $0)?.score }).max() else { return nil }
             return (item, score)
         }.sorted {
+            let lhsFrequency = frequencyScores[$0.0.url] ?? 0
+            let rhsFrequency = frequencyScores[$1.0.url] ?? 0
+            if lhsFrequency != rhsFrequency { return lhsFrequency > rhsFrequency }
             let lhs = recentlyUsed[$0.0.url] ?? 0
             let rhs = recentlyUsed[$1.0.url] ?? 0
             if lhs != rhs { return lhs > rhs }
