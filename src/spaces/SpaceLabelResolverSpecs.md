@@ -34,7 +34,7 @@ Menu opens the same live AltTab menu as the status icon with the clicked label's
 context. It includes Current window, Project: <name>, Other Projects, Desktop: <name>, Settings, Help
 and Quit, works with the status icon hidden, and retains
 the existing menu delegate's refreshes.
-“Project windows in switcher” offers Show and Hide, defaulting to Hide independently of the menu-bar
+“Project windows in switcher” offers Show and Hide, defaulting to Show independently of the menu-bar
 icon. Show makes live label windows switch destinations. The explicit ownership check uses this process's
 registered window IDs; it does not loosen admission for other floating windows. Changing the preference
 updates existing windows without reopening them. Shown labels remain selectable during their
