@@ -14,6 +14,7 @@ class TilesView {
     static var currentEffectViewKind: EffectViewKind?
     private static var cachedEffectViews: [EffectViewKind: EffectView] = [:]
     static var searchField = NSSearchField(frame: NSRect(x: 0, y: 0, width: 320, height: 30))
+    static let searchAllWindowsButton = NSButton(checkboxWithTitle: NSLocalizedString("All windows", comment: "Search scope"), target: nil, action: nil)
     static var noWindowLabel = NSTextField(labelWithString: NSLocalizedString("No Window", comment: ""))
     private(set) static var searchMode: SearchMode = .off
     static var rows = [[TileView]]()
@@ -39,8 +40,10 @@ class TilesView {
 
     static var isSearchModeOn: Bool { searchMode != .off }
     static var isSearchEditing: Bool { searchMode == .editing }
+    static var isSearchingAllWindows: Bool { isSearchModeOn && SwitcherSession.current?.searchAllWindows == true }
 
     static func startSearchSession(_ startInSearchMode: Bool) {
+        SwitcherSession.current?.searchAllWindows = false
         searchField.stringValue = ""
         Windows.updateSearchQuery("")
         searchMode = SearchModeResolver.startMode(startInSearch: startInSearchMode)
@@ -52,6 +55,7 @@ class TilesView {
         Windows.updateSearchQuery("")
         TilesPanel.shared.resetFrozenPosition()
         searchMode = .off
+        SwitcherSession.current?.searchAllWindows = false
         takeTheCaretFromTheField()
     }
 
@@ -80,10 +84,13 @@ class TilesView {
     static func disableSearchMode() {
         MainThreadStall.step()
         guard SearchModeResolver.disable(mode: searchMode) == .exitToOff else { return }
+        let scopeChanged = isSearchingAllWindows
         TilesPanel.shared.resetFrozenPosition()
         searchMode = .off
+        SwitcherSession.current?.searchAllWindows = false
         clearHover()
-        Windows.updateSearchQuery("")
+        Windows.updateSearchQuery("", scopeChanged: scopeChanged)
+        if scopeChanged, !Windows.updatesBeforeShowing() { App.hideUi(); return }
         App.refreshUi(true)
         focusSelectedTileIfPossible()
         takeTheCaretFromTheField()
@@ -91,6 +98,7 @@ class TilesView {
 
     static func enableSearchEditing() {
         MainThreadStall.step()
+        DesktopNavigation.clearSelection()
         switch SearchModeResolver.enableEditing(mode: searchMode, canSearch: ProFeature.searchInSwitcher.attemptUse()) {
             case .placeCaretOnly:
                 giveTheFieldTheCaret()
@@ -122,11 +130,19 @@ class TilesView {
     /// Until the deferred pass above runs, the field is not first responder and a typed key would go to the
     /// panel instead. It normally wins that race by a wide margin (measured 5-9ms, and 77ms on the first
     /// summon of a launch where the main thread is still busy discovering windows), but the user is waiting
-    /// for this keystroke, so close the window rather than bet on it. A no-op once the field already has it.
+    /// for this keystroke, so close the window rather than bet on it. A no-op once the field already has it:
+    /// past that point the selection belongs to the user, and moving it is what broke ⌘A (#6019). See
+    /// `SearchFieldEditing`.
     static func giveTheFieldTheCaretNow() {
-        guard searchMode == .editing else { return }
+        let intent = SearchFieldEditing.caretIntent(mode: searchMode, fieldOwnsCaret: fieldOwnsTheCaret())
+        guard intent == .takeCaretAndCollapseToEnd else { return }
         TilesPanel.shared.makeFirstResponder(searchField)
         placeSearchCaretAtEnd()
+    }
+
+    private static func fieldOwnsTheCaret() -> Bool {
+        guard let editor = searchField.currentEditor() else { return false }
+        return TilesPanel.shared.firstResponder === editor
     }
 
     static func handleSearchEditingKeyDown(_ event: NSEvent) -> SearchKeyResult {
@@ -174,6 +190,10 @@ class TilesView {
     }
 
     private static func configureSearchField() {
+        searchAllWindowsButton.refusesFirstResponder = true
+        searchAllWindowsButton.toolTip = NSLocalizedString("Search across all apps, desktops, and projects, including minimized and hidden windows.", comment: "All windows search help")
+        searchAllWindowsButton.setAccessibilityHelp(searchAllWindowsButton.toolTip)
+        searchAllWindowsButton.onAction = { _ in changeSearchScope() }
         searchField.placeholderString = NSLocalizedString("Search", comment: "")
         searchField.sendsSearchStringImmediately = true
         searchField.sendsWholeSearchString = true
@@ -196,6 +216,20 @@ class TilesView {
 
     @objc private static func searchFieldChanged(_ sender: NSSearchField) {
         updateSearchQuery(sender.stringValue)
+    }
+
+    private static func changeSearchScope() {
+        MainThreadStall.step()
+        guard isSearchEditing, let session = SwitcherSession.current else { return }
+        let allWindows = searchAllWindowsButton.state == .on
+        guard session.searchAllWindows != allWindows else { return }
+        session.searchAllWindows = allWindows
+        clearHover()
+        stopKeyRepeatTimers()
+        Windows.updateSearchQuery(session.searchQuery, scopeChanged: true)
+        guard Windows.updatesBeforeShowing() else { App.hideUi(); return }
+        App.refreshUi()
+        giveTheFieldTheCaret()
     }
 
     private static func updateSearchQuery(_ query: String) {
@@ -228,14 +262,12 @@ class TilesView {
         TilesPanel.shared.makeFirstResponder(tile)
     }
 
+    /// AppKit selects the whole content when a text field becomes first responder, so the keystroke that
+    /// made us take the caret would REPLACE what is already in the field. Collapse to the end instead.
+    /// Only ever runs on the turn we take the caret; see `giveTheFieldTheCaretNow`.
     private static func placeSearchCaretAtEnd() {
-        guard searchMode == .editing else { return }
-        if TilesPanel.shared.firstResponder !== searchField.currentEditor() {
-            TilesPanel.shared.makeFirstResponder(searchField)
-        }
         guard let editor = searchField.currentEditor() else { return }
-        let end = searchField.stringValue.utf16.count
-        editor.selectedRange = NSRange(location: end, length: 0)
+        editor.selectedRange = SearchFieldEditing.endOfText(length: searchField.stringValue.utf16.count)
     }
 
     static func hasMarkedText() -> Bool {
@@ -286,9 +318,23 @@ class TilesView {
         }
     }
 
+    /// A title label is always drawn on one line, so its height is a property of the FONT and of nothing
+    /// else. Measuring it off a tile's own label made it a property of that window's title instead:
+    /// `NSCell.cellSize.height` grows by one line height per line break in the string, so a single window
+    /// titled with a multi-line string made every tile in the grid that much taller and pushed the
+    /// thumbnails down inside them (#6010). `WindowTitle` keeps such a string out of the model; this keeps
+    /// the metric out of reach of whatever does get in.
+    private static let labelHeightProbe = TileTitleView(font: Appearance.font)
+
+    static func labelLineHeight() -> CGFloat {
+        labelHeightProbe.font = Appearance.font
+        labelHeightProbe.stringValue = "Ag"
+        return labelHeightProbe.cell!.cellSize.height
+    }
+
     static func updateCachedSizes() {
         guard let firstView = TilesView.recycledViews.first else { return }
-        layoutCache.labelHeight = firstView.label.cell!.cellSize.height
+        layoutCache.labelHeight = labelLineHeight()
         let iconCellSize = firstView.statusIcons.iconCellSize
         layoutCache.iconWidth = iconCellSize.width
         layoutCache.iconHeight = iconCellSize.height
@@ -307,8 +353,10 @@ class TilesView {
         scrollView = ScrollView()
         if searchMode != .off {
             host.addSubview(searchField)
+            host.addSubview(searchAllWindowsButton)
         } else {
             searchField.removeFromSuperview()
+            searchAllWindowsButton.removeFromSuperview()
         }
         host.addSubview(scrollView)
         host.addSubview(noWindowLabel)
@@ -323,6 +371,7 @@ class TilesView {
         let host = newView.hostView
         if searchField.superview === contentView.hostView {
             host.addSubview(searchField)
+            host.addSubview(searchAllWindowsButton)
         }
         host.addSubview(scrollView)
         host.addSubview(noWindowLabel)
@@ -382,7 +431,7 @@ class TilesView {
         let focusedView = recycledViews[selectedIndex]
         let hoveredView = SwitcherSession.current?.hoveredIndex.flatMap { $0 >= 0 && $0 < recycledViews.count ? recycledViews[$0] : nil }
         underLayer.updateHighlight(
-            focusedView: focusedView.frame != .zero ? focusedView : nil,
+            focusedView: !DesktopNavigation.isReturnSelected && focusedView.frame != .zero ? focusedView : nil,
             hoveredView: hoveredView != focusedView && hoveredView?.frame != .zero ? hoveredView : nil
         )
     }
@@ -439,6 +488,7 @@ class TilesView {
             Self.updateCachedSizes()
             widthMax = TilesPanel.maxThumbnailsWidth().rounded()
         }
+        ProjectContextHeader.prepareLayout()
         if let (maxX, maxY, labelHeight, rowSignature) = layoutTileViews(widthMax) {
             layoutParentViews(maxX, widthMax, maxY, labelHeight)
             centerRows(TilesView.thumbnailsWidth)
@@ -477,96 +527,72 @@ class TilesView {
 
     private static func resolveAutoSize(_ widthMax: CGFloat) {
         let searchReservedHeight: CGFloat = searchMode == .off ? 0 : searchBarHeight() + 10
-        let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight)
         for size in [AppearanceSizePreference.large, .medium, .small] {
             Appearance.applySize(size)
             Self.updateCachedSizes()
+            ProjectContextHeader.prepareLayout()
+            let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight - ProjectContextHeader.height)
             let maxY = dryRunLayoutTileViews(widthMax)
             if size == .small || maxY <= heightMax { return }
         }
     }
 
     private static func dryRunLayoutTileViews(_ widthMax: CGFloat) -> CGFloat {
-        let labelHeight = Self.layoutCache.labelHeight
-        let height = TileView.height(labelHeight)
-        let isLeftToRight = App.shared.userInterfaceLayoutDirection == .leftToRight
-        let startingX = isLeftToRight ? Appearance.interCellPadding : widthMax - Appearance.interCellPadding
-        var currentX = startingX
-        var currentY = Appearance.interCellPadding
-        var maxY = currentY + height + Appearance.interCellPadding
-        var index = 0
-        while index < TilesView.recycledViews.count {
-            guard SwitcherSession.isActive else { return maxY }
-            defer { index += 1 }
+        let height = TileView.height(Self.layoutCache.labelHeight)
+        let tiles = fillTiles(height).tiles
+        return TileGridLayout.compute(gridInput(tiles, height, widthMax)).maxY
+    }
+
+    /// Puts this render's window on every recycled tile that has one, and releases the images the rest are
+    /// still holding. Returns the tiles that will be placed, in model order, and whether the session ended
+    /// half way — a caller that is about to commit a layout has nothing to commit in that case.
+    private static func fillTiles(_ height: CGFloat) -> (tiles: [(index: Int, view: TileView)], aborted: Bool) {
+        var tiles = [(index: Int, view: TileView)]()
+        for index in 0..<TilesView.recycledViews.count {
+            guard SwitcherSession.isActive else { return (tiles, true) }
             let view = TilesView.recycledViews[index]
-            guard index < Windows.list.count else { break }
-            let window = Windows.list[index]
-            guard Windows.shouldDisplay(window) else { view.frame = .zero; continue }
-            view.updateRecycledCellWithNewContent(window, index, height)
-            let width = view.frame.size.width
-            let projectedX = projectedWidth(currentX, width).rounded(.down)
-            if needNewLine(projectedX, widthMax) {
-                currentX = startingX
-                currentY = (currentY + height + Appearance.interCellPadding).rounded(.down)
-                currentX = projectedWidth(currentX, width).rounded(.down)
-                maxY = max(currentY + height + Appearance.interCellPadding, maxY)
-            } else {
-                currentX = projectedX
+            guard index < Windows.list.count else {
+                // release images and stale window references from unused recycledViews; they take lots of RAM
+                view.thumbnail.releaseImage()
+                view.appIcon.releaseImage()
+                view.window_ = nil
+                continue
             }
+            let window = Windows.list[index]
+            guard Windows.shouldDisplay(window) else {
+                view.frame = .zero
+                continue
+            }
+            view.updateRecycledCellWithNewContent(window, index, height)
+            tiles.append((index, view))
         }
-        return maxY
+        return (tiles, false)
+    }
+
+    private static func gridInput(_ tiles: [(index: Int, view: TileView)], _ height: CGFloat, _ widthMax: CGFloat) -> TileGridLayout.Input {
+        TileGridLayout.Input(widths: tiles.map { $0.view.frame.size.width }, tileHeight: height, widthMax: widthMax,
+            padding: Appearance.interCellPadding,
+            isLeftToRight: App.shared.userInterfaceLayoutDirection == .leftToRight)
     }
 
     private static func layoutTileViews(_ widthMax: CGFloat) -> (CGFloat, CGFloat, CGFloat, [Int])? {
         let labelHeight = Self.layoutCache.labelHeight
         let height = TileView.height(labelHeight)
-        let isLeftToRight = App.shared.userInterfaceLayoutDirection == .leftToRight
-        let startingX = isLeftToRight ? Appearance.interCellPadding : widthMax - Appearance.interCellPadding
-        var currentX = startingX
-        var currentY = Appearance.interCellPadding
-        var maxX = CGFloat(0)
-        var maxY = currentY + height + Appearance.interCellPadding
-        var newViews = [TileView]()
-        var rowSignature = [Int]()
-        rows.removeAll(keepingCapacity: true)
-        rows.append([TileView]())
-        var index = 0
-        while index < TilesView.recycledViews.count {
-            guard SwitcherSession.isActive else { return nil }
-            defer { index = index + 1 }
-            let view = TilesView.recycledViews[index]
-            if index < Windows.list.count {
-                let window = Windows.list[index]
-                guard Windows.shouldDisplay(window) else {
-                    view.frame = .zero
-                    continue
-                }
-                view.updateRecycledCellWithNewContent(window, index, height)
-                let width = view.frame.size.width
-                let projectedX = projectedWidth(currentX, width).rounded(.down)
-                if needNewLine(projectedX, widthMax) {
-                    currentX = startingX
-                    currentY = (currentY + height + Appearance.interCellPadding).rounded(.down)
-                    view.frame.origin = CGPoint(x: localizedCurrentX(currentX, width), y: currentY)
-                    currentX = projectedWidth(currentX, width).rounded(.down)
-                    maxY = max(currentY + height + Appearance.interCellPadding, maxY)
-                    rows.append([TileView]())
-                } else {
-                    view.frame.origin = CGPoint(x: localizedCurrentX(currentX, width), y: currentY)
-                    currentX = projectedX
-                    maxX = max(isLeftToRight ? currentX : widthMax - currentX, maxX)
-                }
-                rows[rows.count - 1].append(view)
-                newViews.append(view)
-                rowSignature.append(index)
-                window.rowIndex = rows.count - 1
-            } else {
-                // release images and stale window references from unused recycledViews; they take lots of RAM
-                view.thumbnail.releaseImage()
-                view.appIcon.releaseImage()
-                view.window_ = nil
-            }
+        let filled = fillTiles(height)
+        guard !filled.aborted else { return nil }
+        let tiles = filled.tiles
+        let layout = TileGridLayout.compute(gridInput(tiles, height, widthMax))
+        for (position, tile) in tiles.enumerated() {
+            tile.view.frame.origin = layout.origins[position]
         }
+        rows = layout.rows.map { $0.map { tiles[$0].view } }
+        for (rowIndex, row) in layout.rows.enumerated() {
+            for position in row { Windows.list[tiles[position].index].rowIndex = rowIndex }
+        }
+        let newViews = tiles.map { $0.view }
+        let rowSignature = tiles.map { $0.index }
+        let maxX = layout.maxX
+        let maxY = layout.maxY
         scrollView.documentView!.subviews = newViews
         scrollView.documentView!.addSubview(thumbnailOverView)
         thumbnailOverView.scrollView = scrollView
@@ -577,36 +603,19 @@ class TilesView {
         return (maxX, maxY, labelHeight, rowSignature)
     }
 
-    private static func needNewLine(_ projectedX: CGFloat, _ widthMax: CGFloat) -> Bool {
-        if App.shared.userInterfaceLayoutDirection == .leftToRight {
-            return projectedX > widthMax
-        }
-        return projectedX < 0
-    }
-
-    private static func projectedWidth(_ currentX: CGFloat, _ width: CGFloat) -> CGFloat {
-        if App.shared.userInterfaceLayoutDirection == .leftToRight {
-            return currentX + width + Appearance.interCellPadding
-        }
-        return currentX - width - Appearance.interCellPadding
-    }
-
-    private static func localizedCurrentX(_ currentX: CGFloat, _ width: CGFloat) -> CGFloat {
-        App.shared.userInterfaceLayoutDirection == .leftToRight ? currentX : currentX - width
-    }
-
     private static func layoutParentViews(_ maxX: CGFloat, _ widthMax: CGFloat, _ maxY: CGFloat, _ labelHeight: CGFloat) {
         let searchBarHeight = searchBarHeight()
         let searchBottomPadding = CGFloat(10)
         let searchReservedHeight = searchMode == .off ? 0 : searchBarHeight + searchBottomPadding
-        let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight)
-        let minSearchWidth = min(widthMax, 320)
-        let minWidth = min(widthMax, 320)
-        TilesView.thumbnailsWidth = max(min(maxX, widthMax), searchMode == .off ? (maxX == 0 ? minWidth : 0) : minWidth)
+        let heightMax = max(0, TilesPanel.maxThumbnailsHeight() - searchReservedHeight - ProjectContextHeader.height)
+        let searchScopeWidth = searchAllWindowsButton.intrinsicContentSize.width
+        let minSearchWidth = min(widthMax, 320 + searchScopeWidth + 10)
+        let minWidth = max(searchMode == .off ? min(widthMax, 320) : minSearchWidth, ProjectContextHeader.minimumContentWidth)
+        TilesView.thumbnailsWidth = max(min(maxX, widthMax), minWidth)
         TilesView.thumbnailsHeight = min(maxY, heightMax)
         let appIconsBottomViewportPadding = appIconsBottomViewportPadding(maxY, heightMax, labelHeight)
         let frameWidth = TilesView.thumbnailsWidth + Appearance.windowPadding * 2
-        var frameHeight = TilesView.thumbnailsHeight + Appearance.windowPadding * 2 + searchReservedHeight
+        var frameHeight = TilesView.thumbnailsHeight + Appearance.windowPadding * 2 + searchReservedHeight + ProjectContextHeader.height
         let originX = Appearance.windowPadding
         var originY = Appearance.windowPadding
         if Preferences.effectiveAppearanceStyle(SwitcherSession.activeShortcutIndex) == .appIcons {
@@ -619,6 +628,7 @@ class TilesView {
         if host !== contentView {
             host.frame = CGRect(origin: .zero, size: NSSize(width: frameWidth, height: frameHeight))
         }
+        ProjectContextHeader.layout(in: host, width: frameWidth, top: frameHeight - Appearance.windowPadding)
         let scrollHeight = max(0, min(maxY, heightMax) - appIconsBottomViewportPadding * 2)
         scrollView.frame.size = NSSize(width: TilesView.thumbnailsWidth, height: scrollHeight)
         scrollView.frame.origin = CGPoint(x: originX, y: originY + appIconsBottomViewportPadding * 2)
@@ -626,20 +636,28 @@ class TilesView {
         if searchMode != .off {
             if searchField.superview !== host {
                 host.addSubview(searchField)
+                host.addSubview(searchAllWindowsButton)
             }
-            let searchWidth = minSearchWidth
+            let searchWidth = max(0, minSearchWidth - searchScopeWidth - 10)
             searchField.frame.size = NSSize(width: searchWidth, height: searchBarHeight)
-            let searchX = originX + (TilesView.thumbnailsWidth - searchWidth) * 0.5
-            searchField.frame.origin = CGPoint(x: searchX, y: frameHeight - Appearance.windowPadding - searchBarHeight)
+            let rowX = originX + (TilesView.thumbnailsWidth - minSearchWidth) * 0.5
+            let rightToLeft = App.shared.userInterfaceLayoutDirection == .rightToLeft
+            let searchX = rowX + (rightToLeft ? searchScopeWidth + 10 : 0)
+            searchField.frame.origin = CGPoint(x: searchX, y: frameHeight - Appearance.windowPadding - searchBarHeight - ProjectContextHeader.height)
+            searchAllWindowsButton.state = isSearchingAllWindows ? .on : .off
+            let scopeHeight = searchAllWindowsButton.intrinsicContentSize.height
+            searchAllWindowsButton.frame = NSRect(x: rightToLeft ? rowX : searchField.frame.maxX + 10,
+                y: searchField.frame.midY - scopeHeight / 2, width: searchScopeWidth, height: scopeHeight)
             searchField.layoutSubtreeIfNeeded()
         } else if searchField.superview != nil {
             searchField.removeFromSuperview()
+            searchAllWindowsButton.removeFromSuperview()
         }
         if App.shared.userInterfaceLayoutDirection == .rightToLeft {
-            let croppedWidth = max(0, TilesView.thumbnailsWidth - maxX)
-            scrollView.documentView!.subviews.forEach { $0.frame.origin.x -= croppedWidth }
+            let offset = TilesView.thumbnailsWidth - widthMax
+            scrollView.documentView!.subviews.forEach { $0.frame.origin.x += offset }
         }
-        scrollView.documentView!.frame.size = NSSize(width: maxX, height: maxY)
+        scrollView.documentView!.frame.size = NSSize(width: max(maxX, TilesView.thumbnailsWidth), height: maxY)
         let docSize = scrollView.documentView!.frame.size
         thumbnailOverView.frame = CGRect(origin: .zero, size: docSize)
         thumbnailUnderLayer.frame = CGRect(origin: .zero, size: docSize)
@@ -669,15 +687,13 @@ class TilesView {
     }
 
     static func centerRows(_ maxX: CGFloat) {
-        for row in rows where !row.isEmpty {
+        let offsets = TileGridLayout.centeringOffsets(rowWidths: rows.map { $0.map { $0.frame.size.width } },
+            padding: Appearance.interCellPadding, within: maxX)
+        let sign: CGFloat = App.shared.userInterfaceLayoutDirection == .leftToRight ? 1 : -1
+        for (rowIndex, row) in rows.enumerated() {
             guard SwitcherSession.isActive else { return }
-            let rowWidth = Appearance.interCellPadding + row.reduce(CGFloat(0)) { $0 + $1.frame.size.width + Appearance.interCellPadding }
-            let offset = ((maxX - rowWidth) / 2).rounded()
-            if offset > 0 {
-                for view in row {
-                    view.frame.origin.x += App.shared.userInterfaceLayoutDirection == .leftToRight ? offset : -offset
-                }
-            }
+            guard offsets[rowIndex] > 0 else { continue }
+            for view in row { view.frame.origin.x += sign * offsets[rowIndex] }
         }
     }
 

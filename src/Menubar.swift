@@ -12,8 +12,8 @@ class Menubar {
     private static var isVisibleObserver: NSKeyValueObservation?
 
     @discardableResult
-    static func addMenuItem(_ title: String, _ action: Selector, _ keyEquivalent: String, _ symbolName: String?, _ color: NSColor? = nil, _ target: AnyObject? = nil) -> NSMenuItem {
-        let item = menu.addItem(withTitle: title, action: action, keyEquivalent: keyEquivalent)
+    static func addMenuItem(_ title: String, _ action: Selector?, _ keyEquivalent: String, _ symbolName: String?, _ color: NSColor? = nil, _ target: AnyObject? = nil, to destination: NSMenu? = nil) -> NSMenuItem {
+        let item = (destination ?? menu).addItem(withTitle: title, action: action, keyEquivalent: keyEquivalent)
         item.target = target
         if #available(macOS 26.0, *), let symbolName {
             item.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
@@ -34,20 +34,17 @@ class Menubar {
         permissionCalloutMenuItem.view = callout
         let calloutSeparator = NSMenuItem.separator()
         permissionCalloutMenuItems = [permissionCalloutMenuItem, calloutSeparator]
-        addMenuItem(NSLocalizedString("Show", comment: "Menubar option"), #selector(App.showUiFromShortcut0), "", "eye", nil, App.self)
+        addMenuItem(NSLocalizedString("Show Windows", comment: "Menubar option"), #selector(App.showUiFromShortcut0), "", "eye", nil, App.self)
+        menu.addItem(NSMenuItem.separator())
+        ProjectsMenu.install(in: menu)
         menu.addItem(NSMenuItem.separator())
         addMenuItem(NSLocalizedString("Settings…", comment: "Menubar option"), #selector(App.showSettingsWindow), ",", "gear", nil, App.self)
-        addMenuItem(NSLocalizedString("Check for updates…", comment: "Menubar option"), #selector(App.checkForUpdatesNow), "", "checkmark.arrow.trianglehead.clockwise", nil, App.self)
-        addMenuItem(NSLocalizedString("Check permissions…", comment: "Menubar option"), #selector(App.checkPermissions), "", "hand.raised", nil, App.self)
-        menu.addItem(NSMenuItem.separator())
-        addMenuItem(String(format: NSLocalizedString("About %@", comment: "Menubar option. %@ is AltTab"), App.name), #selector(App.showAboutWindow), "", "info.circle", nil, App.self)
-        addMenuItem(NSLocalizedString("Debug tools", comment: "Menubar option"), #selector(App.showDebugWindow), "", "scope", nil, App.self)
-        addMenuItem(NSLocalizedString("Send feedback…", comment: "Menubar option"), #selector(App.showFeedbackPanel), "", "text.bubble", nil, App.self)
         upgradeToProMenuItem = addMenuItem(NSLocalizedString("Get Pro", comment: "Menubar option"), App.upgradeToProAction, "", "star.fill", nil, App.self)
         upgradeToProMenuItem.view = UpgradeMenuItemView()
         myAccountMenuItem = addMenuItem(NSLocalizedString("My Account", comment: ""), App.openAccountAction, "", "person.crop.circle", nil, App.self)
         supportProjectMenuItem = addMenuItem(NSLocalizedString("Support this project", comment: "Menubar option"), App.supportProjectAction, "", "heart.fill", .red, App.self)
         refreshLicenseMenuItems()
+        installHelpMenu()
         menu.addItem(NSMenuItem.separator())
         addMenuItem(String(format: NSLocalizedString("Quit %@", comment: "%@ is AltTab"), App.name), #selector(NSApplication.terminate(_:)), "q", nil) // "xmark.rectangle" is not necessary; macos automatically recognizes Quit
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -63,6 +60,17 @@ class Menubar {
         #if DEBUG
         installQAMenuMiddleClickMonitor()
         #endif
+    }
+
+    private static func installHelpMenu() {
+        let help = NSMenu()
+        addMenuItem(NSLocalizedString("Help", comment: "Menubar option"), nil, "", "questionmark.circle").submenu = help
+        addMenuItem(String(format: NSLocalizedString("About %@", comment: "Menubar option. %@ is AltTab"), App.name), #selector(App.showAboutWindow), "", "info.circle", nil, App.self, to: help)
+        addMenuItem(NSLocalizedString("Check for updates…", comment: "Menubar option"), #selector(App.checkForUpdatesNow), "", "checkmark.arrow.trianglehead.clockwise", nil, App.self, to: help)
+        addMenuItem(NSLocalizedString("Send feedback…", comment: "Menubar option"), #selector(App.showFeedbackPanel), "", "text.bubble", nil, App.self, to: help)
+        help.addItem(.separator())
+        addMenuItem(NSLocalizedString("Check permissions…", comment: "Menubar option"), #selector(App.checkPermissions), "", "hand.raised", nil, App.self, to: help)
+        addMenuItem(NSLocalizedString("Debug tools", comment: "Menubar option"), #selector(App.showDebugWindow), "", "scope", nil, App.self, to: help)
     }
 
     #if DEBUG
@@ -165,10 +173,29 @@ class Menubar {
         statusItem.menu = nil
     }
 
+    static func popUpMenu(from view: NSView, context: ProjectMenuResolver.Context? = nil, currentWindow: ProjectsMenu.CurrentWindow? = nil, visibleWindows: [Window]? = nil) {
+        guard let menu, view.window != nil else { return }
+        let previous = ProjectsMenu.presentationContext
+        let previousWindow = ProjectsMenu.presentationWindow
+        let previousCurrentWindow = ProjectsMenu.presentationCurrentWindow
+        let previousVisibleWindows = ProjectsMenu.presentationVisibleWindows
+        ProjectsMenu.presentationContext = context
+        ProjectsMenu.presentationWindow = view.window
+        ProjectsMenu.presentationCurrentWindow = currentWindow
+        ProjectsMenu.presentationVisibleWindows = visibleWindows
+        defer {
+            ProjectsMenu.presentationContext = previous
+            ProjectsMenu.presentationWindow = previousWindow
+            ProjectsMenu.presentationCurrentWindow = previousCurrentWindow
+            ProjectsMenu.presentationVisibleWindows = previousVisibleWindows
+        }
+        menu.popUp(positioning: nil, at: NSPoint(x: view.bounds.minX, y: view.bounds.maxY), in: view)
+    }
+
     static func menubarIconCallback(_: NSControl?) {
         // Guard: can be invoked during `LicenseManager.initialize()` (e.g. Pro users where
         // `onStateChanged` → `ProTransitionManager.onLicenseStateChanged` fires before
-        // `Menubar.setup()`), at which point `statusItem` is still nil.
+        // `Menubar.initialize()`), at which point `statusItem` is still nil.
         guard statusItem != nil else { return }
         applyMenubarIconPreferences()
         if let menubarIconDropdown = GeneralTab.menubarIconDropdown {
@@ -419,6 +446,7 @@ private final class MenubarMenuDelegate: NSObject, NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         LicenseManager.shared.refreshState()
         Menubar.refreshPermissionCallout()
+        ProjectsMenu.refresh(menu)
     }
 }
 

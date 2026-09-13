@@ -1,0 +1,36 @@
+name: Dependency advisories
+
+on:
+  schedule:
+    - cron: '41 9 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'vendor/**'
+      - 'alt-tab-macos.xcodeproj/project.pbxproj'
+      - 'alt-tab-macos.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved'
+      - '.github/workflows/vendor_security.yml'
+  pull_request:
+    paths:
+      - 'vendor/**'
+      - 'alt-tab-macos.xcodeproj/project.pbxproj'
+      - 'alt-tab-macos.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved'
+      - '.github/workflows/vendor_security.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  advisories:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Test advisory checker
+        run: python3 -B -m unittest discover -s vendor/security -p '*Tests.py' -v
+      - name: Check pinned sources and published advisories
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 -B vendor/security/check_advisories.py --summary "$GITHUB_STEP_SUMMARY"
