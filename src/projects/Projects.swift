@@ -202,7 +202,6 @@ enum Projects {
             guard let desktop = byId["desktop-\(space.uuid)"] else { return [SpaceLabelResolver.Label(space: space, name: nil)] }
             let projects = linkedProjects(for: desktop)
             guard !projects.isEmpty else {
-                if closedProjects.contains(where: { $0.homeSpaceUuid == space.uuid }) { return [] }
                 return [SpaceLabelResolver.Label(space: space, name: ProjectNameResolver.normalized(desktop.name))]
             }
             return projects.enumerated().map { index, project in
@@ -450,6 +449,7 @@ enum Projects {
 
     static func windowsRemoved(_ windows: [Window]) {
         ProjectPersistence.scheduleSnapshot()
+        DesktopArchive.windowsRemoved(windows)
         WindowDesktopMove.forget(windows)
         ProjectVisibility.forget(windows)
         let ids = Set(windows.map { $0.tracked.id })
@@ -711,19 +711,24 @@ enum Projects {
         save()
     }
 
-    static func close(_ project: Project) {
+    static func close(_ project: Project, snapshot: ProjectEntry? = nil) {
         guard isEnabled, project.isCustom, byId[project.id] === project else { return }
         Logger.debug { "projects close project=\(project.id) desktop=\(project.homeSpaceUuid) label=\(project.labelUuid ?? "none") history=\(project.windowHistory.count)" }
-        archive(project)
+        archive(project, snapshot: snapshot)
         save()
         DispatchQueue.main.async { App.refreshOpenUiAfterExternalEvent([]) }
     }
 
-    private static func archive(_ project: Project) {
+    static func archiveSnapshot(_ project: Project) -> ProjectEntry {
         for id in project.members { _ = rememberPattern(id, in: project) }
         var snapshot = ProjectLifecycleResolver.closed(entry(for: project))
         snapshot.closedWindows = Windows.list.filter { project.members.contains($0.tracked.id) }.compactMap { pattern(for: $0) }
         if snapshot.name == nil, snapshot.autoName == nil { snapshot.name = project.resolvedName }
+        return snapshot
+    }
+
+    private static func archive(_ project: Project, snapshot saved: ProjectEntry? = nil) {
+        let snapshot = saved ?? archiveSnapshot(project)
         closedProjects.append(snapshot)
         for desktop in list { desktop.linkedProjectIds.removeAll { $0 == project.id } }
         if active === project { active = spaces.first { $0.isCurrent }.map { forSpace(uuid: $0.uuid) } }

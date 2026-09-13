@@ -244,6 +244,7 @@ final class ProjectsMenu: NSObject {
             reopen.isEnabled = Projects.spaces.contains { $0.uuid == destinationUuid && $0.desktopNumber > 0 }
             contents.addItem(reopen)
             contents.addItem(.separator())
+            addSnapshotHistory(project.id, to: contents)
             addOpenFolder(project.id, to: contents)
             menu.addItem(submenu(name, contents))
         }
@@ -276,6 +277,7 @@ final class ProjectsMenu: NSObject {
         if let project {
             addWindows(of: project, to: menu, destination: destination)
             menu.addItem(.separator())
+            addSnapshotHistory(project.id, to: menu)
             addOpenFolder(project.id, to: menu)
         } else {
             addHeading(NSLocalizedString("No Active Project", comment: "Projects menu"), to: menu)
@@ -375,6 +377,12 @@ final class ProjectsMenu: NSObject {
         menu.addItem(item(NSLocalizedString("Show Desktops File in Finder", comment: "Reveal Desktop settings YAML"), #selector(showDesktopsFile)))
         guard Projects.isEnabled else { return menu }
         menu.addItem(.separator())
+        let snapshot = item(NSLocalizedString("Take Desktop Snapshot", comment: "Capture the Desktop without closing windows"), #selector(takeDesktopSnapshot))
+        snapshot.representedObject = desktopUuid
+        snapshot.isEnabled = Projects.spaces.contains { $0.uuid == desktopUuid && $0.desktopNumber > 0 }
+        snapshot.toolTip = NSLocalizedString("Save screenshots and reopening details for this Desktop and its linked Projects. Windows stay open.", comment: "Desktop snapshot scope")
+        menu.addItem(snapshot)
+        menu.addItem(.separator())
         let heading = item(NSLocalizedString("Project Labels", comment: "Project label menu section"), nil)
         heading.isEnabled = false
         menu.addItem(heading)
@@ -467,6 +475,41 @@ final class ProjectsMenu: NSObject {
         menu.addItem(entry)
     }
 
+    private static func addSnapshotHistory(_ projectId: String, to menu: NSMenu) {
+        menu.addItem(submenu(NSLocalizedString("Snapshot History", comment: "Saved Project visual snapshots"), DeferredMenu {
+            let history = self.menu()
+            addSnapshots(projectId, to: history)
+            return history
+        }))
+    }
+
+    private static func addSnapshots(_ projectId: String, to menu: NSMenu) {
+        let snapshots = ProjectPersistence.snapshotHistory(for: projectId)
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .medium
+        for snapshot in snapshots {
+            let date = snapshot.capturedAt.map { formatter.string(from: $0) } ?? NSLocalizedString("Unknown date", comment: "Missing snapshot capture date")
+            let title = snapshot.windowCount.map { String(format: NSLocalizedString("%@ — %d windows", comment: "Snapshot capture date and window count"), date, $0) } ?? date
+            let entry = item(title, #selector(openSnapshot))
+            entry.representedObject = snapshot
+            entry.toolTip = snapshot.status + "\n" + snapshot.readme.path
+            menu.addItem(entry)
+        }
+        if snapshots.isEmpty { addHeading(NSLocalizedString("No snapshots yet", comment: "Empty snapshot history"), to: menu) }
+    }
+
+    @objc private static func openSnapshot(_ sender: NSMenuItem) {
+        guard let snapshot = sender.representedObject as? ProjectSnapshotHistory.Entry else { return }
+        ProjectPersistence.openSnapshot(snapshot)
+    }
+
+    @objc private static func takeDesktopSnapshot(_ sender: NSMenuItem) {
+        guard let uuid = sender.representedObject as? String else { return }
+        let parent = presentationWindow
+        DispatchQueue.main.async { DesktopArchive.takeSnapshot(spaceUuid: uuid, from: parent) }
+    }
+
     @objc private static func openProjectFolder(_ sender: NSMenuItem) {
         guard let id = sender.representedObject as? String else { return }
         ProjectPersistence.openFolder(.project(id))
@@ -512,6 +555,7 @@ final class ProjectsMenu: NSObject {
         addWindows(of: project, to: menu, destination: destination)
         if let project {
             menu.addItem(.separator())
+            addSnapshotHistory(project.id, to: menu)
             addOpenFolder(project.id, to: menu)
         }
         return menu
@@ -542,6 +586,10 @@ final class ProjectsMenu: NSObject {
 
     private static func makeHistoryMenu(_ project: Project) -> NSMenu {
         let history = menu()
+        addHeading(NSLocalizedString("Snapshots", comment: "Project visual snapshot history"), to: history)
+        addSnapshots(project.id, to: history)
+        history.addItem(.separator())
+        addHeading(NSLocalizedString("Window History", comment: "Previously seen Project windows"), to: history)
         let grouped = Dictionary(grouping: project.windowHistory, by: { $0.bundleIdentifier + "\u{0}" + $0.title + "\u{0}" + ($0.url ?? "") })
         let entries = grouped.values.compactMap { $0.max { ($0.lastSeenAt ?? .distantPast) < ($1.lastSeenAt ?? .distantPast) } }
             .sorted { ($0.lastSeenAt ?? .distantPast) > ($1.lastSeenAt ?? .distantPast) }

@@ -552,6 +552,22 @@
 		B608FA3BEE4E4C3AB193DD2D /* ProjectFileStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DC544BA95DA4197A7F0AC98 /* ProjectFileStoreTests.swift */; };
 		7A2F25D0205C4AD08636473D /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 786520B0031E4110AB89B31D /* Yams */; };
 		CBA4DC4859734A62B1505A0C /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 786520B0031E4110AB89B31D /* Yams */; };
+		4C19E3DFFCB947C2AA4F006B /* DesktopWindows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B5393A22724BE9A284797E /* DesktopWindows.swift */; };
+		6CF5DF8539E6478A8BB163A1 /* DesktopRemoval.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD7A6671A4424BACB21EFF76 /* DesktopRemoval.swift */; };
+		646E6C0CA5ED441A9EA6C84C /* DesktopArchive.swift in Sources */ = {isa = PBXBuildFile; fileRef = B049961DF6CC4E1A9F8AF957 /* DesktopArchive.swift */; };
+		D9B112B402554AF28D98EB51 /* ProjectArchiveFiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1196A90F685A412EB7929F25 /* ProjectArchiveFiles.swift */; };
+		D12733A1853646D9B8F318DB /* ProjectArchiveSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 060299C3C1FA49469774683B /* ProjectArchiveSnapshot.swift */; };
+		E1DF35DE4871430C9F88DA9A /* ProjectArchiveSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 060299C3C1FA49469774683B /* ProjectArchiveSnapshot.swift */; };
+		57321C403420419887486C95 /* ProjectArchiveSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3BC02C9E62E4EB1909CD25A /* ProjectArchiveSnapshotTests.swift */; };
+		D3F1202CF2424146AC0AA626 /* ProjectArchivePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C4AE1CDC6E4B0DBC92789A /* ProjectArchivePolicy.swift */; };
+		5DF71C78B0954EA999648464 /* ProjectArchivePolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05C4AE1CDC6E4B0DBC92789A /* ProjectArchivePolicy.swift */; };
+		675EE41847F74E1EA1EBB7EE /* ProjectArchivePolicyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A2B39766B64445AD5939FE /* ProjectArchivePolicyTests.swift */; };
+		0F8BE86AA9254ADE92946C14 /* ProjectArchiveStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2114DE554BB4D9982E05869 /* ProjectArchiveStore.swift */; };
+		C44F878043A24EEF9BC97D99 /* ProjectArchiveStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2114DE554BB4D9982E05869 /* ProjectArchiveStore.swift */; };
+		74A507F07FE449E39CD00D06 /* ProjectArchiveStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF707243CD82401C95041FD5 /* ProjectArchiveStoreTests.swift */; };
+		E51CF21206464911B8FAD957 /* ProjectSnapshotHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3311E9A0FC34667B0865FBB /* ProjectSnapshotHistory.swift */; };
+		ECC88BBE6EA9429797C1A3DD /* ProjectSnapshotHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3311E9A0FC34667B0865FBB /* ProjectSnapshotHistory.swift */; };
+		2379FBF69B684FA3B316C466 /* ProjectSnapshotHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DDC2386A284BBA96425E9E /* ProjectSnapshotHistoryTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1109,6 +1125,18 @@
 		DBAAF759C2FF4F088113BB26 /* ProjectPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectPersistence.swift; sourceTree = "<group>"; };
 		4DC544BA95DA4197A7F0AC98 /* ProjectFileStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectFileStoreTests.swift; sourceTree = "<group>"; };
 		475B7DF5252F439FB577CA7B /* ProjectFileStoreSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectFileStoreSpecs.md; sourceTree = "<group>"; };
+		09B5393A22724BE9A284797E /* DesktopWindows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopWindows.swift; sourceTree = "<group>"; };
+		FD7A6671A4424BACB21EFF76 /* DesktopRemoval.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopRemoval.swift; sourceTree = "<group>"; };
+		B049961DF6CC4E1A9F8AF957 /* DesktopArchive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopArchive.swift; sourceTree = "<group>"; };
+		1196A90F685A412EB7929F25 /* ProjectArchiveFiles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectArchiveFiles.swift; sourceTree = "<group>"; };
+		060299C3C1FA49469774683B /* ProjectArchiveSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectArchiveSnapshot.swift; sourceTree = "<group>"; };
+		C3BC02C9E62E4EB1909CD25A /* ProjectArchiveSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectArchiveSnapshotTests.swift; sourceTree = "<group>"; };
+		05C4AE1CDC6E4B0DBC92789A /* ProjectArchivePolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectArchivePolicy.swift; sourceTree = "<group>"; };
+		21A2B39766B64445AD5939FE /* ProjectArchivePolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectArchivePolicyTests.swift; sourceTree = "<group>"; };
+		E2114DE554BB4D9982E05869 /* ProjectArchiveStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectArchiveStore.swift; sourceTree = "<group>"; };
+		DF707243CD82401C95041FD5 /* ProjectArchiveStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectArchiveStoreTests.swift; sourceTree = "<group>"; };
+		A3311E9A0FC34667B0865FBB /* ProjectSnapshotHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSnapshotHistory.swift; sourceTree = "<group>"; };
+		E6DDC2386A284BBA96425E9E /* ProjectSnapshotHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSnapshotHistoryTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1203,6 +1231,7 @@
 				A339A1C1E01843EDA5777801 /* ProjectEntry.swift */,
 				4458F6294F6841CEA08EA811 /* ProjectLifecycleResolver.swift */,
 				C4F5C6B59A374AAD9D852FCA /* ProjectLifecyclePrompt.swift */,
+				FFFFFAF0622542EABB60A3ED /* archive */,
 				3A0259772F034EAF8CC12DCA /* ProjectLifecycleResolverTests.swift */,
 				77216ECF649F4AEBBF9B3799 /* ProjectLifecycleResolverSpecs.md */,
 				6044C0E7A14B4FEF98B852CE /* ProjectAtticResolverSpecs.md */,
@@ -1916,6 +1945,8 @@
 				6EA682F31A6141AEA1F2B98D /* DesktopNavigationResolverTests.swift */,
 				3F3A92712A14482586F34291 /* DesktopNavigationResolverSpecs.md */,
 				2D20DC9DD7644E0092E428ED /* SpaceLabelWindow.swift */,
+				FD7A6671A4424BACB21EFF76 /* DesktopRemoval.swift */,
+				09B5393A22724BE9A284797E /* DesktopWindows.swift */,
 				852A42D34014432598BCB598 /* WindowDesktopRestore.swift */,
 				E43CF07A628648768086BD13 /* WindowDesktopRestoreResolver.swift */,
 				3050CED47F064AD184B4ABAD /* WindowDesktopRestoreResolverTests.swift */,
@@ -2259,6 +2290,23 @@
 			path = storage;
 			sourceTree = "<group>";
 		};
+		FFFFFAF0622542EABB60A3ED /* archive */ = {
+			isa = PBXGroup;
+			children = (
+				E6DDC2386A284BBA96425E9E /* ProjectSnapshotHistoryTests.swift */,
+				A3311E9A0FC34667B0865FBB /* ProjectSnapshotHistory.swift */,
+				DF707243CD82401C95041FD5 /* ProjectArchiveStoreTests.swift */,
+				E2114DE554BB4D9982E05869 /* ProjectArchiveStore.swift */,
+				21A2B39766B64445AD5939FE /* ProjectArchivePolicyTests.swift */,
+				05C4AE1CDC6E4B0DBC92789A /* ProjectArchivePolicy.swift */,
+				C3BC02C9E62E4EB1909CD25A /* ProjectArchiveSnapshotTests.swift */,
+				060299C3C1FA49469774683B /* ProjectArchiveSnapshot.swift */,
+				1196A90F685A412EB7929F25 /* ProjectArchiveFiles.swift */,
+				B049961DF6CC4E1A9F8AF957 /* DesktopArchive.swift */,
+			);
+			path = archive;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -2522,6 +2570,14 @@
 				D31F5E2F326D4A11AD09DDA2 /* ProjectLifecycleResolverTests.swift in Sources */,
 				9F27A1227432435393E7137D /* ProjectDesktopResolver.swift in Sources */,
 				093B44A0218B46498C180BC3 /* SpaceLabelResolver.swift in Sources */,
+				2379FBF69B684FA3B316C466 /* ProjectSnapshotHistoryTests.swift in Sources */,
+				ECC88BBE6EA9429797C1A3DD /* ProjectSnapshotHistory.swift in Sources */,
+				74A507F07FE449E39CD00D06 /* ProjectArchiveStoreTests.swift in Sources */,
+				C44F878043A24EEF9BC97D99 /* ProjectArchiveStore.swift in Sources */,
+				675EE41847F74E1EA1EBB7EE /* ProjectArchivePolicyTests.swift in Sources */,
+				5DF71C78B0954EA999648464 /* ProjectArchivePolicy.swift in Sources */,
+				57321C403420419887486C95 /* ProjectArchiveSnapshotTests.swift in Sources */,
+				E1DF35DE4871430C9F88DA9A /* ProjectArchiveSnapshot.swift in Sources */,
 				7E368F152DB34A42A51A4F60 /* SpaceLabelResolverTests.swift in Sources */,
 				0000CC000000000000000014 /* SpacesOrderResolver.swift in Sources */,
 				0000CC00000000000000001A /* SpacesOrderResolverTests.swift in Sources */,
@@ -2722,6 +2778,14 @@
 				0000CC00000000000000000F /* SpacesSwitcher.swift in Sources */,
 				0000CC000000000000000011 /* SpacesList.swift in Sources */,
 				600FBAE74F894F11A8628713 /* SpaceLabelWindow.swift in Sources */,
+				E51CF21206464911B8FAD957 /* ProjectSnapshotHistory.swift in Sources */,
+				0F8BE86AA9254ADE92946C14 /* ProjectArchiveStore.swift in Sources */,
+				D3F1202CF2424146AC0AA626 /* ProjectArchivePolicy.swift in Sources */,
+				D12733A1853646D9B8F318DB /* ProjectArchiveSnapshot.swift in Sources */,
+				D9B112B402554AF28D98EB51 /* ProjectArchiveFiles.swift in Sources */,
+				646E6C0CA5ED441A9EA6C84C /* DesktopArchive.swift in Sources */,
+				6CF5DF8539E6478A8BB163A1 /* DesktopRemoval.swift in Sources */,
+				4C19E3DFFCB947C2AA4F006B /* DesktopWindows.swift in Sources */,
 				21A91CA3655F4C74A66A8183 /* SpaceLabelWindows.swift in Sources */,
 				F38996B1E86C495BAF2B45BB /* SpaceLabelResolver.swift in Sources */,
 				0000CC000000000000000013 /* SpacesOrderResolver.swift in Sources */,

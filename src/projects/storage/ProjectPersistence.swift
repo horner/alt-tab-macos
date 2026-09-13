@@ -25,6 +25,9 @@ enum ProjectPersistence {
     private static var pendingSnapshot: DispatchWorkItem?
     private static var isFinishing = false
     private static var apply: (([ProjectEntry], Bool) -> Void)?
+    private static var snapshotHistories = [String: [ProjectSnapshotHistory.Entry]]()
+    private static var historyDirectories = [String: URL]()
+    private static var pendingHistoryRefresh: DispatchWorkItem?
 
     static func start(legacy entries: [ProjectEntry], apply: @escaping ([ProjectEntry], Bool) -> Void) {
         self.apply = apply
@@ -49,13 +52,14 @@ enum ProjectPersistence {
             saveRecovery(files)
             report(files.errors)
             do {
-                observer = try ProjectDirectoryObserver(root: root, queue: queue) {
+                observer = try ProjectDirectoryObserver(root: root, queue: queue, snapshotsChanged: { scheduleHistoryRefresh() }) {
                     DispatchQueue.main.async { scheduleSnapshot() }
                 }
             } catch {
                 report(files.errors + [error.localizedDescription])
             }
             let names = savedNames(files)
+            loadSnapshotHistory()
             DispatchQueue.main.async {
                 projectNames = names
                 apply(loaded, true)
@@ -93,6 +97,7 @@ enum ProjectPersistence {
             if let data = try? JSONEncoder().encode(runtime) { UserDefaults.standard.set(data, forKey: "projectsRuntime") }
             saveRecovery(files)
             let names = savedNames(files)
+            if snapshotDirectories() != historyDirectories { loadSnapshotHistory() }
             DispatchQueue.main.async { projectNames = names }
             let resulting = restoringRuntime(runtime, to: files.entries)
             let requested = try? entries.map { try ProjectFileDocument(entry: $0, order: 0).node() }
@@ -117,6 +122,62 @@ enum ProjectPersistence {
                 report(files.errors)
             } catch {
                 report(files.errors + [error.localizedDescription])
+            }
+        }
+    }
+
+    static func archiveDirectories(for ids: [String], completion: @escaping (Result<[URL], Error>) -> Void) {
+        Projects.persistSnapshot()
+        queue.async {
+            let urls = ids.compactMap { store?.directory(for: $0) }
+            let result: Result<[URL], Error> = ready && store?.errors.isEmpty == true && urls.count == ids.count && !urls.isEmpty
+                ? .success(urls) : .failure(ProjectFileError.invalid("Project folders could not be saved. No windows were closed."))
+            DispatchQueue.main.async { completion(result) }
+        }
+    }
+
+    static func snapshotHistory(for projectId: String) -> [ProjectSnapshotHistory.Entry] {
+        snapshotHistories[projectId] ?? []
+    }
+
+    static func refreshSnapshotHistory() {
+        queue.async { scheduleHistoryRefresh() }
+    }
+
+    private static func scheduleHistoryRefresh() {
+        pendingHistoryRefresh?.cancel()
+        let work = DispatchWorkItem { loadSnapshotHistory() }
+        pendingHistoryRefresh = work
+        queue.asyncAfter(deadline: .now() + 0.35, execute: work)
+    }
+
+    private static func snapshotDirectories() -> [String: URL] {
+        guard let files = store else { return [:] }
+        return Dictionary(uniqueKeysWithValues: files.documents.filter { $0.entry.kind == "custom" && !$0.isDeleted }.compactMap { document in
+            files.directory(for: document.entry.id).map { (document.entry.id, $0) }
+        })
+    }
+
+    private static func loadSnapshotHistory() {
+        pendingHistoryRefresh?.cancel()
+        pendingHistoryRefresh = nil
+        historyDirectories = snapshotDirectories()
+        let histories = historyDirectories.mapValues { ProjectSnapshotHistory.load(in: $0) }
+        DispatchQueue.main.async { snapshotHistories = histories }
+    }
+
+    static func openSnapshot(_ entry: ProjectSnapshotHistory.Entry) {
+        guard !isFinishing else { return }
+        DispatchQueue.main.async {
+            queue.async {
+                guard ProjectSnapshotHistory.isRegular(entry.readme), NSWorkspace.shared.open(entry.readme) else {
+                    loadSnapshotHistory()
+                    DispatchQueue.main.async {
+                        ProjectRestoreNotice.showSummary(title: NSLocalizedString("Couldn’t open snapshot", comment: "Snapshot open failure"),
+                            rows: [.init(title: NSLocalizedString("The snapshot may have been moved or deleted, or no app could open its Markdown file.", comment: "Snapshot open failure explanation"), detail: entry.readme.path)])
+                    }
+                    return
+                }
             }
         }
     }

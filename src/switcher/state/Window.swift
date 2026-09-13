@@ -299,7 +299,8 @@ class Window {
             return
         }
         if let altTabWindow = altTabWindow() {
-            altTabWindow.close()
+            if altTabWindow is SpaceLabelWindow { altTabWindow.performClose(nil) }
+            else { altTabWindow.close() }
             return
         }
         guard let element = axUiElement else { return }

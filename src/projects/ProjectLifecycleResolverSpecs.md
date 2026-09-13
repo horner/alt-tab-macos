@@ -1,12 +1,13 @@
 # Project lifecycle
 
-Closing a custom Project archives its name, window identities, membership evidence, exclusions,
+The Close Project menu action archives its name, window identities, membership evidence, exclusions,
 history, icon and label identity. It disappears from active Project menus, numbering, labels,
 automatic membership restoration and Desktop claims. It does not close or move application windows
 or remove a macOS Desktop. Shared Projects on the Desktop remain open. Closing requires confirmation;
 cancel makes no changes. Closed Projects persist across restarts and are available in the root menu.
-An otherwise unlinked Desktop does not substitute a label for a closed Project or recreate it when
-that Desktop is subsequently removed.
+An otherwise unlinked Desktop shows its own Desktop label without recreating the archived Project.
+Removing that Desktop does not recreate the archived Project. Closing a label follows the separate
+visual archive and Desktop-close workflow in `archive/ProjectArchiveSpecs.md`.
 
 An unlinked Desktop record must not become a second Project when its label UUID is already owned
 by a relocated or archived Project. On loading saved state, an empty synthetic custom record whose

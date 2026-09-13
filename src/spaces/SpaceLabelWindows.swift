@@ -52,7 +52,8 @@ enum SpaceLabelWindows {
     static var hasLabels: Bool { visibility.isRequested }
 
     static func switcherVisibility(windowId: CGWindowID?, pid: pid_t) -> Bool? {
-        SpaceLabelResolver.switcherVisibility(windowId: windowId, pid: pid, ownerPid: AXUIElement.currentProcessPid,
+        if pid == AXUIElement.currentProcessPid, DesktopWindows.contains(windowId) { return false }
+        return SpaceLabelResolver.switcherVisibility(windowId: windowId, pid: pid, ownerPid: AXUIElement.currentProcessPid,
             labelWindowIds: windowIds, showInSwitcher: Preferences.projectWindowsInSwitcher)
     }
 
@@ -155,7 +156,9 @@ enum SpaceLabelWindows {
         guard enabled != Projects.isEnabled else { return }
         enabled = Projects.isEnabled
         revision += 1
-        if !enabled { closeAll() }
+        guard enabled else { closeAll(); return }
+        visibility.openOnLaunch()
+        refresh()
     }
 
     static func refreshNames() {
@@ -219,6 +222,8 @@ enum SpaceLabelWindows {
                 let destinations = visible.map { arrival.update($0, didSwitch: didSwitch) } ?? []
                 let movedLabels = observedLabelMoves(placements, locations: locations, snapshot: snapshot)
                 spaces = snapshot
+                DesktopRemoval.topologyChanged(snapshot)
+                DesktopWindows.reconcile(snapshot)
                 Projects.applyDesktopTopology(snapshot, labelLocations: labelLocations, windowLocations: memberLocations, movedLabels: movedLabels)
                 for location in movedLabels { windows[location.labelId]?.spaceId = location.spaceIds.first }
                 guard enabled else { return }
@@ -273,7 +278,9 @@ enum SpaceLabelWindows {
             }
             windows[label.id] = entry
             entry.spaceUuid = label.space.uuid
-            entry.window.onClose = { close(label.id) }
+            entry.window.onClose = {
+                DesktopArchive.prompt(spaceUuid: label.space.uuid, from: entry.window) { close(label.id) }
+            }
             entry.window.onInteraction = { interact(with: label.id) }
             entry.window.update(label, on: screen)
             entry.window.avoidOverlap(occupied[label.space.uuid] ?? [], on: screen, migrated: migrated)

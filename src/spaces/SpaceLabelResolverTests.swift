@@ -1,6 +1,24 @@
 import XCTest
 
 final class SpaceLabelResolverTests: XCTestCase {
+    func testLaunchOpensExistingAndNewLabelsBehindApplicationWindows() {
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.openOnLaunch()
+        XCTAssertTrue(visibility.includes("unnamed-desktop"))
+        XCTAssertTrue(visibility.includes("new-desktop"))
+        XCTAssertEqual(visibility.presentation, .back)
+    }
+
+    func testRelaunchReopensPreviouslyHiddenLabels() {
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.showAll()
+        visibility.close("project")
+        visibility.hideAll()
+        visibility.openOnLaunch()
+        XCTAssertTrue(visibility.includes("project"))
+        XCTAssertEqual(visibility.presentation, .back)
+    }
+
     func testNamingDesktopShowsOnlyItsProjectLabels() {
         var visibility = SpaceLabelResolver.Visibility()
         visibility.show(["project-a", "project-b"])

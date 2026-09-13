@@ -73,6 +73,8 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
             addButton(NSLocalizedString("History", comment: "Project window history"),
                 help: NSLocalizedString("Open this project's window history", comment: "Project label button help"), action: #selector(openHistory(_:))),
         ]
+        addButton(NSLocalizedString("Take Snapshot", comment: "Save a visual desktop snapshot"),
+            help: NSLocalizedString("Save screenshots and reopening details for this Desktop without closing windows", comment: "Project label snapshot button help"), action: #selector(takeSnapshot(_:)))
         addButton(NSLocalizedString("Rename…", comment: "Project label rename button"),
             help: NSLocalizedString("Rename this Project or Desktop", comment: "Project label button help"), action: #selector(rename(_:)))
         addButton(NSLocalizedString("Restore from Attic…", comment: "Restore a Project from its Desktop label"),
@@ -208,6 +210,13 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         performFromLabel(sender) { context, button in
             guard let id = context.projectId else { return }
             ProjectsMenu.showHistory(for: id, from: button)
+        }
+    }
+
+    @objc private func takeSnapshot(_ sender: NSButton) {
+        performFromLabel(sender) { context, button in
+            guard let uuid = context.desktopUuid else { return }
+            DesktopArchive.takeSnapshot(spaceUuid: uuid, from: button.window)
         }
     }
 

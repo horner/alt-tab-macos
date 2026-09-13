@@ -21,6 +21,11 @@ enum SpaceLabelResolver {
         private var requestedLabels = Set<String>()
         private var closedSpaces = Set<String>()
 
+        mutating func openOnLaunch() {
+            showAll()
+            _ = sendToBack(after: presentationRevision)
+        }
+
         mutating func showAll() {
             allRequested = true
             requestedLabels.removeAll()

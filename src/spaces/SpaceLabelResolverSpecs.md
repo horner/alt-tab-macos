@@ -2,15 +2,17 @@
 
 ## Summary
 
-Labels start hidden. Saving “Name this Desktop…” explicitly opens or restores the labels on that
-Desktop, including each of its linked Projects. This does not open labels on other Desktops or
-restore their closed/minimized windows. Cancel leaves labels unchanged.
+When Projects is enabled, launch and re-enabling Projects open all labels behind application windows.
+Each ordinary Desktop has a separate transparent navigation window, including unnamed and empty
+Desktops; hiding or minimizing labels does not remove that focus target. Fullscreen Spaces continue
+to use their application window. Navigation windows are excluded from the switcher and project membership.
 
-“Show Project Labels” requests one window per linked Project on each live Desktop,
-or one Desktop label when it has no linked Projects. New Spaces are included while the set is open.
-Closing a window suppresses only its stable label identity across naming and topology refreshes.
-“Show Project Labels” explicitly restores closed windows. “Close All Project Labels”, disabling Projects,
-and restarting AltTab end the session; subsequent refreshes or re-enabling Projects do not reopen it.
+Saving “Name this Desktop…” opens or restores labels on that Desktop, including each linked Project.
+An explicit “Show Project Labels” restores the entire set and includes subsequently created Spaces.
+The close button offers Archive and Close Desktop, Hide Label, or Cancel; fullscreen labels simply hide.
+Hide Label suppresses its stable identity until explicitly shown or the app restarts. The bulk Close All
+command hides labels without closing application windows or removing navigation targets. Disabling
+Projects hides labels; re-enabling or restarting starts a fresh visible session.
 
 Labels normally use the normal window level. “Bring Project Labels to Front” raises the existing set once and
 restores minimized labels, preserving individual close decisions. If no session exists, it creates
@@ -109,7 +111,7 @@ small action buttons wrap into additional rows when needed.
 - **testMinimizeAllPreservesTheOpenSession** — Minimize All keeps the session open and applies to later Spaces too.
 - **testQueuedClickCannotOverrideMinimizeAll** — A deferred click cannot replace a newer minimize request with back ordering.
 - **testPresentationActionsDoNotStartAClosedSession** — The presentation kernel does not implicitly start a session; creation is the adapter's explicit decision.
-- **testLabelsStartUnrequested** — Starting a session does not create label windows automatically.
+- **testLabelsStartUnrequested** — The raw visibility kernel starts unrequested; the application calls `openOnLaunch` when Projects is enabled.
 - **testShowAllIncludesExistingAndNewSpaces** — An explicit show request includes current and newly created Spaces.
 - **testClosedLabelStaysClosedAcrossRefreshes** — Closing one UUID keeps it suppressed while other labels remain requested.
 - **testShowAllExplicitlyRestoresClosedLabels** — A new show request restores individually closed labels.
@@ -157,3 +159,12 @@ small action buttons wrap into additional rows when needed.
 - `testNamingDesktopShowsOnlyItsProjectLabels` — naming opens just the selected Desktop’s labels.
 - `testNamingReopensItsLabelWithoutRestoringOtherClosedLabels` — naming overrides its own closure, retaining other closures and bulk presentation state.
 - `testSelectiveLabelsCloseAndShowAllStillRestoresEveryDesktop` — selective sessions close normally and remain compatible with Show All and Close All.
+
+## Default launch and navigation checks
+
+- `testLaunchOpensExistingAndNewLabelsBehindApplicationWindows` pins the launch default and back ordering.
+- `testRelaunchReopensPreviouslyHiddenLabels` pins resetting per-session hide decisions.
+- macOS 26.5.1 probe: a clear, ordered 2×2 window with `ignoresMouseEvents` switches Desktops when
+  made key and ordered before app activation. A key-only request plus SLPS did not reliably switch.
+- Live launch created all seven desktop labels without Show Project Labels. Navigation anchors remain
+  registered separately when labels are hidden or minimized; topology removal retires both independently.
