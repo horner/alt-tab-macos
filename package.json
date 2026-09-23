@@ -17,17 +17,21 @@
   },
   "scripts": {
     "format": "node scripts/swiftformat.js",
-    "format:check": "node scripts/swiftformat.js --lint"
+    "format:check": "node scripts/swiftformat.js --lint",
+    "viewer:build": "node scripts/build-snapshot-viewer.mjs",
+    "viewer:check": "tsc --project src/projects/snapshot-viewer/web/tsconfig.json && node scripts/build-snapshot-viewer.mjs --check && node --test src/projects/snapshot-viewer/web/rendererTests.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^8.1.0",
     "@commitlint/config-conventional": "^8.1.0",
     "@semantic-release/changelog": "^3.0.4",
     "@semantic-release/git": "^7.0.16",
+    "esbuild": "0.28.2",
     "fontkit": "^1.8.0",
     "glob": "^10.0.0",
     "husky": "^3.0.4",
     "lint-staged": "^13.0.0",
+    "markdown-it": "15.0.2",
     "marked": "^0.8.0",
     "semantic-release": "^15.13.24"
   },

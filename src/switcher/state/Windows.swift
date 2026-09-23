@@ -52,7 +52,7 @@ class Windows {
         window.shouldShowTheUser && Search.matches(window, query: (SwitcherSession.current?.searchQuery ?? ""))
     }
 
-    static func updateSearchQuery(_ query: String) {
+    static func updateSearchQuery(_ query: String, scopeChanged: Bool = false) {
         let previousTrimmedQuery = Search.normalizedQuery(SwitcherSession.current?.searchQuery ?? "")
         let newTrimmedQuery = Search.normalizedQuery(query)
         SwitcherSession.current?.searchQuery = query
@@ -62,9 +62,9 @@ class Windows {
             sort()
             return
         }
-        if previousTrimmedQuery != newTrimmedQuery {
+        if previousTrimmedQuery != newTrimmedQuery || scopeChanged {
             if newTrimmedQuery.isEmpty {
-                shouldRestoreDefaultSelectionOnSearchClear = !previousTrimmedQuery.isEmpty
+                shouldRestoreDefaultSelectionOnSearchClear = !previousTrimmedQuery.isEmpty || scopeChanged
                 shouldSelectBestMatchOnSearchChange = false
             } else {
                 shouldSelectBestMatchOnSearchChange = true
@@ -77,11 +77,12 @@ class Windows {
 
     static func voiceOverWindow(_ windowIndex: Int = (SwitcherSession.current?.selectedIndex ?? 0)) {
         guard SwitcherSession.isActive && TilesPanel.shared.isKeyWindow else { return }
+        if DesktopNavigation.isReturnSelected { ProjectContextHeader.voiceOverReturn(); return }
         if TilesView.isSearchEditing { return }
         // it seems that sometimes makeFirstResponder is called before the view is visible
         // and it creates a delay in showing the main window; calling it with some delay seems to work around this
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(10)) {
-            if TilesView.isSearchEditing { return }
+            if TilesView.isSearchEditing || DesktopNavigation.isReturnSelected { return }
             let window = TilesView.recycledViews[windowIndex]
             if window.window_ != nil && window.window != nil {
                 TilesPanel.shared.makeFirstResponder(window)
@@ -112,11 +113,13 @@ class Windows {
         // computed-property access rebuilds the underlying array via N×`CachedUserDefaults.macroPref`
         // calls. Snapshot them once and pass into the per-window helper.
         let filters = WindowFilters.snapshot()
+        let projectMembers = Projects.activeMembers
+        Projects.assignUnassignedWindowsOnCurrentDesktop(projectMembers)
         // Tab grouping (incl. fullscreen siblings) and active→inactive state mirroring are reconciled
         // reactively on WindowServer events (TabGroup.reconcile), so the model is already grouped here —
         // doing it in this synchronous show path would reorder tiles mid-render (UI jump).
         for window in list {
-            refreshIfWindowShouldBeShownToTheUser(window, filters)
+            window.shouldShowTheUser = shouldShow(window, filters, projectMembers: projectMembers)
         }
         refreshWhichWindowsToShowTheUser()
         sort()
@@ -124,7 +127,7 @@ class Windows {
     }
 
     static func refreshWhichWindowsToShowTheUser() {
-        guard Preferences.showsOneWindowPerApp() else { return }
+        guard !TilesView.isSearchingAllWindows, Preferences.showsOneWindowPerApp() else { return }
         let current = AttentionEngine.currentUserContext
         for (pid, windows) in Dictionary(grouping: list, by: { $0.application.pid }) {
             let eligible = windows.filter { $0.shouldShowTheUser }
@@ -147,26 +150,34 @@ class Windows {
         }
     }
 
-    private static func refreshIfWindowShouldBeShownToTheUser(_ window: Window, _ f: WindowFilters) {
+    static func shouldShow(_ window: Window, _ f: WindowFilters, projectMembers: Set<String>?) -> Bool {
+        let labelVisibility = SpaceLabelWindows.switcherVisibility(windowId: window.cgWindowId, pid: window.application.pid)
+        guard labelVisibility != false else { return false }
+        let members = labelVisibility == true ? nil : projectMembers
+        let scope = ProjectScopeResolver.resolve(hasActiveProject: members != nil, currentOnly: Preferences.projectsCurrentSpaceOnly,
+            visibleOnly: f.spacesToShow == .visible, nonVisibleOnly: f.spacesToShow == .nonVisible,
+            screenOnly: f.screensToShow == .showingAltTab, visibleSpaceIds: Spaces.visibleSpaces, currentSpaceId: Spaces.currentSpaceId)
         // `isOnPreferredScreen` is the one irreducibly OS-coupled fact (touches `Spaces.screenSpacesMap` +
         // multi-screen quartz math); passed as `@autoclosure` so it's only evaluated if the cheaper
         // filters above don't already exclude the window.
-        window.shouldShowTheUser = WindowFilterResolver.shouldShow(
+        return WindowFilterResolver.shouldShow(
             window.state, window.application.state,
+            searchAllWindows: TilesView.isSearchingAllWindows,
             onlyFrontmostApp: f.appsToShow == .active,
             excludeFrontmostApp: f.appsToShow == .nonActive,
             hideHidden: f.showHiddenWindows == .hide,
             hideWindowless: f.showWindowlessApps == .hide,
             hideFullscreen: f.showFullscreenWindows == .hide,
             hideMinimized: f.showMinimizedWindows == .hide,
-            onlyVisibleSpaces: f.spacesToShow == .visible,
-            onlyNonVisibleSpaces: f.spacesToShow == .nonVisible,
-            onlyPreferredScreen: f.screensToShow == .showingAltTab,
+            onlyVisibleSpaces: scope.visibleOnly,
+            onlyNonVisibleSpaces: scope.nonVisibleOnly,
+            onlyPreferredScreen: scope.screenOnly,
             separateTabs: f.groupTabs == .separateWindows,
             frontmostPid: Applications.frontmostPid,
-            visibleSpaceIds: Spaces.visibleSpaces,
+            visibleSpaceIds: scope.spaceIds,
             exceptions: f.exceptions,
-            isOnPreferredScreen: window.isOnScreen(NSScreen.preferred))
+            activeProjectMembers: members,
+            isOnPreferredScreen: window.isOnScreen(members == nil ? NSScreen.preferred : NSScreen.main ?? NSScreen.preferred))
     }
 
     /// selection + hover methods (all operate on `SwitcherSession.current`)
@@ -211,6 +222,7 @@ class Windows {
     }
 
     static func selectedWindow() -> Window? {
+        guard !DesktopNavigation.isReturnSelected else { return nil }
         guard let session = SwitcherSession.current, list.count > session.selectedIndex else { return nil }
         let window = list[session.selectedIndex]
         return shouldDisplay(window) ? window : nil
@@ -228,7 +240,7 @@ class Windows {
     }
 
     static func updateSelectedWindow() {
-        guard let session = SwitcherSession.current else { return }
+        guard let session = SwitcherSession.current, !DesktopNavigation.isReturnSelected else { return }
         let inputs = selectionInputs(session)
         let decision = SelectionResolver.decide(inputs)
         Logger.debug { "select decide=\(decision) fromTarget=\(session.selectedTarget ?? "nil") sel=\(session.selectedIndex)" }
@@ -336,6 +348,7 @@ class Windows {
     /// Wrapper-side reset that mirrors the first half of the old `setInitialSelectedAndHoveredWindowIndex`:
     /// clear `selectedTarget`, reset `selectedIndex` to 0, redraw the old highlight, drop hover.
     private static func resetForInitialPick(_ session: SwitcherSession) {
+        DesktopNavigation.clearSelection()
         let oldIndex = session.selectedIndex
         session.selectedIndex = 0
         session.selectedTarget = nil
@@ -353,6 +366,7 @@ class Windows {
         guard newIndex >= 0 && newIndex < list.count else { return }
         let newWindow = list[newIndex]
         guard shouldDisplay(newWindow) else { return }
+        if fromMouse && Preferences.mouseHoverEnabled { DesktopNavigation.clearSelection() }
         var index: Int?
         if fromMouse { session.userPickedSelection = true }
         if fromMouse && (newIndex != session.hoveredIndex || lastWindowActivityType == .focus) {
@@ -395,6 +409,7 @@ class Windows {
 
     static func cycleSelectedWindowIndex(_ step: Int, allowWrap: Bool = true) {
         guard let session = SwitcherSession.current else { return }
+        if DesktopNavigation.cycle(step, allowWrap: allowWrap) { return }
         guard list.contains(where: { shouldDisplay($0) }) else { return }
         // `list` can shrink while the panel is open (a window closed), and the selection fix-up runs behind
         // `switcherUiRefreshThrottler`, so a dispatched trackpad/key-repeat step can land here with
@@ -547,7 +562,7 @@ class Windows {
         let wid = raw.wid
         let existing = byWindowId[wid] ?? (list.first { $0.isEqualRobust(windowAxUiElement, wid) })
         let evidence = existing?.admissionEvidence ?? .discovery
-        let decision = WindowAdmissionResolver.resolve(PhysicalSurface(raw), semantic, evidence: evidence)
+        let decision = admissionDecision(raw, semantic, evidence: evidence)
         guard decision.isDestination else {
             logAdmission(decision, raw, app)
             if let existing { removeWindows([existing], true) }
@@ -585,7 +600,7 @@ class Windows {
     static func reevaluateAdmission(_ window: Window, _ semantic: SemanticSurface) -> Bool {
         guard let wid = window.cgWindowId,
               let raw = WindowSurfaceInventory.raw(wid) else { return true }
-        let decision = WindowAdmissionResolver.resolve(PhysicalSurface(raw), semantic,
+        let decision = admissionDecision(raw, semantic,
             evidence: window.admissionEvidence)
         window.semanticSurface = semantic
         logAdmission(decision, raw, window.application)
@@ -602,6 +617,12 @@ class Windows {
             guard let window = byWindowId[raw.wid], let semantic = window.semanticSurface else { continue }
             _ = reevaluateAdmission(window, semantic)
         }
+    }
+
+    private static func admissionDecision(_ raw: WsRawWindow, _ semantic: SemanticSurface?,
+                                          evidence: WindowAdmissionEvidence) -> SwitchDestinationDecision {
+        WindowAdmissionResolver.resolve(PhysicalSurface(raw), semantic, evidence: evidence,
+            ownedControlVisibility: SpaceLabelWindows.switcherVisibility(windowId: raw.wid, pid: raw.pid))
     }
 
     private static func logAdmission(_ decision: SwitchDestinationDecision, _ raw: WsRawWindow,
@@ -637,7 +658,7 @@ class Windows {
             existing.admissionEvidence = .attention
             return existing
         }
-        let decision = WindowAdmissionResolver.resolve(PhysicalSurface(raw), nil, evidence: .attention)
+        let decision = admissionDecision(raw, nil, evidence: .attention)
         guard decision.isDestination else {
             logAdmission(decision, raw, app)
             return nil
@@ -705,6 +726,7 @@ class Windows {
     static func appendWindow(_ window: Window) {
         window.lastFocusOrder = list.count
         list.append(window)
+        Projects.windowAdded(window)
         bumpAppWindowSetVersion(window.application.pid)
         if let wid = window.cgWindowId {
             byWindowId[wid] = window
@@ -814,6 +836,7 @@ class Windows {
             w.lastFocusOrder -= howManyToShift
             return false
         }
+        Projects.windowsRemoved(windows)
         // Drop the cached `SCWindow` for any window we're removing. Otherwise the array
         // grows over time as new shareable-content refreshes leave stale entries behind
         // (see leak #5).
@@ -858,7 +881,7 @@ enum WindowActivityType: Int {
     case focus = 2
 }
 
-/// Snapshot of per-shortcut preferences used by `refreshIfWindowShouldBeShownToTheUser`. The
+/// Snapshot of per-shortcut preferences used by `Windows.shouldShow`. The
 /// `Preferences.<arrayPref>` getters each rebuild a `[MacroPreference]` array via N×`macroPref`
 /// calls — cheap once, dominant when read inside a per-window loop. Snapshotting once at the
 /// start of `updatesBeforeShowing` collapses N_windows × M_prefs accesses into M_prefs.

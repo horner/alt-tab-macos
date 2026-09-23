@@ -73,6 +73,8 @@ class Preferences {
             values[indexToName("shortcutStyleOverride", index)] = ShortcutStylePreference.doNothingOnRelease.indexAsString
             values[indexToName("previewFocusedWindowOverride", index)] = "false"
         }
+        values.merge(spacesDefaultValues) { current, _ in current }
+        values.merge(projectsDefaultValues) { current, _ in current }
         return values
     }()
 
@@ -85,8 +87,10 @@ class Preferences {
         "minDeminWindowShortcut", "toggleFullscreenWindowShortcut", "quitAppShortcut", "hideShowAppShortcut", "searchShortcut",
     ]
     static var allShortcutPreferenceKeys: [String] {
-        staticShortcutKeys + (0..<maxShortcutCount).flatMap { [indexToName("holdShortcut", $0), indexToName("nextWindowShortcut", $0)] }
+        staticShortcutKeys + spacesShortcutKeys
+            + (0..<maxShortcutCount).flatMap { [indexToName("holdShortcut", $0), indexToName("nextWindowShortcut", $0)] }
     }
+    static let spacesShortcutKeys = AuxiliarySwitchers.all.flatMap { $0.shortcutIds }
     static let emptyShortcut = Shortcut(code: .none, modifierFlags: [], characters: nil, charactersIgnoringModifiers: nil)
     private static let shortcutStorageStringField = "string"
     private static let shortcutStorageDataField = "secureData"
@@ -211,7 +215,8 @@ class Preferences {
     }
 
     static func set<T>(_ key: String, _ value: T, _ notify: Bool = true) where T: Encodable {
-        UserDefaults.standard.set(key == "exceptions" ? jsonEncode(value) : value, forKey: key)
+        let isScalar = value is String || value is NSNumber || value is Data || value is Date
+        UserDefaults.standard.set(isScalar ? value : jsonEncode(value), forKey: key)
         CachedUserDefaults.removeFromCache(key)
         invalidateAllCache()
         if notify {

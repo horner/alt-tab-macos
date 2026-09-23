@@ -48,6 +48,10 @@ class LicenseManager {
     /// can drive activation without side effects.
     var onBeforeProUnlock: () -> Void = { }
 
+    /// In-memory product policy; never persisted as a purchased license.
+    var stateOverride: LicenseState?
+    var isProductManaged: Bool { stateOverride != nil }
+
     private(set) var state: LicenseState = .trialExpired {
         didSet { onStateChanged?(state) }
     }
@@ -177,6 +181,7 @@ class LicenseManager {
     }
 
     func computeState() -> LicenseState {
+        if let stateOverride { return stateOverride }
         if keychain.value(account: Self.keychainKeyAccount) != nil {
             let lastValidationResult = defaults.bool(forKey: "lastValidationResult")
             guard lastValidationResult else { return .trialExpired }
@@ -210,6 +215,7 @@ class LicenseManager {
     }
 
     func revalidateWithServer() {
+        guard stateOverride == nil else { return }
         guard let licenseKey = keychain.value(account: Self.keychainKeyAccount),
               let instanceId = keychain.value(account: Self.keychainInstanceAccount) else { return }
         api.validate(licenseKey, instanceId: instanceId) { [weak self] result in

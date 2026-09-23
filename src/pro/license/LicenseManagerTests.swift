@@ -25,6 +25,31 @@ final class LicenseManagerTests: XCTestCase {
 
     // MARK: - Launch / initialize
 
+    func testProductOverrideSurvivesRefreshWithoutStartingTrial() {
+        manager.stateOverride = .pro
+        manager.initialize()
+        clock.advance(days: 365)
+        manager.refreshState()
+        XCTAssertEqual(manager.state, .pro)
+        XCTAssertFalse(manager.isProLocked)
+        XCTAssertNil(manager.trialStartDate)
+        XCTAssertNil(keychain.value(account: LicenseManager.keychainKeyAccount))
+        XCTAssertTrue(api.validateCalls.isEmpty)
+    }
+
+    func testProductOverridePreservesStoredLicenseWithoutRevalidation() {
+        setupActivatedLicense(variantId: "pro_lifetime")
+        let previousValidation = clock.now.addingTimeInterval(-31 * 86400).timeIntervalSince1970
+        defaults.set(previousValidation, forKey: "lastValidation")
+        manager.stateOverride = .pro
+        manager.initialize()
+        manager.revalidateWithServer()
+        XCTAssertTrue(api.validateCalls.isEmpty)
+        XCTAssertEqual(keychain.value(account: LicenseManager.keychainKeyAccount), "LICENSE-ABC")
+        XCTAssertEqual(keychain.value(account: LicenseManager.keychainVariantAccount), "pro_lifetime")
+        XCTAssertEqual(defaults.double(forKey: "lastValidation"), previousValidation)
+    }
+
     func testFirstLaunchStartsTrial() {
         manager.initialize()
         guard case .trial(let days) = manager.state else { return XCTFail("expected .trial, got \(manager.state)") }

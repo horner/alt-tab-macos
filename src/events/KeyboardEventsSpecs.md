@@ -40,6 +40,7 @@ Mirrors `KeyboardEventsTests.swift` 1:1.
 - **testTransitionFromOneShortcutToAnother** — switching slots mid-stream is handled.
 - **testEscapeFiresCancelShortcutWhileSwitcherActiveWithOptionHeld** — Escape → cancel while active.
 - **testEscapeDoesNothingWhenSwitcherIsClosed** — Escape is a no-op when the switcher is closed.
+- **testAppPickerSuppressesShortcutsWhileUpdatingTheirReleaseState** — the app picker owns input until dismissed; releases still update shortcut state so the next summon works.
 
 ## Adjacent: `NSEvent.ModifierFlags.cleaned()` (defined in `ATShortcut.swift`, exercised here)
 
