@@ -1,7 +1,7 @@
 import Cocoa
 import WebKit
 
-final class SnapshotViewerWindow: NSWindow, NSWindowDelegate, WKNavigationDelegate, WKScriptMessageHandler {
+final class SnapshotViewerWindow: NSPanel, NSWindowDelegate, WKNavigationDelegate, WKScriptMessageHandler {
     private final class MessageHandler: NSObject, WKScriptMessageHandler {
         weak var owner: SnapshotViewerWindow?
         func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
@@ -27,6 +27,8 @@ final class SnapshotViewerWindow: NSWindow, NSWindowDelegate, WKNavigationDelega
     private var documentURL: URL?
     private var temporaryDirectory: URL?
     private var generation = UUID()
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
 
     static func open(_ entry: ProjectSnapshotHistory.Entry) {
         MainThreadStall.step()
@@ -37,13 +39,14 @@ final class SnapshotViewerWindow: NSWindow, NSWindowDelegate, WKNavigationDelega
 
     private init() {
         super.init(contentRect: NSRect(x: 0, y: 0, width: 980, height: 760),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .nonactivatingPanel], backing: .buffered, defer: false)
         title = NSLocalizedString("Snapshot", comment: "Snapshot viewer window")
+        collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         isReleasedWhenClosed = false
         hidesOnDeactivate = false
         minSize = NSSize(width: 620, height: 420)
         delegate = self
-        setFrameAutosaveNameSafely("SnapshotViewerWindow")
+        if !setFrameAutosaveNameSafely("SnapshotViewerWindow") { center() }
         setupContent()
     }
 
@@ -95,7 +98,8 @@ final class SnapshotViewerWindow: NSWindow, NSWindowDelegate, WKNavigationDelega
         details.toolTip = entry.readme.path
         showStatus(NSLocalizedString("Loading snapshot…", comment: "Snapshot viewer loading"))
         if isMiniaturized { deminiaturize(nil) }
-        App.showSecondaryWindow(self)
+        // Activating the app can switch to another Desktop containing one of its windows.
+        makeKeyAndOrderFront(nil)
         // Commit the loading window before WebKit starts its process or files are read.
         DispatchQueue.main.async { [weak self] in
             guard let self, self.generation == request else { return }
