@@ -64,7 +64,8 @@ class ATShortcut {
     }
 
     func shouldTrigger() -> Bool {
-        // Must come first: the `.global` `.up` arm below requires a `SwitcherSession`, which an auxiliary
+        guard !AppPicker.isActive else { return false }
+        // Before the session checks: the `.global` `.up` arm below requires a `SwitcherSession`, which an auxiliary
         // summon never creates, so a release would otherwise never commit its selection.
         if let auxiliary = AuxiliarySwitchers.owner(of: id) { return auxiliary.shouldTrigger(id, triggerPhase) }
         let session = SwitcherSession.current

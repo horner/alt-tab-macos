@@ -50,6 +50,7 @@ enum ProjectSwitcher: AuxiliarySwitcher {
             mru.removeAll { $0 == project.id }
             mru.insert(project.id, at: 0)
         }
+        guard !ProjectVisibility.focus(project) else { return }
         // AppKit commits the panel dismissal at the end of this turn; focus may block on another process.
         DispatchQueue.main.async {
             guard Projects.isEnabled, !isActive, Projects.active === project, Projects.byId[project.id] === project, project.isCustom else { return }

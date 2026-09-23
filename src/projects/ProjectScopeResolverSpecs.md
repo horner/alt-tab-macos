@@ -2,7 +2,8 @@
 
 An active custom Project overrides only the Space and screen filters. All Spaces/Screens is the default.
 Current Space/Screen uses the current Space (not every visible Space across displays) and main screen.
-Projects disabled or normal Desktop scope keep the ordinary shortcut filters. Membership and all other
+Projects disabled or normal Desktop scope keep the ordinary shortcut filters. Membership includes
+unassigned windows on the current Desktop, as defined by ProjectMembershipResolver. Membership and all other
 filters, including exceptions, hidden/minimized windows and tabs, remain enforced.
 
 ## Test scenarios
@@ -12,3 +13,5 @@ filters, including exceptions, hidden/minimized windows and tabs, remain enforce
 - **testCurrentLocationRequiresCurrentSpaceAndScreen** — current mode requires both the current Space and screen, excluding another display’s visible Space.
 - **testNoActiveProjectPreservesNormalLocationFilters** — ordinary visible-Space/screen settings remain effective outside custom Projects.
 - **testProjectOverridesNonVisibleSpaceSetting** — an ordinary non-visible-Spaces filter is also overridden by the Project scope.
+- **testUnassignedCurrentDesktopWindowPassesProjectFilter** — unassigned local windows pass while remote unassigned windows and another Project's members stay excluded.
+- **testUnassignedFallbackStillHonorsOrdinaryFilters** — the fallback preserves minimized, phantom and current-screen restrictions.

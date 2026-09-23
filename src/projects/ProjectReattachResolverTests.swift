@@ -3,6 +3,86 @@ import XCTest
 final class ProjectReattachResolverTests: XCTestCase {
     private let cloud = ProjectWindowPattern(bundleIdentifier: "com.google.Chrome", title: "Cloud")
 
+    func testPlaceholderTitlesNeverBecomeRestorationEvidence() {
+        for title in ["", " ", ". — Start Page", "New Tab - Google Chrome", "Loading…", "Untitled 2", "Safari", "Sign in", "Error"] {
+            let pattern = ProjectWindowPattern(bundleIdentifier: "com.apple.Safari", title: title, spaceUuid: "desktop")
+            XCTAssertNil(ProjectReattachResolver.evidence(pattern), title)
+            XCTAssertTrue(ProjectReattachResolver.owners(of: pattern, assignments: ["old": [pattern]]).isEmpty, title)
+        }
+    }
+
+    func testVSCodeStartupTitleCannotRestoreAProjectBeforeItsWorkspaceLoads() {
+        let startup = ProjectWindowPattern(bundleIdentifier: "com.microsoft.VSCode", title: "Visual Studio Code", spaceUuid: "ui-desktop")
+        let workspace = ProjectWindowPattern(bundleIdentifier: "com.microsoft.VSCode", title: "ui-artipod-integration", spaceUuid: "ui-desktop")
+        XCTAssertNil(ProjectReattachResolver.evidence(startup))
+        XCTAssertTrue(ProjectReattachResolver.owners(of: startup, assignments: ["alt-tab": [startup]]).isEmpty)
+        XCTAssertTrue(ProjectReattachResolver.owners(of: workspace, assignments: ["alt-tab": [startup]]).isEmpty)
+        XCTAssertEqual(ProjectReattachResolver.owners(of: workspace, assignments: ["ui": [workspace], "alt-tab": [startup]]), ["ui"])
+    }
+
+    func testTransientURLCannotBecomeEvidenceEvenWithAUsefulTitle() {
+        for url in ["about:blank", "chrome://newtab", "https://example.com/login", "https://example.com/oauth2/authorize"] {
+            XCTAssertNil(ProjectReattachResolver.evidence(ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", url: url)))
+        }
+    }
+
+    func testUsefulURLCanArriveBeforeTitle() {
+        let pending = ProjectWindowPattern(bundleIdentifier: "Safari", title: "Start Page", url: "https://example.com/work")
+        let evidence = ProjectReattachResolver.evidence(pending)
+        XCTAssertEqual(evidence?.title, "")
+        XCTAssertEqual(evidence?.url, pending.url)
+        XCTAssertEqual(ProjectReattachResolver.owners(of: pending, assignments: ["work": [pending]]), ["work"])
+    }
+
+    func testLegacyPlaceholderDoesNotClaimAnUnrelatedWindowOnSameDesktop() {
+        let old = ProjectWindowPattern(bundleIdentifier: "Safari", title: "Start Page", spaceUuid: "a")
+        let current = ProjectWindowPattern(bundleIdentifier: "Safari", title: "Documentation", spaceUuid: "a")
+        XCTAssertTrue(ProjectReattachResolver.owners(of: current, assignments: ["old": [old]]).isEmpty)
+    }
+
+    func testTitleAndURLChangesCannotAddAnOwnerToAnAssignedWindow() {
+        XCTAssertTrue(ProjectReattachResolver.restorationCandidates(liveOwners: ["ui"], identityOwners: [], savedOwners: ["old"], declined: false).isEmpty)
+        XCTAssertTrue(ProjectReattachResolver.restorationCandidates(liveOwners: ["ui", "work"], identityOwners: ["old"], savedOwners: ["old"], declined: false).isEmpty)
+    }
+
+    func testLiveIdentityWinsBeforeTitleRestorationAndPreservesSharedMembership() {
+        XCTAssertEqual(ProjectReattachResolver.restorationCandidates(liveOwners: [], identityOwners: ["ui", "work"], savedOwners: ["old"], declined: false), ["ui", "work"])
+    }
+
+    func testDismissedAndAmbiguousWindowsHaveNoAutomaticRestorationCandidate() {
+        XCTAssertTrue(ProjectReattachResolver.restorationCandidates(liveOwners: [], identityOwners: [], savedOwners: ["ui"], declined: true).isEmpty)
+        XCTAssertTrue(ProjectReattachResolver.restorationCandidates(liveOwners: [], identityOwners: [], savedOwners: ["ui", "work"], declined: false).isEmpty)
+    }
+
+    func testExplicitChoiceIsLearnedWithoutGuessingBetweenConflictingChoices() throws {
+        let confirmed = ProjectWindowPattern(bundleIdentifier: cloud.bundleIdentifier, title: cloud.title, confirmedAt: Date(timeIntervalSince1970: 100))
+        let decoded = try JSONDecoder().decode(ProjectWindowPattern.self, from: JSONEncoder().encode(confirmed))
+        XCTAssertEqual(decoded.confirmedAt, confirmed.confirmedAt)
+        XCTAssertEqual(ProjectReattachResolver.owners(of: cloud, assignments: ["ui": [decoded], "old": [cloud]]), ["ui"])
+        XCTAssertEqual(ProjectReattachResolver.owners(of: cloud, assignments: ["ui": [decoded], "old": [confirmed]]), ["ui", "old"])
+    }
+
+    func testConfirmationDoesNotOverrideDesktopDisambiguation() {
+        let first = ProjectWindowPattern(bundleIdentifier: "Editor", title: "Document", spaceUuid: "a", confirmedAt: Date())
+        let second = ProjectWindowPattern(bundleIdentifier: "Editor", title: "Document", spaceUuid: "b")
+        XCTAssertEqual(ProjectReattachResolver.owners(of: second, assignments: ["a": [first], "b": [second]]), ["b"])
+    }
+
+    func testReviewEvidenceRejectsNavigationOrDesktopChanges() {
+        let original = ProjectWindowPattern(bundleIdentifier: "Safari", title: "Docs", spaceUuid: "a", url: "https://example.com/docs")
+        var updated = original
+        updated.url = "https://example.com/other"
+        XCTAssertFalse(ProjectReattachResolver.sameEvidence(original, updated))
+        updated = original
+        updated.spaceUuid = "b"
+        XCTAssertFalse(ProjectReattachResolver.sameEvidence(original, updated))
+        updated = original
+        updated.url = nil
+        XCTAssertFalse(ProjectReattachResolver.sameEvidence(original, updated))
+        let renamed = ProjectWindowPattern(bundleIdentifier: original.bundleIdentifier, title: "New title", spaceUuid: "a", url: original.url)
+        XCTAssertTrue(ProjectReattachResolver.sameEvidence(original, renamed))
+    }
+
     func testExactAppAndTitleRestoreOwner() {
         XCTAssertEqual(ProjectReattachResolver.owners(of: cloud, assignments: ["cloud": [cloud]]), ["cloud"])
     }
@@ -23,18 +103,38 @@ final class ProjectReattachResolverTests: XCTestCase {
     }
 
     func testAppStartupWindowsDoNotJoinActiveProject() {
-        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 2, onCurrentDesktop: true, hasSavedOwner: false))
-        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 29.9, onCurrentDesktop: true, hasSavedOwner: false))
+        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 2, onCurrentDesktop: true))
+        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 29.9, onCurrentDesktop: true))
     }
 
     func testOrdinaryNewWindowJoinsActiveProject() {
-        XCTAssertTrue(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 30, onCurrentDesktop: true, hasSavedOwner: false))
+        XCTAssertTrue(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 30, onCurrentDesktop: true))
     }
 
-    func testSavedOwnerOtherDesktopAndRediscoveryBlockActiveAssignment() {
-        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 60, onCurrentDesktop: true, hasSavedOwner: true))
-        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 60, onCurrentDesktop: false, hasSavedOwner: false))
-        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: false, applicationAge: 60, onCurrentDesktop: true, hasSavedOwner: false))
+    func testNewWindowContextDoesNotConsultSavedTitles() {
+        XCTAssertTrue(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 60, onCurrentDesktop: true))
+        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 60, onCurrentDesktop: false))
+        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: false, applicationAge: 60, onCurrentDesktop: true))
+    }
+
+    func testDesktopProjectCannotResolveAmbiguousSavedOwners() {
+        XCTAssertFalse(ProjectReattachResolver.allowsAutomaticAssignment(to: "desktop-project",
+            savedOwners: ["desktop-project", "other"], liveOwners: []))
+        XCTAssertFalse(ProjectReattachResolver.allowsAutomaticAssignment(to: "unrelated",
+            savedOwners: ["desktop-project", "other"], liveOwners: []))
+    }
+
+    func testAutomaticAssignmentPreservesLiveAndUniqueSavedOwners() {
+        XCTAssertFalse(ProjectReattachResolver.allowsAutomaticAssignment(to: "desktop-project",
+            savedOwners: ["desktop-project", "other"], liveOwners: ["other"]))
+        XCTAssertFalse(ProjectReattachResolver.allowsAutomaticAssignment(to: "desktop-project",
+            savedOwners: ["other"], liveOwners: []))
+    }
+
+    func testAutomaticAssignmentAcceptsUnownedAndSameProjectWindows() {
+        XCTAssertTrue(ProjectReattachResolver.allowsAutomaticAssignment(to: "desktop-project", savedOwners: [], liveOwners: []))
+        XCTAssertTrue(ProjectReattachResolver.allowsAutomaticAssignment(to: "desktop-project",
+            savedOwners: ["desktop-project"], liveOwners: ["desktop-project"]))
     }
 
     func testPatternsSurviveEncodingWithoutRunningApp() throws {
@@ -58,10 +158,10 @@ final class ProjectReattachResolverTests: XCTestCase {
             patternExcluded: false, isUniquePatternOwner: false))
     }
 
-    func testChangedTitleRestoresFromUniqueAppDesktopHistory() {
+    func testChangedTitleCannotRestoreFromAppDesktopHistory() {
         let saved = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", spaceUuid: "desktop-case")
-        let reopened = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "desktop-case")
-        XCTAssertEqual(ProjectReattachResolver.owners(of: reopened, assignments: ["case": [saved]]), ["case"])
+        let reopened = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Shared document", spaceUuid: "desktop-case")
+        XCTAssertTrue(ProjectReattachResolver.owners(of: reopened, assignments: ["case": [saved]]).isEmpty)
     }
 
     func testExactTitleRestoresEvenOnAnotherDesktop() {
@@ -71,8 +171,8 @@ final class ProjectReattachResolverTests: XCTestCase {
     }
 
     func testDesktopSeparatesIdenticalTitlesInDifferentProjects() {
-        let caseWindow = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "desktop-case")
-        let cloudWindow = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "desktop-cloud")
+        let caseWindow = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Shared document", spaceUuid: "desktop-case")
+        let cloudWindow = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Shared document", spaceUuid: "desktop-cloud")
         XCTAssertEqual(ProjectReattachResolver.owners(of: cloudWindow, assignments: ["case": [caseWindow], "cloud": [cloudWindow]]), ["cloud"])
     }
 
@@ -80,8 +180,8 @@ final class ProjectReattachResolverTests: XCTestCase {
         let saved = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Work", spaceUuid: "desktop-case")
         let elsewhere = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "desktop-other")
         XCTAssertTrue(ProjectReattachResolver.owners(of: elsewhere, assignments: ["case": [saved]]).isEmpty)
-        let sameSpace = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "desktop-case")
-        XCTAssertEqual(ProjectReattachResolver.owners(of: sameSpace, assignments: ["case": [saved], "cloud": [saved]]).count, 2)
+        let sameSpace = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Shared document", spaceUuid: "desktop-case")
+        XCTAssertTrue(ProjectReattachResolver.owners(of: sameSpace, assignments: ["case": [saved], "cloud": [saved]]).isEmpty)
     }
 
     func testLegacyPatternWithoutDesktopStillDecodes() throws {
@@ -117,9 +217,9 @@ final class ProjectReattachResolverTests: XCTestCase {
     }
 
     func testSharedURLUsesDesktopToResolveProject() {
-        let first = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Old", spaceUuid: "a", url: "https://example.com/login")
-        let second = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Old", spaceUuid: "b", url: "https://example.com/login")
-        let reopened = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "b", url: "https://example.com/login")
+        let first = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Old", spaceUuid: "a", url: "https://example.com/docs")
+        let second = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Old", spaceUuid: "b", url: "https://example.com/docs")
+        let reopened = ProjectWindowPattern(bundleIdentifier: "Chrome", title: "Sign in", spaceUuid: "b", url: "https://example.com/docs")
         XCTAssertEqual(ProjectReattachResolver.owners(of: reopened, assignments: ["a": [first], "b": [second]]), ["b"])
     }
 

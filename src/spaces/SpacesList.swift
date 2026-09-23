@@ -11,7 +11,7 @@ class SpaceItem {
     let isCurrent: Bool
     private(set) weak var previewWindow: Window?
     private(set) var previewIcon: NSImage?
-    private var desktopName: String? { Projects.byId["desktop-\(uuid)"]?.preferredName }
+    private var desktopName: String? { Projects.desktopDisplayName(uuid) }
     var label: String { desktopName ?? windowDetail }
     var subtitle: String? { desktopName == nil ? nil : windowDetail }
 
@@ -44,12 +44,11 @@ class SpaceItem {
             window.focus()
             return
         }
+        guard !DesktopWindows.activate(self) else { return }
         activateViaSystemShortcut()
     }
 
-    /// An empty Desktop has no window to focus. The system's "Switch to Desktop N" shortcut is the only
-    /// public way there; it is off by default past Desktop 2 in System Settings, so this can silently do
-    /// nothing — hence it is the fallback, not the primary route.
+    /// Used only while the navigation anchor is unavailable. macOS may leave this shortcut unbound.
     private func activateViaSystemShortcut() {
         let originSpaceId = Spaces.currentSpaceId
         DispatchQueue.global(qos: .userInitiated).async {
@@ -70,7 +69,7 @@ class SpaceItem {
 
     private func mostRecentlyFocusedWindow() -> Window? {
         Windows.list
-            .filter { $0.spaceIds.contains(spaceId) && !$0.isWindowlessApp && !$0.isMinimized && !$0.isHidden && !$0.isPhantom && !$0.isTabbed }
+            .filter { $0.application.pid != AXUIElement.currentProcessPid && $0.spaceIds.contains(spaceId) && !$0.isWindowlessApp && !$0.isMinimized && !$0.isHidden && !$0.isPhantom && !$0.isTabbed }
             .min { $0.lastFocusOrder < $1.lastFocusOrder }
     }
 

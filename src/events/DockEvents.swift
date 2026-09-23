@@ -32,5 +32,6 @@ class DockEvents {
         Logger.debug { notificationName }
         let state = MissionControlState(rawValue: notificationName as String)!
         MissionControl.setState(state)
+        DispatchQueue.main.async { DesktopRemoval.missionControlChanged(state) }
     }
 }

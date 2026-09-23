@@ -2,34 +2,51 @@
 
 ## Summary
 
-AltTabProjects starts with labels behind other windows; Debug starts hidden. “Show Space Labels” requests one window per live Space, including Spaces added
-while the set is open. Closing a window suppresses only its UUID across naming and topology refreshes.
-“Show Space Labels” explicitly restores closed windows. “Close All Space Labels”, disabling Projects,
-and restarting AltTab end the session. Show and Close All save whether labels should open on the next
-launch or enable. Disabling Projects temporarily closes labels without changing that choice.
-Routine refreshes do not reopen a closed session. Individual closures last for the session.
+When Projects is enabled, launch and re-enabling Projects open all labels behind application windows.
+Each ordinary Desktop has a separate transparent navigation window, including unnamed and empty
+Desktops; hiding or minimizing labels does not remove that focus target. Fullscreen Spaces continue
+to use their application window. Navigation windows are excluded from the switcher and project membership.
 
-Labels normally use the normal window level. “Bring Space Labels to Front” raises the existing set once and
+Saving “Name this Desktop…” opens or restores labels on that Desktop, including each linked Project.
+An explicit “Show Project Labels” restores the entire set and includes subsequently created Spaces.
+The close button offers Archive and Close Desktop, Hide Label, or Cancel; fullscreen labels simply hide.
+Hide Label suppresses its stable identity until explicitly shown or the app restarts. The bulk Close All
+command hides labels without closing application windows or removing navigation targets. Disabling
+Projects hides labels; re-enabling or restarting starts a fresh visible session.
+
+Labels normally use the normal window level. “Bring Project Labels to Front” raises the existing set once and
 restores minimized labels, preserving individual close decisions. If no session exists, it creates
-one. “Show Space Labels” creates or restores the whole set and raises it. A click outside a label,
+one. “Show Project Labels” creates or restores the whole set and raises it. A click outside a label,
 including our own settings, or activation of another app sends the set to the back of the normal
 window level. Labels remain open for Exposé. Event handlers defer ordering and ignore stale clicks
 from before a newer bring-to-front, minimize or session request. Click monitoring stops when no front
 presentation, reveal or interacted label needs it.
 
-The native yellow button minimizes one label; “Minimize All Space Labels” minimizes the set.
+The native yellow button minimizes one label; “Minimize All Project Labels” minimizes the set.
 Minimizing does not close the session. Newly discovered labels and pending assignments follow the
 latest front/back/minimized request. Routine name and topology refreshes never raise labels or
 restore an individually minimized window; another explicit Show or Bring request restores it.
 
-Each window also provides Show All, Bring All to Front, Minimize All and Close All buttons below the
-name. These invoke the same set-wide operations as the menu; native title-bar controls affect only
-their own window. Show All restores closed labels, while Bring All to Front respects closures.
+Each linked Project label provides Project Windows, History, Rename, Add All Visible Windows and Menu
+buttons below the name. Unlinked Desktop labels provide Rename and Menu. Project buttons target that label's Project,
+as specified in `../projects/ProjectMenuResolverSpecs.md`. Native title-bar controls affect only their
+own window. Set-wide controls live under Menu → Desktop: <name>; Show All restores closed labels,
+while Bring All to Front respects closures.
+Menu opens the same live AltTab menu as the status icon with the clicked label's Project and Desktop
+context. It includes Current window, Project: <name>, Other Projects, Desktop: <name>, Settings, Help
+and Quit, works with the status icon hidden, and retains
+the existing menu delegate's refreshes.
+“Project windows in switcher” offers Show and Hide, defaulting to Show independently of the menu-bar
+icon. Show makes live label windows switch destinations. The explicit ownership check uses this process's
+registered window IDs; it does not loosen admission for other floating windows. Changing the preference
+updates existing windows without reopening them. Shown labels remain selectable during their
+temporary reveal and bypass custom-Project membership filtering, while ordinary shortcut filters still
+apply. They do not claim automatic Project names or membership.
 
-“Show label after switching Spaces” accepts 0–3000 ms in 100 ms increments and defaults to 1500 in
-AltTabProjects, or 0 (disabled) in Debug. Saved durations are preserved.
+“Show label after switching Spaces” accepts 0–3000 ms in 100 ms increments and defaults to 1500 ms.
+Zero disables the reveal; an explicitly saved duration is preserved when defaults change.
 An active-Space notification requests an asynchronous topology read. Only changed Spaces on existing
-displays reveal their open, non-minimized label; startup, wake, duplicate notifications, new displays
+displays reveal their open, non-minimized labels; startup, wake, duplicate notifications, new displays
 and ordinary topology/name refreshes do not trigger a reveal. First topology establishes a baseline.
 The temporary floating level preserves keyboard focus and restores the original level afterward;
 labels return behind ordinary windows unless their presentation was explicitly front. The duration
@@ -41,39 +58,50 @@ front at its ordinary level until a subsequent outside click or explicit present
 Manual Show, Bring, Minimize, Close and disabling the preference cancel pending timers. A hidden
 label session is never created by an automatic reveal.
 
-Each live Space has one label window, keyed by its persistent UUID. Names resolve from the Desktop
-record's explicit name, then its automatic name, then its numbered Desktop or fullscreen fallback.
+A linked Project has a persistent label identity independent of its current Desktop. Legacy single
+links retain the original Desktop UUID as their label identity, preserving saved positions. Project
+names label linked windows; an unlinked Desktop uses its explicit or automatic name, then “Unnamed Space”.
+When a Desktop closes, ProjectDesktopResolver relocates its Projects and reuses their label windows
+on the destination Desktop alongside its resident Projects. Closing or minimizing one label does not
+affect the other Projects there. Interacting with a Project label selects that Project.
 Desktop numbers follow WindowServer display/Space order. Fullscreen Spaces retain their ordinal in
 that complete order and display “Fullscreen · Space N”; they do not consume a Desktop number.
-Project shortcut numbers and the current custom Project never affect these labels.
-
-Launch restoration is covered by **testLaunchRestoresLabelsBehindWindowsWithoutRevealingThem** and
-**testRestoredSessionIgnoresClicksFromThePreviousSession**. Distribution defaults and persistence
-are covered by ProjectsSetupResolverTests.
+Project shortcut numbers never affect the Desktop numbers on these labels.
 
 A malformed or ambiguous topology returns nil so the adapter retains its last valid state. A valid
 new snapshot replaces the previous topology, allowing creation, removal, renumbering and display
-changes. The adapter reuses windows by UUID and never persists WindowServer IDs.
+changes. The adapter reuses windows by label identity and never persists WindowServer IDs.
 
 The frame uses half the selected screen's visible width, independent of Retina density. Height follows
 the fitted text and button rows instead of the screen height. New labels default to the lower-right
 corner, inset 24 points from the usable screen edges above the Dock. Geometry rounds to whole points.
-Users can drag the title bar or label background. A per-Space UUID preference stores the display UUID
+Users can drag the title bar or label background. A per-label identity preference stores the display UUID
 and offsets within its usable frame; name changes, Space changes and close/reopen preserve placement.
 Saved positions survive app restarts even though the label session starts hidden. The preferred
 display is used while connected, falling back to the Space's display when unavailable. Frames are
 clamped to the usable area after display changes. Move notifications update in-memory placement;
 a cancellable delayed write coalesces drag events, and closing flushes the pending position.
-Programmatic layout never saves a new user position. Non-finite saved coordinates use the default.
+Additional labels stack above the lower-right anchor. New or migrated labels are moved to an
+unoccupied area when possible; any adjusted placement is saved. Ordinary refreshes preserve user
+placements, including intentional overlap. If the screen cannot fit every label, placement cascades
+within its usable bounds. Non-finite saved coordinates use the default.
 The number and name share one bold white
 line on solid black. The font grows to fill the available width, with a height limit of one third of
 the usable screen for very short names. Long names stop shrinking at a readable minimum and truncate
 at the tail, keeping the leading number visible. Fullscreen ordinals retain their explicit prefix.
 Embedded whitespace collapses to spaces for presentation; the complete name remains in the model,
-tooltip and accessible label. Native close and minimize buttons remain above the text. The four
+tooltip and accessible label. Native close and minimize buttons remain above the text. The
 small action buttons wrap into additional rows when needed.
 
 ## Test scenarios
+
+- **testTwoProjectLabelsKeepSeparateIdentitiesOnOneDesktop** — separate label identities and close controls share one physical Desktop.
+- **testMergedLabelsAvoidOverlapWithDifferentHeights** — incoming labels avoid taller resident windows.
+- **testUnobstructedUserPositionSurvivesDesktopMerge** — a free user position remains unchanged.
+
+- **testDefaultRevealDurationIsFifteenHundredMilliseconds** — New installations default to 1500 ms; zero still disables.
+- **testLabelsFollowSwitcherVisibilityPreference** — Show includes registered labels; Hide excludes them.
+- **testSwitcherAccessDoesNotVouchForOtherWindowsOrProcesses** — Only live, nonzero IDs belonging to this process receive explicit control-window treatment.
 
 - **testShowRequestsFrontPresentation** — Showing the set requests one front presentation.
 - **testClickAwaySendsLabelsBackWithoutClosingThem** — Clicking away sends labels behind ordinary windows while retaining the session.
@@ -83,7 +111,7 @@ small action buttons wrap into additional rows when needed.
 - **testMinimizeAllPreservesTheOpenSession** — Minimize All keeps the session open and applies to later Spaces too.
 - **testQueuedClickCannotOverrideMinimizeAll** — A deferred click cannot replace a newer minimize request with back ordering.
 - **testPresentationActionsDoNotStartAClosedSession** — The presentation kernel does not implicitly start a session; creation is the adapter's explicit decision.
-- **testLabelsStartUnrequested** — Starting a session does not create label windows automatically.
+- **testLabelsStartUnrequested** — The raw visibility kernel starts unrequested; the application calls `openOnLaunch` when Projects is enabled.
 - **testShowAllIncludesExistingAndNewSpaces** — An explicit show request includes current and newly created Spaces.
 - **testClosedLabelStaysClosedAcrossRefreshes** — Closing one UUID keeps it suppressed while other labels remain requested.
 - **testShowAllExplicitlyRestoresClosedLabels** — A new show request restores individually closed labels.
@@ -125,3 +153,18 @@ small action buttons wrap into additional rows when needed.
 - **testExplicitActionCancelsPendingRevealTimers** — A manual action invalidates all outstanding timers.
 - **testInteractingWithOneLabelPreservesOtherDisplayTimer** — Per-window interaction cancels only that reveal.
 - **testRevealDurationIsBounded** — External preference values remain within 0–3000 ms.
+
+## Naming and selective visibility tests
+
+- `testNamingDesktopShowsOnlyItsProjectLabels` — naming opens just the selected Desktop’s labels.
+- `testNamingReopensItsLabelWithoutRestoringOtherClosedLabels` — naming overrides its own closure, retaining other closures and bulk presentation state.
+- `testSelectiveLabelsCloseAndShowAllStillRestoresEveryDesktop` — selective sessions close normally and remain compatible with Show All and Close All.
+
+## Default launch and navigation checks
+
+- `testLaunchOpensExistingAndNewLabelsBehindApplicationWindows` pins the launch default and back ordering.
+- `testRelaunchReopensPreviouslyHiddenLabels` pins resetting per-session hide decisions.
+- macOS 26.5.1 probe: a clear, ordered 2×2 window with `ignoresMouseEvents` switches Desktops when
+  made key and ordered before app activation. A key-only request plus SLPS did not reliably switch.
+- Live launch created all seven desktop labels without Show Project Labels. Navigation anchors remain
+  registered separately when labels are hidden or minimized; topology removal retires both independently.

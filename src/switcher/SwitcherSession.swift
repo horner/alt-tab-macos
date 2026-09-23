@@ -68,6 +68,7 @@ final class SwitcherSession {
     /// Keeps one-per-app tiles from changing identity while discovery, grouping and search settle.
     var representativeByPid = [pid_t: String]()
     var searchQuery: String = ""
+    var searchAllWindows = false
 
     /// Full-resolution frames for the Preview panel, fetched just-in-time for the selected window and
     /// its cycling neighbors (`WindowThumbnails.fetchPreviewFrames`, #5861). Living on the session, they

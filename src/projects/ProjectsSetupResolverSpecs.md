@@ -1,32 +1,38 @@
 # First enable of Projects
 
-AltTabProjects distribution builds default to Projects enabled, label windows open behind other
-windows, and a 1,500 ms label reveal when switching Spaces. Debug builds keep the opt-in defaults.
-Registered defaults preserve saved choices, including a disabled feature or a different duration.
+AltTabProjects distribution builds default to Projects enabled. Debug builds keep Projects opt-in.
+Whenever Projects is enabled, label windows open behind other windows, with a 1,500 ms reveal when
+switching Spaces. Registered defaults preserve a saved disabled feature or a different duration.
+Label visibility follows SpaceLabelResolver; the obsolete spaceLabelsOnLaunch preference is unused.
 
-After permissions and Space discovery, the first enable creates one linked Project for each live
-Desktop or fullscreen Space without an existing link. Existing names, links, custom Projects,
-memberships and exclusions are preserved. The setup-completed preference is saved after the
-Projects collection. Missing topology defers setup. Relaunching or toggling the feature later does
-not recreate Projects that the user deleted or unlinked. Upgrading from 0.1.0 runs this setup once
-when Projects is enabled.
+After permissions, YAML loading and Desktop discovery, the first enable creates one linked Project
+for each live Desktop without an existing link. Existing names, links, custom Projects, memberships
+and exclusions are preserved. Missing storage or topology defers setup. Relaunching or toggling the
+feature after setup does not recreate Projects that the user deleted or unlinked. Upgrading from
+0.1.0 runs this setup once when Projects is enabled.
 
-Linking captures already discovered windows. The enable handler also refreshes browser metadata
-and restores identities before capturing windows; asynchronous launch discovery uses the same
-Desktop links as windows arrive. Windows keep existing owners and explicit exclusions. Minimized
-and hidden windows are included; windowless app placeholders and phantom windows are excluded.
+The setup-completed preference is saved only after the persistence queue has finished writing the
+snapshot without file errors. The completion runs on main after that queue check, so another
+Desktop update cannot seed duplicate Projects while the save is pending. A failed write leaves
+setup incomplete for a later topology update or relaunch; existing links are never replaced during
+a retry. Setup also validates the saved snapshot when every Desktop already has a link.
 
-Names use the first available application name on the Desktop, with Desktop N / Project N fallbacks
-for empty entries. Automatic names appear in Desktop tiles, navigation, labels and Project lists.
-An explicit user name always wins. Setup does not display a naming wizard.
+Linking captures already discovered windows. Asynchronous launch discovery uses the same Desktop
+links as windows arrive. Windows keep existing owners and explicit exclusions. Minimized and
+hidden windows are included; windowless app placeholders and phantom windows are excluded.
+
+Newly linked Projects use the Desktop’s explicit name, then its automatic name, then the generated
+Project name. A numeric suffix keeps names unique when several Desktops share a name. Existing
+Projects keep their names. Setup does not display a naming wizard.
 
 ## Tests
 
-- **testDistributionDefaultsEnableProjectsAndLabelsFor1500Milliseconds** — release defaults.
-- **testDebugDefaultsKeepProjectsAndLabelsOptIn** — Debug defaults remain independent.
+- **testDistributionDefaultsEnableProjectsWith1500MillisecondReveal** — release defaults.
+- **testDebugDefaultsKeepProjectsOptInWith1500MillisecondReveal** — Debug enablement stays independent.
 - **testRegisteringDistributionDefaultsPreservesUserChoices** — saved settings beat defaults.
 - **testFirstEnableLinksEveryDesktopWithoutAnExistingProject** — seed only missing links.
 - **testDisabledProjectsDeferSetup** — a saved disabled choice defers initialization.
+- **testStorageLoadingDefersSetupUntilExistingLinksAreKnown** — loaded links determine setup.
 - **testUnavailableTopologyDoesNotMarkSetupComplete** — discovery may arrive later.
 - **testExistingLinksCompleteSetupWithoutReplacement** — existing links are sufficient.
 - **testRelaunchAndReenableDoNotRecreateDeletedOrUnlinkedProjects** — one-time initialization.

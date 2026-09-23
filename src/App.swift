@@ -63,10 +63,10 @@ class App: AppCenterApplication {
     }
 
     static func restart() {
-        // we use -n to open a new instance, to avoid calling applicationShouldHandleReopen
-        // we use Bundle.main.bundlePath in case of multiple AltTab versions on the machine
+        // The replacement waits on the instance lock until this process finishes capture draining and exits.
+        // -n bypasses reopen handling; the bundle path keeps the restart on the same build.
         printStackTrace()
-        Process.launchedProcess(launchPath: "/usr/bin/open", arguments: ["-n", Bundle.main.bundlePath])
+        Process.launchedProcess(launchPath: "/usr/bin/open", arguments: ["-n", Bundle.main.bundlePath, "--args", SingleInstance.restartArgument])
         App.shared.terminate(nil)
     }
 
@@ -465,7 +465,20 @@ class App: AppCenterApplication {
             })
     }
 
+    private static var didContinueAppLaunch = false
+
+    /// Exactly once, whatever asks. `SystemPermissions` polls every 500ms while the permissions window is
+    /// up and hops its "granted" verdict to main, where `preStartupPermissionsPassed` is set, so a
+    /// main-thread stall longer than one tick queues this function twice. A second run starts a second
+    /// input-events thread while the first keeps running (the old RunLoop still retains the old taps'
+    /// sources, so both threads get every event), and the gesture state in `TrackpadEvents` is unlocked on
+    /// the grounds that one thread reaches it. Two of them segfault in `GestureTracker.prune`.
     static func continueAppLaunchAfterPermissionsAreGranted() {
+        guard !didContinueAppLaunch else {
+            Logger.warning { "launch continuation asked for twice; ignoring" }
+            return
+        }
+        didContinueAppLaunch = true
         Logger.info { "System permissions are granted; continuing launch" }
         BackgroundWork.start()
         NSScreen.updatePreferred()
@@ -646,8 +659,10 @@ extension App: NSApplicationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Logger.info { "" }
+        guard !App.isTerminating else { return .terminateLater }
         makeSureAllCapturesAreFinished()
-        return .terminateNow
+        Projects.finishPendingSave { sender.reply(toApplicationShouldTerminate: true) }
+        return .terminateLater
     }
 }
 

@@ -7,6 +7,7 @@ enum ProjectContextHeader {
     private static let returnButton = NSButton(title: "", target: nil, action: nil)
     private static var buttons = [NSButton]()
     private static var projectIds = [String]()
+    private static var projectChoices = [ProjectNumberResolver.Choice]()
     private static let popover = NSPopover()
     private static weak var pressedButton: NSButton?
     private static var stripLayout = ProjectStripLayoutResolver.layout(buttonWidths: [], allProjectsWidth: 0, maximumWidth: 0)
@@ -17,9 +18,10 @@ enum ProjectContextHeader {
     static func handleNumberKey(_ event: NSEvent?) -> Bool {
         guard Projects.isEnabled, SwitcherSession.isActive, !TilesView.isSearchEditing,
               let event, event.type == .keyDown,
-              let index = ProjectNumberResolver.index(keyCode: event.keyCode), projectIds.indices.contains(index) else { return false }
+              let id = ProjectNumberResolver.projectId(keyCode: event.keyCode, choices: projectChoices,
+                  currentProjectId: Projects.active?.id) else { return false }
         if event.isARepeat { return true }
-        select(projectIds[index])
+        select(id)
         return true
     }
 
@@ -91,7 +93,7 @@ enum ProjectContextHeader {
 
     private static func update(_ button: NSButton, _ index: Int, _ id: String) {
         guard let project = Projects.byId[id] else { return }
-        button.title = ProjectNumberResolver.label(index: index).map { "\($0)–\(project.resolvedName)" } ?? project.resolvedName
+        button.title = projectChoices[index].label.map { "\($0)–\(project.resolvedName)" } ?? project.resolvedName
         button.toolTip = button.title
         button.setAccessibilityLabel(button.title)
         button.bezelColor = project === Projects.active ? .controlAccentColor : nil
@@ -99,7 +101,8 @@ enum ProjectContextHeader {
 
     static func prepareLayout() {
         guard Projects.isEnabled else { return }
-        let ids = Projects.switcherProjectIds()
+        projectChoices = Projects.numberedProjectChoices()
+        let ids = projectChoices.map { $0.id }
         if ids != projectIds {
             buttons.forEach { $0.removeFromSuperview() }
             projectIds = ids
@@ -207,11 +210,12 @@ enum ProjectContextHeader {
     }
 
     private static func contextTitle() -> String {
+        if TilesView.isSearchingAllWindows { return NSLocalizedString("All windows", comment: "Search scope") }
         if Projects.isEnabled, let project = Projects.active, project.isCustom {
             return String(format: NSLocalizedString("Project: %@", comment: "Window switcher context"), project.resolvedName)
         }
         let space = Projects.spaces.first { $0.isCurrent }
-        let name = space.flatMap { Projects.byId["desktop-\($0.uuid)"]?.preferredName }
+        let name = space.flatMap { Projects.desktopDisplayName($0.uuid) }
         let desktop = name ?? space.map { String(format: NSLocalizedString("Desktop %d", comment: ""), $0.desktopNumber) }
             ?? NSLocalizedString("Desktop", comment: "")
         switch Preferences.spacesToShow[SwitcherSession.activeShortcutIndex] {

@@ -1,27 +1,41 @@
 import Foundation
 
 enum SpaceLabelResolver {
+    static let defaultRevealDuration = 1500
+
+    static func switcherVisibility(windowId: UInt32?, pid: Int32, ownerPid: Int32,
+                                   labelWindowIds: Set<UInt32>, showInSwitcher: Bool) -> Bool? {
+        guard pid == ownerPid, let windowId, windowId != 0, labelWindowIds.contains(windowId) else { return nil }
+        return showInSwitcher
+    }
+
     enum Presentation {
         case front, back, minimized
     }
 
     struct Visibility {
-        private(set) var isRequested = false
+        var isRequested: Bool { allRequested || !requestedLabels.isEmpty }
         private(set) var presentation = Presentation.back
         private(set) var presentationRevision = 0
+        private var allRequested = false
+        private var requestedLabels = Set<String>()
         private var closedSpaces = Set<String>()
 
-        mutating func restoreOnLaunch() {
-            isRequested = true
-            closedSpaces.removeAll()
-            presentation = .back
-            presentationRevision += 1
+        mutating func openOnLaunch() {
+            showAll()
+            _ = sendToBack(after: presentationRevision)
         }
 
         mutating func showAll() {
-            isRequested = true
+            allRequested = true
+            requestedLabels.removeAll()
             closedSpaces.removeAll()
             bringToFront()
+        }
+
+        mutating func show(_ labels: Set<String>) {
+            requestedLabels.formUnion(labels)
+            closedSpaces.subtract(labels)
         }
 
         mutating func bringToFront() {
@@ -44,18 +58,20 @@ enum SpaceLabelResolver {
         }
 
         mutating func close(_ uuid: String) {
+            requestedLabels.remove(uuid)
             closedSpaces.insert(uuid)
         }
 
         mutating func hideAll() {
-            isRequested = false
+            allRequested = false
+            requestedLabels.removeAll()
             closedSpaces.removeAll()
             presentation = .back
             presentationRevision += 1
         }
 
         func includes(_ uuid: String) -> Bool {
-            isRequested && !closedSpaces.contains(uuid)
+            (allRequested || requestedLabels.contains(uuid)) && !closedSpaces.contains(uuid)
         }
     }
 
@@ -131,6 +147,9 @@ enum SpaceLabelResolver {
     struct Label: Equatable {
         let space: Space
         let name: String?
+        var identity: String? = nil
+        var stackIndex = 0
+        var id: String { identity ?? space.uuid }
         var number: Int { space.desktopNumber > 0 ? space.desktopNumber : space.ordinal }
         var isFullscreen: Bool { space.desktopNumber == 0 }
     }
@@ -163,14 +182,27 @@ enum SpaceLabelResolver {
         }
     }
 
-    static func frame(visibleFrame: CGRect, height: CGFloat, position: Position? = nil) -> CGRect {
+    static func frame(visibleFrame: CGRect, height: CGFloat, position: Position? = nil, stackIndex: Int = 0) -> CGRect {
         // Match AppKit's whole-point frame rounding so unchanged labels do not resize on every refresh.
         let size = CGSize(width: (visibleFrame.width / 2).rounded(), height: min(visibleFrame.height, height.rounded(.up)))
         let saved = position.flatMap { $0.x.isFinite && $0.y.isFinite ? $0 : nil }
         let x = saved.map { visibleFrame.minX + $0.x } ?? (visibleFrame.maxX - size.width - 24)
-        let y = saved.map { visibleFrame.minY + $0.y } ?? (visibleFrame.minY + 24)
+        let y = saved.map { visibleFrame.minY + $0.y } ?? (visibleFrame.minY + 24 + CGFloat(stackIndex) * (size.height + 12))
         return CGRect(x: min(max(x, visibleFrame.minX), visibleFrame.maxX - size.width).rounded(.down),
             y: min(max(y, visibleFrame.minY), visibleFrame.maxY - size.height).rounded(.down), width: size.width, height: size.height)
+    }
+
+    static func avoidingOverlap(_ frame: CGRect, in visibleFrame: CGRect, occupied: [CGRect]) -> CGRect {
+        guard occupied.contains(where: { $0.intersects(frame) }) else { return frame }
+        let ys = ([visibleFrame.minY + 24] + occupied.map { $0.maxY + 12 }).sorted()
+        for x in [frame.minX, visibleFrame.minX] {
+            for y in ys {
+                let candidate = CGRect(origin: CGPoint(x: x, y: y), size: frame.size)
+                if visibleFrame.contains(candidate), !occupied.contains(where: { $0.intersects(candidate) }) { return candidate }
+            }
+        }
+        return CGRect(x: max(visibleFrame.minX, frame.minX - CGFloat(occupied.count) * 24),
+            y: min(visibleFrame.maxY - frame.height, visibleFrame.minY + CGFloat(occupied.count) * 32), width: frame.width, height: frame.height)
     }
 
     private static func normalized(_ name: String?) -> String? {

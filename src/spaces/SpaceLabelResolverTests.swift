@@ -1,25 +1,112 @@
 import XCTest
 
 final class SpaceLabelResolverTests: XCTestCase {
-    func testLaunchRestoresLabelsBehindWindowsWithoutRevealingThem() {
+    func testLaunchOpensExistingAndNewLabelsBehindApplicationWindows() {
         var visibility = SpaceLabelResolver.Visibility()
-        visibility.restoreOnLaunch()
-        XCTAssertTrue(visibility.includes("a"))
-        XCTAssertTrue(visibility.includes("b"))
+        visibility.openOnLaunch()
+        XCTAssertTrue(visibility.includes("unnamed-desktop"))
+        XCTAssertTrue(visibility.includes("new-desktop"))
         XCTAssertEqual(visibility.presentation, .back)
     }
 
-    func testRestoredSessionIgnoresClicksFromThePreviousSession() {
+    func testRelaunchReopensPreviouslyHiddenLabels() {
         var visibility = SpaceLabelResolver.Visibility()
         visibility.showAll()
-        let oldRevision = visibility.presentationRevision
-        visibility.close("a")
+        visibility.close("project")
         visibility.hideAll()
-        visibility.restoreOnLaunch()
-        visibility.bringToFront()
-        XCTAssertTrue(visibility.includes("a"))
-        XCTAssertFalse(visibility.sendToBack(after: oldRevision))
-        XCTAssertEqual(visibility.presentation, .front)
+        visibility.openOnLaunch()
+        XCTAssertTrue(visibility.includes("project"))
+        XCTAssertEqual(visibility.presentation, .back)
+    }
+
+    func testNamingDesktopShowsOnlyItsProjectLabels() {
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.show(["project-a", "project-b"])
+        XCTAssertTrue(visibility.isRequested)
+        XCTAssertTrue(visibility.includes("project-a"))
+        XCTAssertTrue(visibility.includes("project-b"))
+        XCTAssertFalse(visibility.includes("another-desktop"))
+        XCTAssertFalse(visibility.includes("new-desktop"))
+    }
+
+    func testNamingReopensItsLabelWithoutRestoringOtherClosedLabels() {
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.showAll()
+        visibility.close("project-a")
+        visibility.close("project-b")
+        visibility.minimizeAll()
+        let revision = visibility.presentationRevision
+        visibility.show(["project-a"])
+        XCTAssertTrue(visibility.includes("project-a"))
+        XCTAssertFalse(visibility.includes("project-b"))
+        XCTAssertEqual(visibility.presentation, .minimized)
+        XCTAssertEqual(visibility.presentationRevision, revision)
+    }
+
+    func testSelectiveLabelsCloseAndShowAllStillRestoresEveryDesktop() {
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.show(["project-a"])
+        visibility.close("project-a")
+        XCTAssertFalse(visibility.isRequested)
+        visibility.show(["project-a"])
+        visibility.hideAll()
+        XCTAssertFalse(visibility.includes("project-a"))
+        visibility.showAll()
+        XCTAssertTrue(visibility.includes("project-a"))
+        XCTAssertTrue(visibility.includes("new-desktop"))
+    }
+
+    func testTwoProjectLabelsKeepSeparateIdentitiesOnOneDesktop() {
+        let space = SpaceLabelResolver.Space(id: 1, uuid: "destination", displayIdentifier: "display", desktopNumber: 1, ordinal: 1)
+        let labels = [SpaceLabelResolver.Label(space: space, name: "First", identity: "project-a"),
+            SpaceLabelResolver.Label(space: space, name: "Second", identity: "project-b", stackIndex: 1)]
+        XCTAssertEqual(Set(labels.map { $0.id }), ["project-a", "project-b"])
+        XCTAssertEqual(Set(labels.map { $0.space.id }), [1])
+        var visibility = SpaceLabelResolver.Visibility()
+        visibility.showAll()
+        visibility.close("project-a")
+        XCTAssertFalse(visibility.includes(labels[0].id))
+        XCTAssertTrue(visibility.includes(labels[1].id))
+    }
+
+    func testMergedLabelsAvoidOverlapWithDifferentHeights() {
+        let visible = CGRect(x: 0, y: 0, width: 1400, height: 900)
+        let resident = SpaceLabelResolver.frame(visibleFrame: visible, height: 300)
+        let incoming = SpaceLabelResolver.frame(visibleFrame: visible, height: 180, stackIndex: 1)
+        XCTAssertTrue(resident.intersects(incoming))
+        let placed = SpaceLabelResolver.avoidingOverlap(incoming, in: visible, occupied: [resident])
+        XCTAssertFalse(resident.intersects(placed))
+        XCTAssertTrue(visible.contains(placed))
+    }
+
+    func testUnobstructedUserPositionSurvivesDesktopMerge() {
+        let visible = CGRect(x: 0, y: 0, width: 1400, height: 900)
+        let resident = CGRect(x: 700, y: 24, width: 600, height: 220)
+        let incoming = CGRect(x: 10, y: 200, width: 600, height: 220)
+        XCTAssertEqual(SpaceLabelResolver.avoidingOverlap(incoming, in: visible, occupied: [resident]), incoming)
+    }
+
+    func testDefaultRevealDurationIsFifteenHundredMilliseconds() {
+        XCTAssertEqual(SpaceLabelResolver.defaultRevealDuration, 1500)
+        XCTAssertEqual(SpaceLabelResolver.revealDuration(0), 0)
+    }
+
+    func testLabelsFollowSwitcherVisibilityPreference() {
+        XCTAssertEqual(SpaceLabelResolver.switcherVisibility(windowId: 7, pid: 100, ownerPid: 100,
+            labelWindowIds: [7], showInSwitcher: true), true)
+        XCTAssertEqual(SpaceLabelResolver.switcherVisibility(windowId: 7, pid: 100, ownerPid: 100,
+            labelWindowIds: [7], showInSwitcher: false), false)
+    }
+
+    func testSwitcherAccessDoesNotVouchForOtherWindowsOrProcesses() {
+        XCTAssertNil(SpaceLabelResolver.switcherVisibility(windowId: 7, pid: 200, ownerPid: 100,
+            labelWindowIds: [7], showInSwitcher: true))
+        XCTAssertNil(SpaceLabelResolver.switcherVisibility(windowId: 8, pid: 100, ownerPid: 100,
+            labelWindowIds: [7], showInSwitcher: true))
+        XCTAssertNil(SpaceLabelResolver.switcherVisibility(windowId: nil, pid: 100, ownerPid: 100,
+            labelWindowIds: [7], showInSwitcher: true))
+        XCTAssertNil(SpaceLabelResolver.switcherVisibility(windowId: 0, pid: 100, ownerPid: 100,
+            labelWindowIds: [0], showInSwitcher: true))
     }
 
     func testShowRequestsFrontPresentation() {

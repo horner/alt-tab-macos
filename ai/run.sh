@@ -11,6 +11,6 @@ rm -f "$fifo" && mkfifo "$fifo"
 # `--stdout` needs a real path (/dev/stdout is not connected through), and opening a fifo for writing blocks
 # until a reader shows up — hence the background launch, and `tee` both streaming the log here as the app
 # writes it and leaving it in "$log" to grep afterwards.
-open -n --stdout "$fifo" --stderr "$fifo" -a "$PWD/DerivedData/Build/Products/Debug/AltTab.app" \
+open -n --stdout "$fifo" --stderr "$fifo" -a "$PWD/DerivedData/Build/Products/Debug/AltTabProjects.app" \
   --args --logs=debug --benchmark showUi 3 &
 tee "$log" < "$fifo"

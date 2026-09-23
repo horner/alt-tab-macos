@@ -155,24 +155,10 @@ class CliServer {
         let filters = WindowFilters.snapshot()
         let frontmostPid = Applications.frontmostPid
         let visibleSpaceIds = Spaces.visibleSpaces
+        let projectMembers = Projects.activeMembers
         let windows = Windows.list.enumerated().map { (i, w) -> QaWindow in
             let wid = w.cgWindowId
-            let shown = WindowFilterResolver.shouldShow(
-                w.state, w.application.state,
-                onlyFrontmostApp: filters.appsToShow == .active,
-                excludeFrontmostApp: filters.appsToShow == .nonActive,
-                hideHidden: filters.showHiddenWindows == .hide,
-                hideWindowless: filters.showWindowlessApps == .hide,
-                hideFullscreen: filters.showFullscreenWindows == .hide,
-                hideMinimized: filters.showMinimizedWindows == .hide,
-                onlyVisibleSpaces: filters.spacesToShow == .visible,
-                onlyNonVisibleSpaces: filters.spacesToShow == .nonVisible,
-                onlyPreferredScreen: filters.screensToShow == .showingAltTab,
-                separateTabs: filters.groupTabs == .separateWindows,
-                frontmostPid: frontmostPid,
-                visibleSpaceIds: visibleSpaceIds,
-                exceptions: filters.exceptions,
-                isOnPreferredScreen: w.isOnScreen(NSScreen.preferred))
+            let shown = Windows.shouldShow(w, filters, projectMembers: projectMembers)
             return QaWindow(
                 index: i,
                 wid: wid,
@@ -181,6 +167,7 @@ class CliServer {
                 bundleId: w.application.bundleIdentifier,
                 pid: w.application.pid,
                 shown: shown,
+                projectIds: Projects.list.filter { $0.isCustom && $0.members.contains(w.tracked.id) }.map { $0.id },
                 tabbed: w.isTabbed,
                 groupId: wid.flatMap { TabGroups.groupId(of: $0) },
                 siblings: w.tabbedSiblingWids,
@@ -199,6 +186,7 @@ class CliServer {
                 spaceIds: w.spaceIds,
                 spaceIndexes: w.spaceIndexes,
                 spaceIsBorrowed: w.spaceIsBorrowed,
+                screenId: w.screenId as String?,
                 lastFocusOrder: w.lastFocusOrder,
                 creationOrder: w.creationOrder,
                 focusedAt: w.focusedAt,
@@ -217,6 +205,7 @@ class CliServer {
             currentSpaceIndex: Spaces.currentSpaceIndex,
             visibleSpaceIds: visibleSpaceIds,
             allSpaces: Spaces.idsAndIndexes.map { QaSpace(id: $0.0, index: $0.1) },
+            screens: qaScreens(),
             switcherVisible: SwitcherSession.isActive,
             selectedIndex: SwitcherSession.current?.selectedIndex,
             heldWids: Array(Windows.windowsHeldVisibleForTab),
@@ -227,7 +216,18 @@ class CliServer {
             groups: groups,
             windows: windows,
             tiles: renderedTiles(),
+            layout: renderedLayout(),
             tracking: TrackingTelemetryRecorder.state.summary())
+    }
+
+    private static func qaScreens() -> [QaScreen] {
+        let preferredUuid = NSScreen.preferred.cachedUuid()
+        return NSScreen.screens.compactMap { screen in
+            guard let uuid = screen.cachedUuid() else { return nil }
+            return QaScreen(uuid: uuid as String, frame: screen.frame,
+                spaceIds: Spaces.screenSpacesMap[uuid] ?? [],
+                isPreferred: uuid == preferredUuid)
+        }
     }
 
     /// What the tiles on screen are CURRENTLY showing, as opposed to what the model says they should show.
@@ -240,13 +240,34 @@ class CliServer {
         return TilesView.recycledViews.enumerated().compactMap { (i, view) -> QaTile? in
             guard view.frame != .zero, let window = view.window_ else { return nil }
             let icons = view.statusIcons.icons
+            let frame = view.frame
             return QaTile(index: i, wid: window.cgWindowId, title: window.title,
                 app: window.application.runningApplication.localizedName,
                 minimizedIcon: icons[StatusIconsView.minimizedIdx].visible,
                 fullscreenIcon: icons[StatusIconsView.fullscreenIdx].visible,
                 appHiddenIcon: icons[StatusIconsView.hiddenIdx].visible,
-                spaceIcon: icons[StatusIconsView.spaceIdx].visible)
+                spaceIcon: icons[StatusIconsView.spaceIdx].visible,
+                x: frame.origin.x, y: frame.origin.y, w: frame.size.width, h: frame.size.height,
+                thumbY: view.thumbnail.frame.origin.y, labelY: view.label.frame.origin.y,
+                row: window.rowIndex ?? -1)
         }
+    }
+
+    /// The panel-wide numbers every tile is placed from. `labelHeight` is the one #6010 moved: it is meant
+    /// to be the font's line height and nothing else, so a test can compare it against a run whose titles
+    /// hold no line breaks.
+    private static func renderedLayout() -> QaLayout? {
+        guard SwitcherSession.isActive else { return nil }
+        return QaLayout(labelHeight: TilesView.layoutCache.labelHeight,
+            thumbnailsWidth: TilesView.thumbnailsWidth, thumbnailsHeight: TilesView.thumbnailsHeight,
+            rowCount: TilesView.rows.filter { !$0.isEmpty }.count)
+    }
+
+    private struct QaLayout: Codable {
+        var labelHeight: CGFloat
+        var thumbnailsWidth: CGFloat
+        var thumbnailsHeight: CGFloat
+        var rowCount: Int
     }
 
     private struct QaState: Codable {
@@ -257,6 +278,7 @@ class CliServer {
         var currentSpaceIndex: Int
         var visibleSpaceIds: [UInt64]
         var allSpaces: [QaSpace]
+        var screens: [QaScreen]
         var switcherVisible: Bool
         var selectedIndex: Int?
         var heldWids: [CGWindowID]
@@ -266,6 +288,8 @@ class CliServer {
         var windows: [QaWindow]
         /// empty while the switcher is closed — there is nothing drawn to report
         var tiles: [QaTile]
+        /// nil while the switcher is closed, for the same reason
+        var layout: QaLayout?
         /// provider health and the last committed attention decision (`TrackingTelemetryState`)
         var tracking: TrackingTelemetrySummary
     }
@@ -284,11 +308,33 @@ class CliServer {
         var fullscreenIcon: Bool
         var appHiddenIcon: Bool
         var spaceIcon: Bool
+        /// **The laid-out geometry, so a test can judge the GRID and not just the list.** The tile's own
+        /// frame moves when the row height is wrong (titles / appIcons styles), and the thumbnail's origin
+        /// inside it moves when only the label metric is wrong (thumbnails style) — which is the shape of
+        /// #6010 and is invisible in every other field here.
+        var x: CGFloat
+        var y: CGFloat
+        var w: CGFloat
+        var h: CGFloat
+        var thumbY: CGFloat
+        var labelY: CGFloat
+        var row: Int
     }
 
     private struct QaSpace: Codable {
         var id: UInt64
         var index: Int
+    }
+
+    /// The screen⇄Space map the `screensToShow: showing AltTab` filter is judged against
+    /// (`Spaces.screenSpacesMap`), plus which screen that filter currently prefers. A window whose
+    /// `spaceIds` name no Space of the preferred screen is hidden by that filter, and the two halves
+    /// of that verdict were previously invisible here (#6021).
+    private struct QaScreen: Codable {
+        var uuid: String
+        var frame: CGRect
+        var spaceIds: [UInt64]
+        var isPreferred: Bool
     }
 
     private struct QaApp: Codable {
@@ -312,6 +358,7 @@ class CliServer {
         var bundleId: String?
         var pid: pid_t
         var shown: Bool
+        var projectIds: [String]
         var tabbed: Bool
         var groupId: Int?
         var siblings: [CGWindowID]?
@@ -330,6 +377,7 @@ class CliServer {
         var spaceIds: [UInt64]
         var spaceIndexes: [Int]
         var spaceIsBorrowed: Bool
+        var screenId: String?
         var lastFocusOrder: Int
         var creationOrder: Int
         var focusedAt: TimeInterval

@@ -5,8 +5,12 @@ final class ProjectNameResolverTests: XCTestCase {
         XCTAssertEqual(ProjectNameResolver.resolved(name: "Work", autoName: "Safari", desktopNumber: 2, projectNumber: 1), "Work")
     }
 
-    func testAutoNameWinsOverFallback() {
-        XCTAssertEqual(ProjectNameResolver.resolved(name: nil, autoName: "Safari", desktopNumber: 2, projectNumber: 1), "Safari")
+    func testDesktopIgnoresSavedAutomaticAppName() {
+        XCTAssertEqual(ProjectNameResolver.resolved(name: nil, autoName: "Safari", desktopNumber: 2, projectNumber: 1), "Desktop 2")
+    }
+
+    func testCustomProjectKeepsAutomaticAppName() {
+        XCTAssertEqual(ProjectNameResolver.resolved(name: nil, autoName: "Safari", desktopNumber: nil, projectNumber: 1), "Safari")
     }
 
     func testDesktopFallbackUsesDesktopNumber() {
@@ -44,10 +48,28 @@ final class ProjectNameResolverTests: XCTestCase {
 
     func testWhitespaceClearsToAutomatic() {
         XCTAssertNil(ProjectNameResolver.normalized(" \n\t "))
-        XCTAssertEqual(ProjectNameResolver.resolved(name: " \n ", autoName: "Safari", desktopNumber: 2, projectNumber: 1), "Safari")
+        XCTAssertEqual(ProjectNameResolver.resolved(name: " \n ", autoName: "Safari", desktopNumber: 2, projectNumber: 1), "Desktop 2")
     }
 
     func testBlankAppCannotClaimName() {
         XCTAssertNil(ProjectNameResolver.claim(name: nil, autoName: nil, appName: " \t "))
+    }
+
+    func testProjectNamesReserveTheSameCaseInsensitiveFolder() {
+        for name in ["work", " WORK ", "Wörk", "Ｗｏｒｋ"] {
+            XCTAssertNotNil(ProjectNameResolver.validationError(name, existing: ["Work"]))
+        }
+        XCTAssertNotNil(ProjectNameResolver.validationError("My_Project", existing: ["My Project"]))
+        XCTAssertNotNil(ProjectNameResolver.validationError("\n ", existing: []))
+        XCTAssertNil(ProjectNameResolver.validationError("Personal", existing: ["Work"]))
+        XCTAssertEqual(ProjectNameResolver.folderName("Alt Tab Projects"), "alt-tab-projects")
+    }
+
+    func testAutomaticProjectNamesAreDistinctWithoutRandomSuffixes() {
+        XCTAssertEqual(ProjectNameResolver.available("Work", existing: ["Work", "Work 2"]), "Work 3")
+        XCTAssertEqual(ProjectNameResolver.available("Finder", existing: ["Work"]), "Finder")
+        let long = String(repeating: "a", count: 80)
+        let available = ProjectNameResolver.available(long, existing: [long])
+        XCTAssertNotEqual(ProjectNameResolver.folderName(available), ProjectNameResolver.folderName(long))
     }
 }

@@ -4,12 +4,21 @@ enum ProjectBrowserURLs {
     private static var finished = Set<String>()
     private static var urls = [String: String]()
     private static var dirty = Set<String>()
-    private static var waiting = [String: [() -> Void]]()
+    private struct Request {
+        let token = UUID()
+        var callbacks: [() -> Void]
+    }
+    private static var waiting = [String: Request]()
 
     static func url(for window: Window) -> String? { urls[window.tracked.id] }
 
     static func isReady(_ window: Window) -> Bool {
-        !ProjectBrowserURLResolver.supports(window.application.bundleIdentifier) || finished.contains(window.tracked.id)
+        !ProjectBrowserURLResolver.supports(window.application.bundleIdentifier) || (finished.contains(window.tracked.id) && waiting[window.tracked.id] == nil)
+    }
+
+    static func invalidate(_ window: Window) {
+        urls.removeValue(forKey: window.tracked.id)
+        finished.remove(window.tracked.id)
     }
 
     static func refresh(wid: CGWindowID) {
@@ -20,7 +29,11 @@ enum ProjectBrowserURLs {
     }
 
     static func forget(_ windows: [Window]) {
-        for window in windows { urls.removeValue(forKey: window.tracked.id); finished.remove(window.tracked.id) }
+        for window in windows {
+            invalidate(window)
+            waiting.removeValue(forKey: window.tracked.id)
+            dirty.remove(window.tracked.id)
+        }
     }
 
     static func refresh(_ window: Window, then completion: (() -> Void)? = nil) {
@@ -28,25 +41,30 @@ enum ProjectBrowserURLs {
         let id = window.tracked.id
         if waiting[id] != nil {
             dirty.insert(id)
-            if let completion { waiting[id]?.append(completion) }
+            if let completion { waiting[id]?.callbacks.append(completion) }
             return
         }
-        waiting[id] = completion.map { [$0] } ?? []
+        let request = Request(callbacks: completion.map { [$0] } ?? [])
+        waiting[id] = request
+        read(window, element: element, token: request.token)
+    }
+
+    private static func read(_ window: Window, element: AXUIElement, token: UUID) {
+        let id = window.tracked.id
         AXCallScheduler.shared.schedule(key: "project-url-\(id)", pid: window.application.pid) { [weak window] in
             let url = read(element)
             DispatchQueue.main.async {
-                let callbacks = waiting.removeValue(forKey: id) ?? []
-                let needsRefresh = dirty.remove(id) != nil
-                guard let window, Windows.list.contains(where: { $0 === window }) else { return }
-                finished.insert(id)
+                guard let window, Windows.list.contains(where: { $0 === window }), waiting[id]?.token == token else { return }
+                if dirty.remove(id) != nil { read(window, element: element, token: token); return }
+                let callbacks = waiting.removeValue(forKey: id)?.callbacks ?? []
+                let becameReady = finished.insert(id).inserted
                 let changed = urls[id] != url
                 urls[id] = url
-                if changed {
+                if changed || becameReady {
                     Logger.debug { "projects browser URL window=\(id) available=\(url != nil)" }
                     Projects.browserURLUpdated(window, restoreIfUnassigned: callbacks.isEmpty)
                 }
                 callbacks.forEach { $0() }
-                if needsRefresh { refresh(window) }
             }
         }
     }

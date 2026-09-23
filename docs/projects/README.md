@@ -115,7 +115,11 @@ An explicit move also prevents linked-Desktop capture from adding that window ba
 
 **Switch Projects inside the window switcher**
 
-Numbered Project buttons sit beneath the context title. The window switcher widens to fit them, up to 90% of the usable screen width, even when the active Project has only one or two windows. The buttons wrap onto a second row when needed. All Projects remains at the end of the final row and opens the complete list if two rows fill up. Click a Project or press its displayed digit (1–9, then 0) to update the windows in place. An unlinked Desktop comes first and returns to normal Desktop filtering; custom Projects follow in creation order. A linked Desktop appears only once, as its Project, using the Project's name. This also applies to the Project switcher. Normal Desktop filtering remains available from the menu's **Use Desktop (No Project)** action. **All Projects** opens a compact, scrollable grid, including unnumbered, click-only Projects after the tenth entry. Opening the grid keeps the switcher open after releasing the hold key; select a window and press Return to focus it, or Escape to dismiss. While editing search, numbers remain search text.
+Numbered Project buttons sit beneath the context title. The window switcher widens to fit them, up to 90% of the usable screen width, even when the active Project has only one or two windows. The buttons wrap onto a second row when needed. All Projects remains at the end of the final row and opens the complete list if two rows fill up. Click a Project or use a digit to update the windows in place. While editing search, numbers remain search text.
+
+With multiple Desktops, Project numbers match their Desktop numbers, and the buttons appear in Desktop order. Projects sharing a Desktop share its number. Digits **1–9** select the first Project to claim that Desktop; **0** selects Desktop 10. Higher Desktop numbers remain visible and are selected by clicking. When **Follow Desktop** is enabled, arriving on a shared Desktop also selects its first claimant. Explicitly choosing another Project lasts until you leave that Desktop. Saving its links preserves the claim order; unlinking the first Project promotes the next, and relinking puts a Project at the end. F-key Desktop shortcuts are unchanged.
+
+With a single Desktop, custom Projects keep creation order and use individual shortcuts **1–9, then 0**; later Projects are click-only. An unlinked current Desktop precedes the custom Projects in this mode. A linked Desktop appears only as its Projects, using their names. This also applies to the Project switcher. Normal Desktop filtering remains available from the menu's **Use Desktop (No Project)** action. **All Projects** opens the complete list in a compact, scrollable grid with the same numbering. Opening the grid keeps the switcher open after releasing the hold key; select a window and press Return to focus it, or Escape to dismiss.
 
 The captures below show the earlier single-row layout.
 
@@ -123,7 +127,7 @@ The captures below show the earlier single-row layout.
 
 ![All Projects in a centered compact grid](screenshots/m3-project-compact-grid.jpg)
 
-The numbered strip now follows keyboard order **1–9, then 0**. Later entries show only their names. Pointer clicks on the strip and grid use the switcher’s mouse-event routing; pressing on one button and releasing elsewhere cancels the click. Earlier screenshots above show the superseded numbering.
+The capture below shows the individual Project shortcuts used with a single Desktop. Pointer clicks on the strip and grid use the switcher’s mouse-event routing; pressing on one button and releasing elsewhere cancels the click. Earlier screenshots above show the superseded numbering.
 
 ![Corrected 1–9, 0 Project buttons, followed by click-only Projects](screenshots/m3-project-pointer-numbering.jpg)
 
@@ -139,7 +143,7 @@ The first reboot recovery imported patterns from the pre-reboot snapshot and eve
 
 ![Artipod windows recovered after reboot using saved app and title evidence](screenshots/m8-recovered-artipod.jpg)
 
-Restoration displays a brief, non-activating notice grouped over one second. Each entry shows the window title above **→ Project name**, with **(different Desktop)** when applicable. Up to five entries appear for six seconds, followed by further pages for larger batches. Empty titles use the app name. This restores assignments without moving the windows between Desktops.
+Restoration displays a brief, non-activating notice grouped over one second. Each entry shows the window title above **→ Project name**, with **(different Desktop)** when applicable. Up to five entries initially appear for four seconds, followed by further pages for larger batches. Hover anywhere over the notice to keep the current page visible; moving away starts a two-second countdown. The close button dismisses the notice and its remaining queued pages. Empty titles use the app name. This restores assignments without moving the windows between Desktops.
 
 **Project window history**
 

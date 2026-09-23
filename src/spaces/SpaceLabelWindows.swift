@@ -6,7 +6,10 @@ enum SpaceLabelWindows {
         let uuid: String
         let window: SpaceLabelWindow
         var spaceId: CGSSpaceID?
+        var spaceUuid: String?
+        var windowId: CGWindowID?
         var assigning = false
+        var assignmentRevision = 0
         var retired = false
         var presentationRevision: Int?
         var revealLevel: NSWindow.Level?
@@ -19,7 +22,16 @@ enum SpaceLabelWindows {
         }
     }
 
+    private struct PlacementRead {
+        let windowId: CGWindowID
+        let spaceId: CGSSpaceID
+        let spaceUuid: String
+        let assignmentRevision: Int
+    }
+
     private static var windows = [String: Entry]()
+    private static var windowIds = Set<CGWindowID>()
+    private static var showInSwitcher: Bool?
     private static var spaces = [SpaceLabelResolver.Space]()
     private static var observers = [NSObjectProtocol]()
     private static var dockObserver: AXObserver?
@@ -34,15 +46,43 @@ enum SpaceLabelWindows {
     private static var arrival = SpaceLabelResolver.Arrival()
     private static var reveal = SpaceLabelResolver.Reveal()
     private static var revealRequested = false
+    private static var requestedSpaceShows = Set<String>()
+    private static var requestedLabelShows = Set<String>()
 
     static var hasLabels: Bool { visibility.isRequested }
 
+    static func switcherVisibility(windowId: CGWindowID?, pid: pid_t) -> Bool? {
+        if pid == AXUIElement.currentProcessPid, DesktopWindows.contains(windowId) { return false }
+        return SpaceLabelResolver.switcherVisibility(windowId: windowId, pid: pid, ownerPid: AXUIElement.currentProcessPid,
+            labelWindowIds: windowIds, showInSwitcher: Preferences.projectWindowsInSwitcher)
+    }
+
+    private static func synchronizeSwitcherVisibility() {
+        guard showInSwitcher != Preferences.projectWindowsInSwitcher else { return }
+        showInSwitcher = Preferences.projectWindowsInSwitcher
+        for entry in windows.values {
+            entry.window.synchronizeSwitcherVisibility()
+            guard let wid = entry.windowId else { continue }
+            if let window = Windows.byWindowId[wid], let semantic = window.semanticSurface {
+                Windows.reevaluateAdmission(window, semantic)
+            }
+            if showInSwitcher == true, !entry.assigning { Applications.discoverWindow(wid) }
+        }
+        App.refreshOpenUiAfterExternalEvent([])
+    }
+
     static func showAll() {
         guard Projects.isEnabled else { return }
-        Preferences.set("spaceLabelsOnLaunch", "true", false)
         synchronizeEnabled()
         visibility.showAll()
         updatePresentation()
+        refresh()
+    }
+
+    static func show(on spaceUuid: String) {
+        guard Projects.isEnabled else { return }
+        synchronizeEnabled()
+        requestedSpaceShows.insert(spaceUuid)
         refresh()
     }
 
@@ -58,9 +98,10 @@ enum SpaceLabelWindows {
         updatePresentation()
     }
 
-    static func closeAll(remember: Bool = true) {
-        if remember { Preferences.set("spaceLabelsOnLaunch", "false", false) }
+    static func closeAll() {
         visibility.hideAll()
+        requestedSpaceShows.removeAll()
+        requestedLabelShows.removeAll()
         revealRequested = false
         reveal.cancel()
         arrival = SpaceLabelResolver.Arrival()
@@ -68,11 +109,11 @@ enum SpaceLabelWindows {
         revision += 1
         windows.values.forEach { retire($0) }
         windows.removeAll()
-        spaces.removeAll()
     }
 
     private static func close(_ uuid: String) {
         visibility.close(uuid)
+        requestedLabelShows.remove(uuid)
         reveal.finish(uuid, after: reveal.revision)
         if let entry = windows.removeValue(forKey: uuid) { retire(entry) }
         synchronizeClickMonitors()
@@ -84,6 +125,7 @@ enum SpaceLabelWindows {
         observers.append(center.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
             DispatchQueue.main.async {
                 synchronizeEnabled()
+                synchronizeSwitcherVisibility()
                 if Preferences.spaceLabelRevealDuration == 0 { cancelReveals() }
             }
         })
@@ -114,9 +156,8 @@ enum SpaceLabelWindows {
         guard enabled != Projects.isEnabled else { return }
         enabled = Projects.isEnabled
         revision += 1
-        guard enabled else { closeAll(remember: false); return }
-        guard Preferences.spaceLabelsOnLaunch else { return }
-        visibility.restoreOnLaunch()
+        guard enabled else { closeAll(); return }
+        visibility.openOnLaunch()
         refresh()
     }
 
@@ -130,15 +171,20 @@ enum SpaceLabelWindows {
         }
     }
 
+    static func refreshTopology() { refresh() }
+
+    static func spaceMembershipChanged(windowId: CGWindowID) {
+        guard windowIds.contains(windowId), windows.values.contains(where: { $0.windowId == windowId && !$0.assigning }) else { return }
+        refresh()
+    }
+
     private static func refresh(revealOnArrival: Bool = false) {
-        guard enabled, visibility.isRequested else { return }
         if revealOnArrival { revealRequested = true }
         revision += 1
         guard !refreshQueued, !refreshInFlight else { return }
         refreshQueued = true
         DispatchQueue.main.async {
             refreshQueued = false
-            guard enabled, visibility.isRequested else { return }
             readSpaces()
         }
     }
@@ -146,22 +192,43 @@ enum SpaceLabelWindows {
     private static func readSpaces() {
         let requestedRevision = revision
         refreshInFlight = true
+        let previous = spaces
+        let memberIds = Projects.migrationWindowIds()
+        let placements = windows.compactMapValues { entry -> PlacementRead? in
+            guard !entry.assigning, !entry.retired, let windowId = entry.windowId,
+                  let spaceId = entry.spaceId, let spaceUuid = entry.spaceUuid else { return nil }
+            return PlacementRead(windowId: windowId, spaceId: spaceId, spaceUuid: spaceUuid, assignmentRevision: entry.assignmentRevision)
+        }
+        let labelIds = Dictionary(grouping: windows.values.filter { $0.spaceUuid != nil }, by: { $0.spaceUuid! })
+            .mapValues { $0.compactMap { $0.windowId } }
         CGSCallScheduler.run {
             let raw = CGSCopyManagedDisplaySpaces(CGS_CONNECTION) as? [NSDictionary]
             let snapshot = raw.flatMap { SpaceLabelResolver.spaces(from: $0) }
             let visible = raw.flatMap { SpaceLabelResolver.visibleSpaces(from: $0) }
+            let removed = previous.filter { old in snapshot.map { !$0.contains(where: { $0.uuid == old.uuid }) } ?? false }
+            let ids = Set(removed.flatMap { (memberIds[$0.uuid] ?? []) + (labelIds[$0.uuid] ?? []) } + placements.values.map { $0.windowId })
+            let locations = Dictionary(uniqueKeysWithValues: ids.map { ($0, CGSCallScheduler.windowSpaces($0) ?? []) })
+            let memberLocations = memberIds.mapValues { $0.flatMap { locations[$0] ?? [] } }
+            let labelLocations = labelIds.mapValues { $0.flatMap { locations[$0] ?? [] } }
             DispatchQueue.main.async {
                 refreshInFlight = false
-                guard enabled, visibility.isRequested else { return }
                 guard requestedRevision == revision else { refresh(); return }
                 guard let snapshot else {
-                    Logger.warning { "Space labels: unavailable Space topology; retaining current windows" }
+                    Logger.warning { "Project labels: unavailable Space topology; retaining current windows" }
                     return
                 }
                 let didSwitch = revealRequested
                 revealRequested = false
                 let destinations = visible.map { arrival.update($0, didSwitch: didSwitch) } ?? []
+                let movedLabels = observedLabelMoves(placements, locations: locations, snapshot: snapshot)
                 spaces = snapshot
+                DesktopRemoval.topologyChanged(snapshot)
+                DesktopWindows.reconcile(snapshot)
+                Projects.applyDesktopTopology(snapshot, labelLocations: labelLocations, windowLocations: memberLocations, movedLabels: movedLabels)
+                for location in movedLabels { windows[location.labelId]?.spaceId = location.spaceIds.first }
+                guard enabled else { return }
+                prepareRequestedLabels()
+                guard visibility.isRequested else { return }
                 reconcile()
                 if didSwitch, !destinations.isEmpty {
                     cancelReveals()
@@ -171,30 +238,56 @@ enum SpaceLabelWindows {
         }
     }
 
+    private static func observedLabelMoves(_ placements: [String: PlacementRead], locations: [CGWindowID: [UInt64]],
+                                           snapshot: [SpaceLabelResolver.Space]) -> [ProjectDesktopResolver.LabelLocation] {
+        Projects.desktopLabels(spaces).compactMap { label in
+            guard let read = placements[label.id], let entry = windows[label.id], !entry.assigning, !entry.retired,
+                  entry.windowId == read.windowId, entry.spaceId == read.spaceId, entry.spaceUuid == read.spaceUuid,
+                  entry.assignmentRevision == read.assignmentRevision, label.space.uuid == read.spaceUuid,
+                  let ids = locations[read.windowId] else { return nil }
+            let location = ProjectDesktopResolver.LabelLocation(labelId: label.id, sourceUuid: read.spaceUuid, spaceIds: ids)
+            return ProjectDesktopResolver.relocation(location, in: snapshot) == nil ? nil : location
+        }
+    }
+
+    private static func prepareRequestedLabels() {
+        guard !requestedSpaceShows.isEmpty else { return }
+        let labels = Projects.desktopLabels(spaces).filter { requestedSpaceShows.contains($0.space.uuid) }
+        let ids = Set(labels.map { $0.id })
+        visibility.show(ids)
+        requestedLabelShows.formUnion(ids)
+        requestedSpaceShows.removeAll()
+    }
+
     private static func reconcile() {
         MainThreadStall.step()
-        let names = Dictionary(uniqueKeysWithValues: Projects.list.filter { !$0.isCustom }.map {
-            ($0.homeSpaceUuid, SpaceLabelResolver.Name(explicit: $0.name, automatic: $0.autoName ?? $0.resolvedName))
-        })
-        let labels = SpaceLabelResolver.labels(spaces: spaces, names: names, enabled: enabled)
-            .filter { visibility.includes($0.space.uuid) }
+        let labels = Projects.desktopLabels(spaces).filter { visibility.includes($0.id) }
         let screens = screensByIdentifier()
-        let live = Set(labels.map { $0.space.uuid })
+        let live = Set(labels.map { $0.id })
         for uuid in Array(windows.keys) where !live.contains(uuid) {
             if let entry = windows.removeValue(forKey: uuid) { retire(entry) }
         }
+        var occupied = [String: [CGRect]]()
         for label in labels {
-            let entry = windows[label.space.uuid] ?? Entry(uuid: label.space.uuid)
-            guard let screen = screens[entry.window.savedDisplayIdentifier ?? label.space.displayIdentifier] ?? screens[label.space.displayIdentifier] else {
-                if let entry = windows.removeValue(forKey: label.space.uuid) { retire(entry) }
+            let entry = windows[label.id] ?? Entry(uuid: label.id)
+            let migrated = entry.spaceUuid != nil && entry.spaceUuid != label.space.uuid
+            let display = migrated ? label.space.displayIdentifier : entry.window.savedDisplayIdentifier ?? label.space.displayIdentifier
+            guard let screen = screens[display] ?? screens[label.space.displayIdentifier] else {
+                if let entry = windows.removeValue(forKey: label.id) { retire(entry) }
                 continue
             }
-            windows[label.space.uuid] = entry
-            entry.window.onClose = { close(label.space.uuid) }
-            entry.window.onInteraction = { interact(with: label.space.uuid) }
+            windows[label.id] = entry
+            entry.spaceUuid = label.space.uuid
+            entry.window.onClose = {
+                DesktopArchive.prompt(spaceUuid: label.space.uuid, from: entry.window) { close(label.id) }
+            }
+            entry.window.onInteraction = { interact(with: label.id) }
             entry.window.update(label, on: screen)
+            entry.window.avoidOverlap(occupied[label.space.uuid] ?? [], on: screen, migrated: migrated)
+            occupied[label.space.uuid, default: []].append(entry.window.frame)
             guard !entry.assigning else { continue }
             if entry.spaceId != label.space.id { assign(entry, to: label.space) }
+            if requestedLabelShows.contains(label.id) { present(entry) }
         }
         synchronizeClickMonitors()
     }
@@ -211,6 +304,7 @@ enum SpaceLabelWindows {
 
     private static func assign(_ entry: Entry, to space: SpaceLabelResolver.Space) {
         entry.assigning = true
+        entry.assignmentRevision += 1
         entry.spaceId = nil
         entry.window.alphaValue = 0
         if !entry.window.isVisible && !entry.window.isMiniaturized {
@@ -218,31 +312,35 @@ enum SpaceLabelWindows {
             entry.window.orderFrontRegardless()
         }
         let windowId = CGWindowID(entry.window.windowNumber)
+        entry.windowId = windowId
+        windowIds.insert(windowId)
         SpaceLabelWindow.assign(windowId, to: space.id) { success in
             entry.assigning = false
             guard !entry.retired else { entry.window.close(); return }
-            guard enabled, visibility.includes(space.uuid), spaces.contains(space) else {
+            guard enabled, visibility.includes(entry.uuid), spaces.contains(space) else {
                 entry.window.orderOut(nil)
                 refreshNames()
                 return
             }
             guard success else {
                 entry.window.orderOut(nil)
-                reveal.finish(space.uuid, after: reveal.revision)
+                reveal.finish(entry.uuid, after: reveal.revision)
                 synchronizeClickMonitors()
-                Logger.warning { "Space label assignment failed window=\(windowId) space=\(space.id)" }
+                Logger.warning { "Project label assignment failed window=\(windowId) space=\(space.id)" }
                 return
             }
             entry.spaceId = space.id
             entry.window.alphaValue = 1
             present(entry)
-            revealIfRequested(entry, uuid: space.uuid)
-            Logger.debug { "Space label assigned window=\(windowId) space=\(space.id) uuid=\(space.uuid)" }
+            revealIfRequested(entry, uuid: entry.uuid)
+            Logger.debug { "Project label assigned window=\(windowId) space=\(space.id) uuid=\(space.uuid)" }
         }
     }
 
     private static func updatePresentation() {
         MainThreadStall.step()
+        requestedSpaceShows.removeAll()
+        requestedLabelShows.removeAll()
         revealRequested = false
         windows.values.forEach { $0.keptInFront = false }
         cancelReveals()
@@ -250,7 +348,10 @@ enum SpaceLabelWindows {
     }
 
     private static func revealArrivals(_ destinations: Set<UInt64>) {
-        let targets = Set(spaces.filter { destinations.contains($0.id) && visibility.includes($0.uuid) && windows[$0.uuid] != nil }.map { $0.uuid })
+        let destinationUuids = Set(spaces.filter { destinations.contains($0.id) }.map { $0.uuid })
+        let targets = Set(windows.values.filter { entry in
+            entry.spaceUuid.map { destinationUuids.contains($0) } == true && visibility.includes(entry.uuid)
+        }.map { $0.uuid })
         reveal.start(targets, duration: Preferences.spaceLabelRevealDuration)
         for uuid in reveal.targets {
             if let entry = windows[uuid] { revealIfRequested(entry, uuid: uuid) }
@@ -305,6 +406,7 @@ enum SpaceLabelWindows {
         guard let entry = windows[uuid], !entry.retired, !entry.assigning else { return }
         reveal.finish(uuid, after: reveal.revision)
         entry.keptInFront = true
+        Projects.activateLabel(uuid)
         restoreReveal(entry)
         synchronizeClickMonitors()
     }
@@ -329,8 +431,16 @@ enum SpaceLabelWindows {
 
     private static func present(_ entry: Entry) {
         MainThreadStall.step()
-        guard !entry.retired, !entry.assigning, entry.spaceId != nil,
-              entry.presentationRevision != visibility.presentationRevision else { return }
+        guard !entry.retired, !entry.assigning, entry.spaceId != nil else { return }
+        if requestedLabelShows.remove(entry.uuid) != nil {
+            entry.presentationRevision = visibility.presentationRevision
+            entry.keptInFront = true
+            if entry.window.isMiniaturized { entry.window.deminiaturize(nil) }
+            entry.window.orderFrontRegardless()
+            synchronizeClickMonitors()
+            return
+        }
+        guard entry.presentationRevision != visibility.presentationRevision else { return }
         entry.presentationRevision = visibility.presentationRevision
         switch visibility.presentation {
         case .front:
@@ -386,6 +496,7 @@ enum SpaceLabelWindows {
 
     private static func retire(_ entry: Entry) {
         entry.retired = true
+        if let wid = entry.windowId { windowIds.remove(wid) }
         reveal.finish(entry.uuid, after: reveal.revision)
         entry.revealTimer?.cancel()
         entry.revealTimer = nil
