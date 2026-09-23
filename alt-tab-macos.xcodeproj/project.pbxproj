@@ -568,6 +568,12 @@
 		E51CF21206464911B8FAD957 /* ProjectSnapshotHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3311E9A0FC34667B0865FBB /* ProjectSnapshotHistory.swift */; };
 		ECC88BBE6EA9429797C1A3DD /* ProjectSnapshotHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3311E9A0FC34667B0865FBB /* ProjectSnapshotHistory.swift */; };
 		2379FBF69B684FA3B316C466 /* ProjectSnapshotHistoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6DDC2386A284BBA96425E9E /* ProjectSnapshotHistoryTests.swift */; };
+		05D4BD40DB594B60A89A3F30 /* SnapshotViewerWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85BEBA355B74D51B8B4F52F /* SnapshotViewerWindow.swift */; };
+		83D57B310ECC421284A32D4D /* SnapshotViewerDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = E868D8599FF540DBA80D38A1 /* SnapshotViewerDocument.swift */; };
+		DDAF1398A60C42AA8E2A6B17 /* SnapshotViewerDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = E868D8599FF540DBA80D38A1 /* SnapshotViewerDocument.swift */; };
+		B6E4A2A5CC05481696F9085B /* SnapshotViewerDocumentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E84BA3E31ED4FFDB5B3097F /* SnapshotViewerDocumentTests.swift */; };
+		6BC78F18CFEC4919A4D9DC6A /* viewer.html in Resources */ = {isa = PBXBuildFile; fileRef = DFD9195853E941B59BF3B760 /* viewer.html */; };
+		EA2F41816A2F47AE8BEF0D84 /* THIRD-PARTY-NOTICES.txt in Resources */ = {isa = PBXBuildFile; fileRef = AB6C5ED5CE344BC4A14BB0BD /* THIRD-PARTY-NOTICES.txt */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1137,6 +1143,12 @@
 		DF707243CD82401C95041FD5 /* ProjectArchiveStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectArchiveStoreTests.swift; sourceTree = "<group>"; };
 		A3311E9A0FC34667B0865FBB /* ProjectSnapshotHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSnapshotHistory.swift; sourceTree = "<group>"; };
 		E6DDC2386A284BBA96425E9E /* ProjectSnapshotHistoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectSnapshotHistoryTests.swift; sourceTree = "<group>"; };
+		C85BEBA355B74D51B8B4F52F /* SnapshotViewerWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SnapshotViewerWindow.swift"; sourceTree = "<group>"; };
+		E868D8599FF540DBA80D38A1 /* SnapshotViewerDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SnapshotViewerDocument.swift"; sourceTree = "<group>"; };
+		3E84BA3E31ED4FFDB5B3097F /* SnapshotViewerDocumentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SnapshotViewerDocumentTests.swift"; sourceTree = "<group>"; };
+		91A7AA01CB4C44B4B7CD673A /* SnapshotViewerSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = "SnapshotViewerSpecs.md"; sourceTree = "<group>"; };
+		DFD9195853E941B59BF3B760 /* viewer.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = "web/dist/viewer.html"; sourceTree = "<group>"; };
+		AB6C5ED5CE344BC4A14BB0BD /* THIRD-PARTY-NOTICES.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "web/dist/THIRD-PARTY-NOTICES.txt"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1232,6 +1244,7 @@
 				4458F6294F6841CEA08EA811 /* ProjectLifecycleResolver.swift */,
 				C4F5C6B59A374AAD9D852FCA /* ProjectLifecyclePrompt.swift */,
 				FFFFFAF0622542EABB60A3ED /* archive */,
+				76B81838AC794789855A5710 /* snapshot-viewer */,
 				3A0259772F034EAF8CC12DCA /* ProjectLifecycleResolverTests.swift */,
 				77216ECF649F4AEBBF9B3799 /* ProjectLifecycleResolverSpecs.md */,
 				6044C0E7A14B4FEF98B852CE /* ProjectAtticResolverSpecs.md */,
@@ -2307,6 +2320,19 @@
 			path = archive;
 			sourceTree = "<group>";
 		};
+		76B81838AC794789855A5710 /* snapshot-viewer */ = {
+			isa = PBXGroup;
+			children = (
+				AB6C5ED5CE344BC4A14BB0BD /* THIRD-PARTY-NOTICES.txt */,
+				C85BEBA355B74D51B8B4F52F /* SnapshotViewerWindow.swift */,
+				E868D8599FF540DBA80D38A1 /* SnapshotViewerDocument.swift */,
+				3E84BA3E31ED4FFDB5B3097F /* SnapshotViewerDocumentTests.swift */,
+				91A7AA01CB4C44B4B7CD673A /* SnapshotViewerSpecs.md */,
+				DFD9195853E941B59BF3B760 /* viewer.html */,
+			);
+			path = "snapshot-viewer";
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -2331,6 +2357,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D04BA4D71CBB2FA4B9947B10 /* Build configuration list for PBXNativeTarget "alt-tab-macos" */;
 			buildPhases = (
+				01EC1BA70184495CB7263F42 /* Check Snapshot Viewer */,
 				D04BAD01F4BCEDF8B539AFD2 /* Sources */,
 				D04BA82F32FB183F65DC3E42 /* Frameworks */,
 				D04BA96F3DC99263120BCD21 /* Resources */,
@@ -2429,6 +2456,8 @@
 				D04BA2D8099594E1593EC8EF /* InfoPlist.strings in Resources */,
 				D04BA0DD6819010987B578D1 /* Localizable.strings in Resources */,
 				D04BA69012A483201B375D46 /* acknowledgments.md in Resources */,
+				EA2F41816A2F47AE8BEF0D84 /* THIRD-PARTY-NOTICES.txt in Resources */,
+				6BC78F18CFEC4919A4D9DC6A /* viewer.html in Resources */,
 				D04BA9D63A88AF2C20A1E656 /* SF-Pro-Text-Regular.otf in Resources */,
 				D04BACA938C98E0A83C9ED6F /* InfoPlist.strings in Resources */,
 				D04BA9B7A964C5FABFEB9DA2 /* Localizable.strings in Resources */,
@@ -2513,6 +2542,19 @@
 			shellScript = "\"$SRCROOT/scripts/copy_sparkle_helpers.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		01EC1BA70184495CB7263F42 /* Check Snapshot Viewer */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = ();
+			inputPaths = ();
+			name = "Check Snapshot Viewer";
+			outputPaths = ();
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/bin/sh \"$SRCROOT/scripts/check-snapshot-viewer.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -2570,6 +2612,8 @@
 				D31F5E2F326D4A11AD09DDA2 /* ProjectLifecycleResolverTests.swift in Sources */,
 				9F27A1227432435393E7137D /* ProjectDesktopResolver.swift in Sources */,
 				093B44A0218B46498C180BC3 /* SpaceLabelResolver.swift in Sources */,
+				B6E4A2A5CC05481696F9085B /* SnapshotViewerDocumentTests.swift in Sources */,
+				DDAF1398A60C42AA8E2A6B17 /* SnapshotViewerDocument.swift in Sources */,
 				2379FBF69B684FA3B316C466 /* ProjectSnapshotHistoryTests.swift in Sources */,
 				ECC88BBE6EA9429797C1A3DD /* ProjectSnapshotHistory.swift in Sources */,
 				74A507F07FE449E39CD00D06 /* ProjectArchiveStoreTests.swift in Sources */,
@@ -2778,6 +2822,8 @@
 				0000CC00000000000000000F /* SpacesSwitcher.swift in Sources */,
 				0000CC000000000000000011 /* SpacesList.swift in Sources */,
 				600FBAE74F894F11A8628713 /* SpaceLabelWindow.swift in Sources */,
+				83D57B310ECC421284A32D4D /* SnapshotViewerDocument.swift in Sources */,
+				05D4BD40DB594B60A89A3F30 /* SnapshotViewerWindow.swift in Sources */,
 				E51CF21206464911B8FAD957 /* ProjectSnapshotHistory.swift in Sources */,
 				0F8BE86AA9254ADE92946C14 /* ProjectArchiveStore.swift in Sources */,
 				D3F1202CF2424146AC0AA626 /* ProjectArchivePolicy.swift in Sources */,

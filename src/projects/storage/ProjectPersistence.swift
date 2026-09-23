@@ -169,16 +169,8 @@ enum ProjectPersistence {
     static func openSnapshot(_ entry: ProjectSnapshotHistory.Entry) {
         guard !isFinishing else { return }
         DispatchQueue.main.async {
-            queue.async {
-                guard ProjectSnapshotHistory.isRegular(entry.readme), NSWorkspace.shared.open(entry.readme) else {
-                    loadSnapshotHistory()
-                    DispatchQueue.main.async {
-                        ProjectRestoreNotice.showSummary(title: NSLocalizedString("Couldn’t open snapshot", comment: "Snapshot open failure"),
-                            rows: [.init(title: NSLocalizedString("The snapshot may have been moved or deleted, or no app could open its Markdown file.", comment: "Snapshot open failure explanation"), detail: entry.readme.path)])
-                    }
-                    return
-                }
-            }
+            guard !isFinishing else { return }
+            SnapshotViewerWindow.open(entry)
         }
     }
 

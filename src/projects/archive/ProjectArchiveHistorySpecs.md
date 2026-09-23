@@ -2,7 +2,8 @@
 
 Current Project, Other Projects, and Project Attic menus expose Snapshot History. The existing
 project History popup also lists snapshots above individual window history. Each link opens the
-saved `README.md`, with its relative window screenshots, in the user's default Markdown application.
+saved `README.md`, with its relative window screenshots, in the built-in Snapshot Viewer.
+The viewer offers Show in Finder and Open Externally; details are in SnapshotViewerSpecs.md.
 Snapshot entries display local capture date/time and window count, newest first. Their tooltip
 includes the saved status and file location. Historical snapshots remain available after a Project
 moves to the Attic and follow project folder renames.
@@ -21,8 +22,8 @@ Hidden staging directories, missing README files, directories masquerading as fi
 links are excluded. A readable README remains available if its metadata is missing or malformed;
 its folder timestamp provides the capture date where available, and its tooltip explains the missing
 details. A missing archives directory produces an empty history. Opening a link is deferred until
-menu dismissal and uses NSWorkspace on the persistence queue. A removed or unopenable file produces
-a notice and refreshes cached history.
+menu dismissal. The viewer reads files on its background queue; a removed or unopenable file produces
+an error in the viewer and refreshes cached history.
 
 `ProjectSnapshotHistoryTests` verifies ordering/counts/status, publication boundaries, malformed
 metadata, updates/deletions, folder moves, symbolic links, and atomic metadata saves reaching the
