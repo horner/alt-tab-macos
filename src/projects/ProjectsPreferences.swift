@@ -19,3 +19,25 @@ extension Preferences {
          "projectsShortcutStyle": ShortcutStylePreference.focusOnRelease.indexAsString]
     }
 }
+
+/// Product policy is installed before preference registration and license initialization.
+enum ProjectsStartup {
+    private(set) static var isEnabled = false
+
+    static func configure() {
+        guard App.name == "AltTabProjects", !isEnabled else { return }
+        isEnabled = true
+        Preferences.defaultValues.merge([
+            "holdShortcut": Preferences.defaultShortcut("⌘"),
+            "holdShortcut2": Preferences.defaultShortcut("⌘"),
+            "nextWindowShortcut": Preferences.defaultShortcut("⇥"),
+            "appsToShow": AppsToShowPreference.all.indexAsString,
+            "spacesToShow": SpacesToShowPreference.visible.indexAsString,
+            "screensToShow": ScreensToShowPreference.showingAltTab.indexAsString,
+            "showMinimizedWindows": ShowHowPreference.show.indexAsString,
+            "projectsEnabled": "true",
+            ProjectSwitcher.holdShortcutId: Preferences.defaultShortcut("⌥"),
+        ]) { _, value in value }
+        LicenseManager.shared.stateOverride = .pro
+    }
+}

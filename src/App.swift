@@ -569,6 +569,7 @@ extension App: NSApplicationDelegate {
         // profile, which reads `showOnScreen` / `appearanceStyle`. Migrations must keep running before
         // `registerDefaults()` (they read raw plist values), which `initialize()` already guarantees.
         // This only touches UserDefaults + TIS (main-thread), so it depends on nothing below.
+        ProjectsStartup.configure()
         Preferences.initialize()
         // Handle the "move to /Applications" prompt before anything else sets up the model. It runs a modal
         // alert (and may relaunch + exit), both of which pump the main run loop, so it must come before the

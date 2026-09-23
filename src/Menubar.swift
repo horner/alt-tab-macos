@@ -91,6 +91,12 @@ class Menubar {
 
     static func refreshLicenseMenuItems() {
         guard upgradeToProMenuItem != nil else { return }
+        if LicenseManager.shared.isProductManaged {
+            toggleUpgradeMenuItem(false)
+            supportProjectMenuItem.isHidden = true
+            myAccountMenuItem.isHidden = true
+            return
+        }
         let state = LicenseManager.shared.state
         switch state {
         case .trial:
