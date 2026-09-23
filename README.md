@@ -2,7 +2,7 @@
 
 Saved Projects and Desktop navigation in a dedicated AltTab app, distributed from the [horner fork](https://github.com/horner/alt-tab-macos).
 
-[Download the friends beta](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.2), or install the prebuilt app with Homebrew:
+[Download the friends beta](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.3), or install the prebuilt app with Homebrew:
 
 ```sh
 if brew command trust >/dev/null 2>&1; then brew trust --cask horner/projects/alttab-projects; fi
