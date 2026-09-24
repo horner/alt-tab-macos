@@ -103,18 +103,18 @@ final class ProjectReattachResolverTests: XCTestCase {
     }
 
     func testAppStartupWindowsDoNotJoinActiveProject() {
-        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 2, onCurrentDesktop: true))
-        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 29.9, onCurrentDesktop: true))
+        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 2, onCurrentDesktop: true, ownsCreationDesktop: true))
+        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 29.9, onCurrentDesktop: true, ownsCreationDesktop: true))
     }
 
     func testOrdinaryNewWindowJoinsActiveProject() {
-        XCTAssertTrue(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 30, onCurrentDesktop: true))
+        XCTAssertTrue(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 30, onCurrentDesktop: true, ownsCreationDesktop: true))
     }
 
     func testNewWindowContextDoesNotConsultSavedTitles() {
-        XCTAssertTrue(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 60, onCurrentDesktop: true))
-        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 60, onCurrentDesktop: false))
-        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: false, applicationAge: 60, onCurrentDesktop: true))
+        XCTAssertTrue(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 60, onCurrentDesktop: true, ownsCreationDesktop: true))
+        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 60, onCurrentDesktop: false, ownsCreationDesktop: true))
+        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: false, applicationAge: 60, onCurrentDesktop: true, ownsCreationDesktop: true))
     }
 
     func testDesktopProjectCannotResolveAmbiguousSavedOwners() {
@@ -235,6 +235,13 @@ final class ProjectReattachResolverTests: XCTestCase {
         XCTAssertFalse(ProjectReattachResolver.matchesObservation(saved, ProjectWindowPattern(bundleIdentifier: "com.apple.Safari", title: "Work", url: "https://example.com/other")))
         XCTAssertTrue(ProjectReattachResolver.matchesObservation(saved, ProjectWindowPattern(bundleIdentifier: "com.apple.Safari", title: "Work")))
         XCTAssertFalse(ProjectReattachResolver.matchesObservation(saved, ProjectWindowPattern(bundleIdentifier: "com.google.Chrome", title: "Work", url: saved.url)))
+    }
+
+    func testUnassignedSelectionOrChangedOwnerCannotClaimNewWindow() {
+        XCTAssertFalse(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 60,
+            onCurrentDesktop: true, ownsCreationDesktop: false))
+        XCTAssertTrue(ProjectReattachResolver.allowsActiveAssignment(isNew: true, applicationAge: 60,
+            onCurrentDesktop: true, ownsCreationDesktop: true))
     }
 
 }

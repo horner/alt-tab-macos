@@ -7,7 +7,7 @@ Each ordinary Desktop has a separate transparent navigation window, including un
 Desktops; hiding or minimizing labels does not remove that focus target. Fullscreen Spaces continue
 to use their application window. Navigation windows are excluded from the switcher and project membership.
 
-Saving “Name this Desktop…” opens or restores labels on that Desktop, including each linked Project.
+Saving “Name this Desktop…” opens or restores the owning Project’s label on that Desktop.
 An explicit “Show Project Labels” restores the entire set and includes subsequently created Spaces.
 The close button offers Archive and Close Desktop, Hide Label, or Cancel; fullscreen labels simply hide.
 Hide Label suppresses its stable identity until explicitly shown or the app restarts. The bulk Close All
@@ -58,12 +58,10 @@ front at its ordinary level until a subsequent outside click or explicit present
 Manual Show, Bring, Minimize, Close and disabling the preference cancel pending timers. A hidden
 label session is never created by an automatic reveal.
 
-A linked Project has a persistent label identity independent of its current Desktop. Legacy single
-links retain the original Desktop UUID as their label identity, preserving saved positions. Project
-names label linked windows; an unlinked Desktop uses its explicit or automatic name, then “Unnamed Space”.
-When a Desktop closes, ProjectDesktopResolver relocates its Projects and reuses their label windows
-on the destination Desktop alongside its resident Projects. Closing or minimizing one label does not
-affect the other Projects there. Interacting with a Project label selects that Project.
+A Project's ID is its label identity. Its desktop assignment is the only authority for placement.
+An owned Desktop displays that Project's name; an unowned Desktop displays “Desktop N”.
+A disappearing Desktop does not transfer its Project to a neighbor. The saved assignment remains
+available for reconnection or explicit reassignment. Interacting with a Project label selects it.
 Desktop numbers follow WindowServer display/Space order. Fullscreen Spaces retain their ordinal in
 that complete order and display “Fullscreen · Space N”; they do not consume a Desktop number.
 Project shortcut numbers never affect the Desktop numbers on these labels.
@@ -77,7 +75,7 @@ the fitted text and button rows instead of the screen height. New labels default
 corner, inset 24 points from the usable screen edges above the Dock. Geometry rounds to whole points.
 Users can drag the title bar or label background. A per-label identity preference stores the display UUID
 and offsets within its usable frame; name changes, Space changes and close/reopen preserve placement.
-Saved positions survive app restarts even though the label session starts hidden. The preferred
+Saved positions survive app restarts. The preferred
 display is used while connected, falling back to the Space's display when unavailable. Frames are
 clamped to the usable area after display changes. Move notifications update in-memory placement;
 a cancellable delayed write coalesces drag events, and closing flushes the pending position.
@@ -168,3 +166,18 @@ small action buttons wrap into additional rows when needed.
   made key and ordered before app activation. A key-only request plus SLPS did not reliably switch.
 - Live launch created all seven desktop labels without Show Project Labels. Navigation anchors remain
   registered separately when labels are hidden or minimized; topology removal retires both independently.
+
+## Project ownership and reconciliation
+
+Project IDs identify owned label windows. The project assignment determines the destination Desktop;
+WindowServer observations never change project ownership. A label observed on the wrong Desktop,
+on several Desktops, or on none is reassigned to its intended Desktop at the next topology event.
+An unavailable placement read retains the last known state. There is no placement polling.
+
+Window title and visible text share the same label model. Unowned Desktops display `Desktop N`.
+Reconciliation checks actual text as well as the cached model, so stale text is replaced in place.
+Legacy label UUIDs are only used as fallback keys for saved positions. `--project-labels` exposes
+expected and displayed text/title together with the last verified placement and observation time.
+
+`testUnownedDesktopUsesItsNumberWithoutUnnamedPlaceholder`, `testOwnedLabelTitleAndTextUseOneProjectName`,
+and `testPlacementRepairRejectsWrongEmptyAndMultipleDesktops` cover these rules.

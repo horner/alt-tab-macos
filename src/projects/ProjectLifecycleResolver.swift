@@ -1,22 +1,82 @@
 import Foundation
 
 enum ProjectLifecycleResolver {
-    static func repairingUnlinkedProjects(_ entries: [ProjectEntry]) -> [ProjectEntry] {
+    static func normalizingDesktopOwnership(_ entries: [ProjectEntry]) -> [ProjectEntry] {
         var result = entries
-        let linkedIds = Set(entries.flatMap { $0.linkedProjectIds })
-        for index in result.indices where result[index].kind == "desktop" {
+        let projects = entries.indices.filter { entries[$0].kind == "custom" }.sorted { entries[$0].id < entries[$1].id }
+        let desktops = entries.indices.filter { entries[$0].kind == "desktop" }.sorted {
+            [entries[$0].spaceUuid ?? "", entries[$0].id].lexicographicallyPrecedes([entries[$1].spaceUuid ?? "", entries[$1].id])
+        }
+        var assignments = [String: String]()
+        var occupied = Set<String>()
+        var linked = Set<String>()
+        for index in projects where entries[index].desktopOwnershipVersion == 1 && !entries[index].isClosed {
+            claim(entries[index], desktop: entries[index].homeSpaceUuid, assignments: &assignments, occupied: &occupied)
+        }
+        for index in desktops where entries[index].desktopOwnershipVersion == nil {
+            guard let uuid = entries[index].spaceUuid, !uuid.isEmpty else { continue }
+            let candidates = entries[index].linkedProjectIds.compactMap { id in
+                projects.first { entries[$0].id == id && entries[$0].desktopOwnershipVersion == nil && !entries[$0].isClosed }
+            }
+            linked.formUnion(candidates.map { entries[$0].id })
+            for candidate in candidates {
+                claim(entries[candidate], desktop: uuid, assignments: &assignments, occupied: &occupied)
+            }
+        }
+        for index in projects where entries[index].desktopOwnershipVersion == nil && !entries[index].isClosed && !linked.contains(entries[index].id) {
+            claim(entries[index], desktop: entries[index].homeSpaceUuid, assignments: &assignments, occupied: &occupied)
+        }
+        for index in projects {
+            result[index].homeSpaceUuid = assignments[entries[index].id] ?? ""
+            result[index].desktopOwnershipVersion = 1
+            result[index].linkedProjectIds = []
+            result[index].linkedProjectId = nil
+            if result[index].isClosed { result[index].pendingDesktopRemoval = false }
+        }
+        for index in desktops {
+            let desktop = entries[index]
+            if desktop.desktopOwnershipVersion == nil, let uuid = desktop.spaceUuid, !occupied.contains(uuid),
+               let project = preservedDesktopProject(desktop, among: result) {
+                result.append(project)
+                if !project.homeSpaceUuid.isEmpty { occupied.insert(project.homeSpaceUuid) }
+            }
+            result[index].name = nil
             result[index].autoName = nil
-            guard let uuid = result[index].spaceUuid, result[index].linkedProjectIds.isEmpty else { continue }
-            let candidates = entries.indices.filter { entries[$0].kind == "custom" && !entries[$0].isClosed
-                && entries[$0].homeSpaceUuid == uuid && !linkedIds.contains(entries[$0].id) }
-            // A label identity survives explicit unlinking; only repair a sole Project that has never claimed a Desktop.
-            guard candidates.count == 1, let projectIndex = candidates.first, entries[projectIndex].labelUuid == nil else { continue }
-            let id = entries[projectIndex].id
-            result[index].linkedProjectIds = [id]
-            result[index].linkedProjectId = id
-            result[projectIndex].labelUuid = entries.contains { $0.labelUuid == uuid } ? id : uuid
+            result[index].linkedProjectIds = []
+            result[index].linkedProjectId = nil
+            result[index].desktopOwnershipVersion = 1
         }
         return result
+    }
+
+    private static func claim(_ project: ProjectEntry, desktop: String, assignments: inout [String: String], occupied: inout Set<String>) {
+        guard !desktop.isEmpty, assignments[project.id] == nil, occupied.insert(desktop).inserted else { return }
+        assignments[project.id] = desktop
+    }
+
+    private static func preservedDesktopProject(_ desktop: ProjectEntry, among entries: [ProjectEntry]) -> ProjectEntry? {
+        guard let uuid = desktop.spaceUuid, !uuid.isEmpty,
+              let name = ProjectNameResolver.normalized(desktop.name) ?? ProjectNameResolver.normalized(desktop.autoName) else { return nil }
+        guard !entries.contains(where: { $0.kind == "custom" && desktop.linkedProjectIds.contains($0.id) }) else { return nil }
+        let label = desktop.labelUuid ?? uuid
+        guard !entries.contains(where: { $0.kind == "custom" && $0.labelUuid == label
+            && $0.name == desktop.name && $0.autoName == desktop.autoName }) else { return nil }
+        let baseId = "project-desktop-" + uuid
+        var id = baseId
+        var suffix = 2
+        while entries.contains(where: { $0.id == id }) { id = baseId + "-\(suffix)"; suffix += 1 }
+        var project = desktop
+        project.id = id
+        project.kind = "custom"
+        project.spaceUuid = nil
+        project.homeSpaceUuid = desktop.isClosed ? "" : uuid
+        project.name = ProjectNameResolver.available(name, existing: entries.filter { $0.kind == "custom" }.compactMap(\.name))
+        project.labelUuid = label
+        project.linkedProjectIds = []
+        project.linkedProjectId = nil
+        project.pendingDesktopRemoval = false
+        project.desktopOwnershipVersion = 1
+        return project
     }
 
     static func repairingEmptyDesktopAliases(_ entries: [ProjectEntry]) -> [ProjectEntry] {
@@ -52,6 +112,8 @@ enum ProjectLifecycleResolver {
     static func closed(_ entry: ProjectEntry) -> ProjectEntry {
         var result = entry
         result.isClosed = true
+        result.homeSpaceUuid = ""
+        result.desktopOwnershipVersion = 1
         result.pendingDesktopRemoval = false
         return result
     }
@@ -61,13 +123,14 @@ enum ProjectLifecycleResolver {
         result.isClosed = false
         result.pendingDesktopRemoval = false
         result.homeSpaceUuid = desktop
+        result.desktopOwnershipVersion = 1
         result.windowHistory = patterns(result.windowHistory, entry.closedWindows ?? [])
         return result
     }
 
     static func canCombine(_ source: ProjectEntry, into destination: ProjectEntry) -> Bool {
         source.id != destination.id && source.kind == "custom" && destination.kind == "custom"
-            && !source.isClosed && !destination.isClosed && source.homeSpaceUuid == destination.homeSpaceUuid
+            && !source.isClosed && !destination.isClosed && !source.homeSpaceUuid.isEmpty && source.homeSpaceUuid == destination.homeSpaceUuid
     }
 
     static func combined(_ source: ProjectEntry, into destination: ProjectEntry) -> ProjectEntry? {

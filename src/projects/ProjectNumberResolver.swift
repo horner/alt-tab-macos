@@ -2,7 +2,6 @@ enum ProjectNumberResolver {
     struct Entry {
         let id: String
         let desktopNumber: Int?
-        var claimIndex = Int.max
     }
 
     struct Choice: Equatable {
@@ -22,16 +21,10 @@ enum ProjectNumberResolver {
     }
 
     static func choices(_ entries: [Entry], desktopCount: Int) -> [Choice] {
-        guard desktopCount > 1 else {
-            return entries.enumerated().map { index, entry in
-                Choice(id: entry.id, label: label(index: index), shortcutIndex: index < 10 ? index : nil)
-            }
-        }
         return entries.enumerated().sorted { lhs, rhs in
             let left = lhs.element.desktopNumber ?? Int.max
             let right = rhs.element.desktopNumber ?? Int.max
             if left != right { return left < right }
-            if lhs.element.claimIndex != rhs.element.claimIndex { return lhs.element.claimIndex < rhs.element.claimIndex }
             return lhs.offset < rhs.offset
         }.map { _, entry in
             let number = entry.desktopNumber.flatMap { $0 > 0 ? $0 : nil }

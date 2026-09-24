@@ -42,7 +42,7 @@ enum WindowDesktopRestoreResolver {
     }
 
     static func decision(isEligible: Bool, spaces: [UInt64], projectHomes: [String], desktops: [UInt64: String]) -> Decision {
-        guard !projectHomes.isEmpty else { return .unassigned }
+        guard projectHomes.contains(where: { !$0.isEmpty }) else { return .unassigned }
         let homes = Set(projectHomes)
         guard homes.count == 1, let home = homes.first else { return .conflictingProjects }
         guard let desktop = desktops.first(where: { $0.value == home }) else { return .missingDesktop }

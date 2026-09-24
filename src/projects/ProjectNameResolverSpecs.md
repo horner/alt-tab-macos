@@ -1,12 +1,21 @@
 # ProjectNameResolver
 
-Desktop names resolve to a nonblank user name or `Desktop N`; a saved automatic app
-name cannot label a Desktop. Custom project names resolve to a nonblank user name,
-a sticky automatic name, then `Project N` for legacy records.
+A Desktop displays its owning Project's resolved name, or `Desktop N` when it has no owner.
+Desktop records do not carry editable names; the runtime adapter never passes an independent
+Desktop name to the resolver. Project names resolve to a nonblank user name, a sticky automatic
+name, then `Project N` for legacy records.
 Claiming a name only fills an unnamed record once. Forgetting operates only on the automatic name,
 so a user's name is preserved when all windows close. New custom projects receive a
 permanent unique name. Their name prompts reject blank or duplicate names and keep the
 entered text for correction. Archived and deleted project names remain reserved.
+
+Project for This Desktop uses a single owner picker and one Project-name field. Save can create
+an owner, choose an existing Project, rename the owner, or leave the Desktop without a Project.
+Replacing an owner preserves the previous Project, its windows and history without a desktop
+assignment. Selecting a Project assigned elsewhere transfers that assignment. Cancel leaves all
+ownership and names unchanged. A changed or removed Desktop invalidates the pending save.
+New Project naming creates an unassigned draft until accepted, so cancellation cannot displace
+the Desktop's existing owner. Rename Project accepts only a Project, never a desktop adapter.
 
 Names share the same filesystem key after case, accent and width folding, whitespace
 and punctuation become hyphens, and keys are limited to 60 characters. Such collisions

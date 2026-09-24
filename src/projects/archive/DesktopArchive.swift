@@ -114,7 +114,7 @@ enum DesktopArchive {
         let targets = candidates(on: space)
         let alert = NSAlert()
         alert.messageText = "Close Desktop \(space.desktopNumber)?"
-        alert.informativeText = "Save a dated Markdown snapshot with screenshots and reopening details in each project’s folder, then close \(targets.count) windows and this Desktop. Projects move to the Attic.\n\nProject windows on other Desktops and windows shared with other Desktops stay open. Apps may ask you to save documents; cancelling or leaving a save prompt open keeps the Desktop open."
+        alert.informativeText = "Save a dated Markdown snapshot with screenshots and reopening details in the Project’s folder, then close \(targets.count) windows and this Desktop. The Project moves to the Attic.\n\nProject windows on other Desktops and windows shared with other Desktops stay open. Apps may ask you to save documents; cancelling or leaving a save prompt open keeps the Desktop open."
         let name = NSTextField(frame: NSRect(x: 0, y: 0, width: 340, height: 24))
         if projects.isEmpty {
             name.stringValue = Projects.availableProjectName(Projects.desktopDisplayName(spaceUuid) ?? "Desktop \(space.desktopNumber)")
@@ -123,7 +123,7 @@ enum DesktopArchive {
             alert.accessoryView = name
             alert.informativeText += "\n\nCreate a project with the name below in your Projects folder."
         } else {
-            alert.informativeText += "\n\nProjects: " + projects.map { $0.resolvedName }.joined(separator: ", ")
+            alert.informativeText += "\n\nProject: " + projects.map { $0.resolvedName }.joined(separator: ", ")
         }
         alert.addButton(withTitle: "Archive and Close Desktop").keyEquivalent = ""
         alert.addButton(withTitle: "Hide Label")

@@ -234,8 +234,12 @@ enum ProjectPersistence {
         pendingSnapshot?.cancel()
         pendingSnapshot = nil
         Projects.persistSnapshot()
-        // UserDefaults writes synchronously deliver main-queue observers. A main-thread queue.sync
-        // here deadlocks against that notification; keep the runloop free until the save completes.
-        queue.async { DispatchQueue.main.async(execute: completion) }
+        // A modal quit can run inside a main-dispatch callback, which prevents that queue from
+        // reentering. Defaults observers must enqueue UI work without blocking the file queue;
+        // the completion uses the runloop so it can reply from the nested termination loop.
+        queue.async {
+            RunLoop.main.perform(inModes: [.common, .modalPanel, .eventTracking], block: completion)
+            CFRunLoopWakeUp(CFRunLoopGetMain())
+        }
     }
 }

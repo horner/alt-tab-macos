@@ -6,7 +6,7 @@ struct ProjectFileDocument: Codable {
     var order: Int
     var isDeleted: Bool
     private enum CodingKeys: String, CodingKey {
-        case schemaVersion, order, isDeleted, id, kind, spaceUuid, homeSpaceUuid, name, autoName, iconFileName
+        case schemaVersion, order, isDeleted, id, kind, spaceUuid, homeSpaceUuid, desktopOwnershipVersion, name, autoName, iconFileName
         case windowHistory, memberPatterns, excludedPatterns, linkedProjectIds, labelUuid, isClosed, closedWindows
     }
 
@@ -25,8 +25,14 @@ struct ProjectFileDocument: Codable {
         let kind = try c.decode(String.self, forKey: .kind)
         let home = try c.decode(String.self, forKey: .homeSpaceUuid)
         let space = try c.decodeIfPresent(String.self, forKey: .spaceUuid)
-        guard !id.isEmpty, !home.isEmpty, ["custom", "desktop"].contains(kind), kind != "desktop" || space == home else {
-            throw ProjectFileError.invalid("A project needs an id, a homeSpaceUuid and a valid kind; desktop spaceUuid must match its home")
+        let ownershipVersion = try c.decodeIfPresent(Int.self, forKey: .desktopOwnershipVersion)
+        guard ownershipVersion == nil || ownershipVersion == 1 else {
+            throw ProjectFileError.invalid("Unsupported desktopOwnershipVersion; expected 1")
+        }
+        guard !id.isEmpty, ["custom", "desktop"].contains(kind),
+              !home.isEmpty || (kind == "custom" && ownershipVersion == 1),
+              kind != "desktop" || space == home else {
+            throw ProjectFileError.invalid("A project needs an id and valid kind; an unassigned project needs desktopOwnershipVersion 1, and a desktop's spaceUuid must match its nonempty home")
         }
         order = try c.decodeIfPresent(Int.self, forKey: .order) ?? 0
         isDeleted = try c.decodeIfPresent(Bool.self, forKey: .isDeleted) ?? false
@@ -38,7 +44,8 @@ struct ProjectFileDocument: Codable {
             windowHistory: try c.decodeIfPresent([ProjectWindowPattern].self, forKey: .windowHistory) ?? [],
             linkedProjectIds: try c.decodeIfPresent([String].self, forKey: .linkedProjectIds) ?? [],
             labelUuid: try c.decodeIfPresent(String.self, forKey: .labelUuid),
-            isClosed: try c.decodeIfPresent(Bool.self, forKey: .isClosed) ?? false)
+            isClosed: try c.decodeIfPresent(Bool.self, forKey: .isClosed) ?? false,
+            desktopOwnershipVersion: ownershipVersion)
         entry.closedWindows = try c.decodeIfPresent([ProjectWindowPattern].self, forKey: .closedWindows)
         guard (entry.memberPatterns + entry.excludedPatterns + entry.windowHistory + (entry.closedWindows ?? [])).allSatisfy({ !$0.bundleIdentifier.isEmpty }) else {
             throw ProjectFileError.invalid("Window patterns need a bundleIdentifier")

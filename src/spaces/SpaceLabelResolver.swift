@@ -152,6 +152,17 @@ enum SpaceLabelResolver {
         var id: String { identity ?? space.uuid }
         var number: Int { space.desktopNumber > 0 ? space.desktopNumber : space.ordinal }
         var isFullscreen: Bool { space.desktopNumber == 0 }
+        var desktopTitle: String { SpaceLabelResolver.desktopTitle(number: number, isFullscreen: isFullscreen) }
+        var title: String {
+            guard let name = SpaceLabelResolver.normalized(name), name != desktopTitle else { return desktopTitle }
+            return "\(name) · \(desktopTitle)"
+        }
+        var text: String {
+            guard let name = SpaceLabelResolver.normalized(name), name != desktopTitle else { return desktopTitle }
+            let singleLineName = name.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+            return "\(isFullscreen ? desktopTitle : String(number)) · \(singleLineName)"
+        }
+
     }
 
     /// A partial topology is not evidence that the missing Spaces were deleted.
@@ -180,6 +191,17 @@ enum SpaceLabelResolver {
             let name = names[space.uuid]
             return Label(space: space, name: normalized(name?.explicit) ?? normalized(name?.automatic))
         }
+    }
+
+    static func desktopTitle(number: Int, isFullscreen: Bool) -> String {
+        isFullscreen
+            ? String(format: NSLocalizedString("Fullscreen · Space %d", comment: "Fullscreen Project label number"), number)
+            : String(format: NSLocalizedString("Desktop %d", comment: "Spaces switcher tile label"), number)
+    }
+
+    static func needsPlacementRepair(actual: [UInt64]?, expected: UInt64) -> Bool {
+        guard let actual else { return false }
+        return Set(actual) != [expected]
     }
 
     static func frame(visibleFrame: CGRect, height: CGFloat, position: Position? = nil, stackIndex: Int = 0) -> CGRect {

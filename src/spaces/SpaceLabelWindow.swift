@@ -35,9 +35,13 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
     var savedDisplayIdentifier: String? { position?.displayIdentifier }
     override var canBecomeMain: Bool { false }
 
-    init(uuid: String) {
+    var displayedText: String { textLabel.stringValue }
+
+    init(uuid: String, legacyUuid: String? = nil) {
         positionKey = "spaceLabelPosition.\(uuid)"
-        if let data = UserDefaults.standard.data(forKey: positionKey) {
+        let savedPosition = UserDefaults.standard.data(forKey: positionKey)
+            ?? legacyUuid.flatMap { UserDefaults.standard.data(forKey: "spaceLabelPosition.\($0)") }
+        if let data = savedPosition {
             position = try? JSONDecoder().decode(SpaceLabelResolver.Position.self, from: data)
         }
         super.init(contentRect: .zero, styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView], backing: .buffered, defer: false)
@@ -92,7 +96,7 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
     func update(_ label: SpaceLabelResolver.Label, on screen: NSScreen) {
         MainThreadStall.step()
         let visibleFrame = screen.visibleFrame
-        if renderedLabel != label || renderedSize != visibleFrame.size {
+        if renderedLabel != label || renderedSize != visibleFrame.size || title != label.title || displayedText != label.text {
             updateText(label, visibleSize: visibleFrame.size)
         }
         let height = textLabel.frame.height + controlsHeight + 50
@@ -105,17 +109,11 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
     private func updateText(_ label: SpaceLabelResolver.Label, visibleSize: NSSize) {
         renderedLabel = label
         renderedSize = visibleSize
-        let number = label.isFullscreen
-            ? String(format: NSLocalizedString("Fullscreen · Space %d", comment: "Fullscreen Project label number"), label.number)
-            : String(format: NSLocalizedString("Desktop %d", comment: "Spaces switcher tile label"), label.number)
-        let name = label.name ?? NSLocalizedString("Unnamed Space", comment: "Project label without a saved name")
-        title = "\(name) · \(number)"
+        title = label.title
         setAccessibilityLabel(title)
         textLabel.toolTip = title
         textLabel.setAccessibilityLabel(title)
-        let prefix = label.isFullscreen ? number : String(label.number)
-        let singleLineName = name.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
-        textLabel.stringValue = "\(prefix) · \(singleLineName)"
+        textLabel.stringValue = label.text
         let hasProject = ProjectsMenu.context(for: label).projectId != nil
         projectButtons.forEach { $0.isHidden = !hasProject }
         let width = (visibleSize.width / 2).rounded() - 32

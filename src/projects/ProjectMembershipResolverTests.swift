@@ -38,8 +38,23 @@ final class ProjectMembershipResolverTests: XCTestCase {
             windowSpaces: ["member": [8], "settings": [3], "other-project": [3], "other-desktop": [4]],
             assigned: ["member", "other-project"])
         let members = ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: true,
-            members: ["member"], unassignedOnDesktop: local)
+            members: ["member"], unassignedOnDesktop: local, ownsCurrentDesktop: true)
         XCTAssertEqual(members, ["member", "settings"])
+    }
+
+    func testSelectingUnassignedOrElsewhereProjectDoesNotBorrowCurrentDesktopWindows() {
+        let members = ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: true,
+            members: ["shared-member", "remote-member"], unassignedOnDesktop: ["local-unassigned"], ownsCurrentDesktop: false)
+        XCTAssertEqual(members, ["shared-member", "remote-member"])
+    }
+
+    func testLosingDesktopOwnershipRemovesFallbackButPreservesExplicitMembers() {
+        let owned = ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: true,
+            members: ["shared-member"], unassignedOnDesktop: ["local-unassigned"], ownsCurrentDesktop: true)
+        let unassigned = ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: true,
+            members: ["shared-member"], unassignedOnDesktop: ["local-unassigned"], ownsCurrentDesktop: false)
+        XCTAssertEqual(owned, ["shared-member", "local-unassigned"])
+        XCTAssertEqual(unassigned, ["shared-member"])
     }
 
     func testLateSpaceInformationMakesUnassignedWindowEligible() {
@@ -58,9 +73,9 @@ final class ProjectMembershipResolverTests: XCTestCase {
     func testRepairedMembershipKeepsWindowVisible() {
         let spaces: [String: [UInt64]] = ["settings": [3]]
         let before = ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: true, members: [],
-            unassignedOnDesktop: ProjectMembershipResolver.unassignedOnDesktop(spaceId: 3, windowSpaces: spaces, assigned: []))
+            unassignedOnDesktop: ProjectMembershipResolver.unassignedOnDesktop(spaceId: 3, windowSpaces: spaces, assigned: []), ownsCurrentDesktop: true)
         let after = ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: true, members: ["settings"],
-            unassignedOnDesktop: ProjectMembershipResolver.unassignedOnDesktop(spaceId: 3, windowSpaces: spaces, assigned: ["settings"]))
+            unassignedOnDesktop: ProjectMembershipResolver.unassignedOnDesktop(spaceId: 3, windowSpaces: spaces, assigned: ["settings"]), ownsCurrentDesktop: true)
         XCTAssertEqual(before, ["settings"])
         XCTAssertEqual(after, before)
     }

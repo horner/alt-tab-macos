@@ -99,7 +99,7 @@ final class ProjectsMenu: NSObject {
     }
 
     static func context(for label: SpaceLabelResolver.Label? = nil) -> ProjectMenuResolver.Context {
-        let labels = Projects.list.filter { $0.isCustom }.reduce(into: [String: String]()) { $0[$1.labelUuid ?? $1.id] = $1.id }
+        let labels = Projects.list.filter { $0.isCustom }.reduce(into: [String: String]()) { $0[$1.id] = $1.id }
         return ProjectMenuResolver.context(labelId: label?.id, desktopUuid: label?.space.uuid,
             activeProjectId: Projects.active.flatMap { $0.isCustom ? $0.id : nil },
             currentDesktopUuid: Projects.spaces.first { $0.isCurrent }?.uuid, projectLabels: labels)
@@ -204,7 +204,7 @@ final class ProjectsMenu: NSObject {
             let entry = item(project.resolvedName, #selector(moveCurrentWindow))
             entry.representedObject = WindowSelection(project, window)
             entry.state = memberships.contains(project.id) ? .on : .off
-            entry.isEnabled = ProjectMenuResolver.canMove(to: project.id, memberships: memberships)
+            entry.isEnabled = ProjectAssignmentPrompt.hasDesktop(project) && ProjectMenuResolver.canMove(to: project.id, memberships: memberships)
             destinations.addItem(entry)
         }
         menu.addItem(submenu(NSLocalizedString("Move to Project", comment: "Move current window membership"), destinations, enabled: !destinations.items.isEmpty))
@@ -315,15 +315,6 @@ final class ProjectsMenu: NSObject {
             addProjectAction(NSLocalizedString("Close Project…", comment: "Archive a Project with confirmation"), #selector(closeProject), project, to: menu)
             addProjectAction(NSLocalizedString("Delete Project", comment: "Projects menu"), #selector(deleteProject), project, to: menu)
         }
-        if let project {
-            let targets = self.menu()
-            for target in Projects.list where target.isCustom && target !== project && target.homeSpaceUuid == project.homeSpaceUuid {
-                let option = item(target.resolvedName, #selector(combineProjects))
-                option.representedObject = [project.id, target.id]
-                targets.addItem(option)
-            }
-            if !targets.items.isEmpty { menu.addItem(submenu(NSLocalizedString("Combine with", comment: "Combine target label"), targets)) }
-        }
         addProjectAction(NSLocalizedString("Add Windows…", comment: "Project window picker action"), #selector(chooseWindows), project, to: menu)
         menu.addItem(.separator())
         addProjects(to: menu, title: NSLocalizedString("Add Windows to", comment: "Choose a Project for manual assignment"), action: #selector(chooseWindows))
@@ -341,12 +332,13 @@ final class ProjectsMenu: NSObject {
 
     private static func makeSwitchMenu(_ active: Project?) -> NSMenu {
         let menu = menu()
-        let desktop = item(NSLocalizedString("Use Desktop (No Project)", comment: ""), #selector(selectDesktop))
-        desktop.state = active == nil ? .on : .off
-        desktop.isEnabled = currentDesktop != nil
-        menu.addItem(desktop)
+        if let currentDesktop, Projects.owner(for: currentDesktop.homeSpaceUuid) == nil {
+            let desktop = item(NSLocalizedString("Use Desktop (No Project)", comment: ""), #selector(selectDesktop))
+            desktop.state = active == nil ? .on : .off
+            menu.addItem(desktop)
+        }
         let projects = Projects.list.filter { $0.isCustom }
-        if !projects.isEmpty { menu.addItem(.separator()) }
+        if !projects.isEmpty, !menu.items.isEmpty { menu.addItem(.separator()) }
         for project in projects {
             let entry = addProjectAction(project.resolvedName, #selector(selectProject), project, to: menu)
             entry.state = project === active ? .on : .off
@@ -371,16 +363,15 @@ final class ProjectsMenu: NSObject {
 
     private static func makeDesktopMenu() -> NSMenu {
         let menu = menu()
-        let name = item(NSLocalizedString("Name This Desktop…", comment: "Desktop menu action"), #selector(nameDesktop))
-        name.isEnabled = currentDesktop != nil
+        let name = item(NSLocalizedString("Project for This Desktop…", comment: "Choose the Desktop owner"), #selector(nameDesktop))
+        name.isEnabled = Projects.spaces.contains { $0.uuid == desktopUuid && $0.desktopNumber > 0 }
         menu.addItem(name)
-        menu.addItem(item(NSLocalizedString("Show Desktops File in Finder", comment: "Reveal Desktop settings YAML"), #selector(showDesktopsFile)))
         guard Projects.isEnabled else { return menu }
         menu.addItem(.separator())
         let snapshot = item(NSLocalizedString("Take Desktop Snapshot", comment: "Capture the Desktop without closing windows"), #selector(takeDesktopSnapshot))
         snapshot.representedObject = desktopUuid
         snapshot.isEnabled = Projects.spaces.contains { $0.uuid == desktopUuid && $0.desktopNumber > 0 }
-        snapshot.toolTip = NSLocalizedString("Save screenshots and reopening details for this Desktop and its linked Projects. Windows stay open.", comment: "Desktop snapshot scope")
+        snapshot.toolTip = NSLocalizedString("Save screenshots and reopening details for this Desktop’s Project. Windows stay open.", comment: "Desktop snapshot scope")
         menu.addItem(snapshot)
         menu.addItem(.separator())
         let heading = item(NSLocalizedString("Project Labels", comment: "Project label menu section"), nil)
@@ -428,7 +419,7 @@ final class ProjectsMenu: NSObject {
             ProjectNamePrompt.rename(project, from: window)
             return
         }
-        guard let uuid = context.desktopUuid, Projects.spaces.contains(where: { $0.uuid == uuid }) else { return }
+        guard let uuid = context.desktopUuid, Projects.spaces.contains(where: { $0.uuid == uuid && $0.desktopNumber > 0 }) else { return }
         DesktopNamePrompt.present(Projects.forSpace(uuid: uuid))
     }
 
@@ -661,13 +652,14 @@ final class ProjectsMenu: NSObject {
         defer { logMenu("selectDesktop", "finished") }
         cancelNavigation()
         guard Projects.isEnabled else { return }
-        Projects.active = currentDesktop
+        Projects.active = currentDesktop.map { Projects.owner(for: $0.homeSpaceUuid) ?? $0 }
     }
 
     @objc private static func moveCurrentWindow(_ sender: NSMenuItem) {
         guard let selection = sender.representedObject as? WindowSelection else { return }
         DispatchQueue.main.async {
             guard Projects.isEnabled, let id = selection.projectId, let project = Projects.byId[id], project.isCustom,
+                  ProjectAssignmentPrompt.hasDesktop(project),
                   let window = ProjectMenuResolver.liveTarget(selection.window, in: Windows.list, isEligible: ProjectAssignmentPrompt.canAssign) else { return }
             Projects.assign([window.tracked.id], to: project, move: true)
         }
@@ -801,18 +793,23 @@ final class ProjectsMenu: NSObject {
     }
 
     private static func createNamedProject(with windows: [Window], title: String, desktopUuid: String, from parent: NSWindow?) {
-        guard Projects.isEnabled, Projects.spaces.contains(where: { $0.uuid == desktopUuid }),
-              let project = Projects.createCustom(homeSpaceUuid: desktopUuid) else { return }
+        guard Projects.isEnabled, Projects.spaces.contains(where: { $0.uuid == desktopUuid && $0.desktopNumber > 0 }),
+              let project = Projects.createCustom(homeSpaceUuid: "") else { return }
         project.name = Projects.availableProjectName(windows.first?.application.localizedName ?? "Project", excluding: project.id)
-        ProjectNamePrompt.present(project, title: title, from: parent) { saved in
+        let previousOwner = Projects.owner(for: desktopUuid)
+        let detail = previousOwner.map {
+            String(format: NSLocalizedString("The new Project will use this Desktop. %@ will stay open without a Desktop; its windows and history are kept.", comment: "Creating a replacement Desktop owner"), $0.resolvedName)
+        }
+        ProjectNamePrompt.present(project, title: title, detail: detail, from: parent) { saved in
             guard saved else { Projects.delete(id: project.id); return }
             guard Projects.isEnabled, Projects.byId[project.id] === project else { return }
-            guard Projects.spaces.contains(where: { $0.uuid == desktopUuid && $0.desktopNumber > 0 }) else {
+            guard Projects.spaces.contains(where: { $0.uuid == desktopUuid && $0.desktopNumber > 0 }),
+                  Projects.owner(for: desktopUuid) === previousOwner else {
                 Projects.delete(id: project.id)
                 return
             }
             let desktop = Projects.forSpace(uuid: desktopUuid)
-            guard Projects.link(desktop, toProjects: Projects.linkedProjects(for: desktop) + [project]) else {
+            guard Projects.link(desktop, to: project) else {
                 Projects.delete(id: project.id)
                 return
             }

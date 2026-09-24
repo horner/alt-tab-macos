@@ -12,13 +12,19 @@ a numeric suffix is part of the project name when a generated suggestion is alre
 
 `~/.alt-tab-projects/desktops.yaml` holds Desktop records in an ID-keyed `desktops`
 mapping. Its root `schemaVersion: 2` identifies the separated storage layout. Each
-record and `project.yaml` retain their unchanged version 1 record schema. Unsupported
+record and `project.yaml` retain `schemaVersion: 1`. Unsupported
 versions are rejected without writes. `order` preserves ordering across both files.
 YAML uses a single block mapping with unique keys; merge keys and layouts that cannot
 be safely patched are rejected with an error.
 
-Names, Desktop/label associations, membership and exclusion patterns, browser
-URLs, history, confirmed restoration evidence, links and closed state are durable.
+Project names, ownership assignments, label identities, membership and exclusion patterns,
+browser URLs, history, confirmed restoration evidence and closed state are durable.
+`desktopOwnershipVersion: 1` makes the custom Project's `homeSpaceUuid` authoritative;
+an empty string is an explicit unassignment. Empty homes remain invalid for Desktop
+records and unversioned legacy records. Unknown ownership versions are rejected.
+Legacy Desktop names and links are read for migration and cleared after ownership
+normalization. Custom files are saved before the cleaned Desktop collection, so an
+interruption retains either the original migration input or its preserved Project.
 Window IDs, PIDs, launch times, observation timestamps, pending Desktop removal,
 active selection and minimization ownership remain runtime data in UserDefaults.
 Pattern lists have deterministic ordering. Observations do not rewrite YAML.
@@ -92,11 +98,13 @@ renames and archives do not change the target identity. Missing folders report a
 ## Quit ordering
 
 Application termination returns `terminateLater` while the final snapshot drains, then
-replies on main. It must not synchronously wait on the storage queue: UserDefaults writes
-synchronously deliver main-queue notification observers. Sampling a hung quit showed main
-waiting in `ProjectPersistence.flush` while the save waited in `NSOperation.waitUntilFinished`
-for that notification. New snapshot scheduling stops during termination. A real app quit
-and restart verifies the final diagnostic snapshot is written and the instance lock released.
+replies through the main run loop. A quit initiated inside a main-dispatch callback enters
+a nested AppKit event loop that cannot reenter the main dispatch queue. UserDefaults
+observers therefore receive on the posting thread (`queue: nil`) and enqueue UI work
+asynchronously, so preference writes cannot block the storage queue waiting for main.
+Save completion runs in the main run loop's common, modal and event-tracking modes.
+New snapshot scheduling stops during termination. A real app quit from the label menu
+and restart verifies the final snapshot is written and the instance lock released.
 
 Manual verification on macOS 26.5.1: both Projects settings buttons opened their expected
 Finder directories, including the hidden current-boot diagnostics folder. Quitting through

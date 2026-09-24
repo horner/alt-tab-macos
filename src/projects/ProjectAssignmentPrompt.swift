@@ -6,6 +6,11 @@ enum ProjectAssignmentPrompt {
             labelVisibility: SpaceLabelWindows.switcherVisibility(windowId: window.cgWindowId, pid: window.application.pid))
     }
 
+    static func hasDesktop(_ project: Project) -> Bool {
+        Projects.owner(for: project.homeSpaceUuid) === project
+            && Projects.spaces.contains { $0.uuid == project.homeSpaceUuid && $0.desktopNumber > 0 }
+    }
+
     static func add(_ windows: [Window], to project: Project, from parent: NSWindow? = nil) {
         guard Projects.isEnabled, project.isCustom, Projects.byId[project.id] === project else { return }
         let ids = liveIds(windows)
@@ -15,7 +20,10 @@ enum ProjectAssignmentPrompt {
         let conflicts = sources.reduce(into: Set<String>()) { $0.formUnion($1.members.intersection(ids)) }
         let alert = NSAlert()
         alert.messageText = String(format: NSLocalizedString("Move windows to %@?", comment: "Project assignment conflict"), project.resolvedName)
-        alert.informativeText = String(format: NSLocalizedString("%d selected window(s) already belong to: %@. Move removes them from those Projects and moves them to this Project's Desktop. Keep in Both adds them without changing their Desktop or existing memberships.", comment: ""), conflicts.count, sources.map { $0.resolvedName }.joined(separator: ", "))
+        let explanation = hasDesktop(project)
+            ? NSLocalizedString("%d selected window(s) already belong to: %@. Move removes them from those Projects and moves them to this Project's Desktop. Keep in Both adds them without changing their Desktop or existing memberships.", comment: "Project assignment with a Desktop")
+            : NSLocalizedString("%d selected window(s) already belong to: %@. Move removes them from those Projects. Keep in Both preserves those memberships. This Project has no available Desktop, so the windows stay where they are.", comment: "Project assignment without an available Desktop")
+        alert.informativeText = String(format: explanation, conflicts.count, sources.map { $0.resolvedName }.joined(separator: ", "))
         alert.addButton(withTitle: NSLocalizedString("Move", comment: "Project membership action")).keyEquivalent = "\r"
         alert.addButton(withTitle: NSLocalizedString("Keep in Both", comment: "Project membership action"))
         alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "")).keyEquivalent = "\u{1b}"
@@ -27,10 +35,11 @@ enum ProjectAssignmentPrompt {
     }
 
     static func moveToDesktop(_ windows: [Window], project: Project, onlyUnshared: Bool = false) {
+        guard hasDesktop(project) else { return }
         let home = project.homeSpaceUuid
         // Sheet completion may share the dismissal turn; let that frame commit before moving windows.
         DispatchQueue.main.async {
-            guard Projects.isEnabled, Projects.byId[project.id] === project, project.homeSpaceUuid == home else { return }
+            guard Projects.isEnabled, Projects.byId[project.id] === project, project.homeSpaceUuid == home, hasDesktop(project) else { return }
             let live = windows.filter { window in
                 Windows.list.contains { $0 === window } && project.members.contains(window.tracked.id)
                     && (!onlyUnshared || !Projects.list.contains { $0.isCustom && $0 !== project && $0.members.contains(window.tracked.id) })
