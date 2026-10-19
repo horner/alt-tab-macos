@@ -6,7 +6,15 @@ Each actual Desktop change remembers the Desktop, selected Project and most rece
 
 Command-Z returns directly while the window switcher is open, regardless of the selected stop. Its label appears on Back. The adapter accepts the configured hold modifiers alongside Command and ignores key repeats. Command-Z stays with the text field while editing search, and other applications retain their normal undo outside the switcher.
 
-Returning focuses the remembered window if still eligible, otherwise the destination's most recent window or empty-Desktop system-shortcut fallback. The fallback honors configured shortcuts, including Command–function-key bindings, and does not send disabled or malformed bindings. Without an explicit binding it retains the Control-digit fallback; macOS must have that shortcut enabled for an empty Desktop to be reachable. A confirmed return restores the saved Project if it still exists; ordinary Desktop following handles deleted Projects. The Desktop just left becomes the reverse destination. History is session-local. Duplicate notifications do not overwrite it; deleted Desktops have no return button. Pending Project restoration expires after three seconds and is cancelled by an unrelated Desktop transition.
+Returning focuses the remembered window if still eligible, otherwise the destination's most recent window or navigation anchor. While an anchor is unavailable, the system-shortcut fallback honors configured shortcuts, including Command–function-key bindings, and does not send disabled or malformed bindings. Without an explicit binding it retains the Control-digit fallback; macOS must have that shortcut enabled for this fallback to reach an empty Desktop. A confirmed return restores the saved Project if it still exists; ordinary Desktop following handles deleted Projects. The Desktop just left becomes the reverse destination. History is session-local. Duplicate notifications do not overwrite it; deleted Desktops have no return button. Pending Project restoration expires after three seconds and is cancelled by an unrelated Desktop transition.
+
+Each ordinary Desktop also has an invisible, click-through navigation anchor so it remains reachable when no eligible application window is available, including when Project labels are hidden or minimized. Anchors are confined to their assigned Desktop and can become key without becoming main. Their stationary collection behavior excludes them from App Exposé without changing the managed behavior of visible Project labels. Anchors are ordered before application activation when used for navigation; making a destination key without ordering does not reliably switch Desktops.
+
+## Runtime scenarios
+
+- Focus a Project label, then open App Exposé with Control–Down. Visible labels remain selectable, and the invisible navigation anchors contribute no blank entries.
+- Hide or minimize Project labels and navigate to a Desktop with no eligible application window. The destination Desktop becomes current; repeated navigation between empty and occupied Desktops still works.
+- Show Project labels again after anchor navigation. Their Desktop assignments and Exposé participation remain unchanged.
 
 ## Test scenarios
 
