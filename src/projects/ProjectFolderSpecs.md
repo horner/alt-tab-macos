@@ -21,7 +21,18 @@ using the default profile with a login shell in the selected folder; its profile
 is overridden for this launch. AppleScript arguments and nested shell quoting preserve
 spaces, quotes, dollar signs, backticks, and newlines. macOS may request Automation
 permission for iTerm2. VS Code uses its bundled CLI with --new-window, without requiring
-a code command on PATH.
+a code command on PATH. An ordinary first launch passes the primary folder unchanged.
+Explicit New VS Code Window instead writes a distinct single-folder `.code-workspace`
+document under `~/Library/Application Support/AltTabProjects/ProjectWorkspaces/<request UUID>/`.
+The document's friendly filename uses the folder name, or `Root` for `/`, and its JSON
+stores the absolute primary path as literal data. Nothing is written into the primary
+folder, and the user's VS Code profile and extension settings are unchanged.
+
+VS Code reuses an already-open folder even with --new-window. A distinct workspace
+document gives each explicit New Window request its own window identity. It also has
+independent workspace UI/editor state; it does not clone the existing editor session or
+its workspace settings. These documents remain available for VS Code to reopen or restore,
+including after a timeout or CLI error that may still produce a late window.
 
 Window association uses existing discovery/identity events, never polling. iTerm2 returns
 an exact WindowServer window ID. VS Code does not return a window ID: the first newly
@@ -31,6 +42,12 @@ are excluded. Association moves the new window to the Project's Desktop through 
 existing assignment path. One launch per application can be pending; repeated clicks
 while pending do not create duplicates. Requests expire after 30 seconds, and child
 processes receive termination after 25 seconds. Late results cannot claim windows.
+
+## Automated scenarios
+
+- **testEditorWorkspacePreservesLiteralAbsoluteFolderPaths** — JSON round trips spaces, quotes, shell metacharacters, backslashes, newlines and Unicode without changing the folder path.
+- **testEditorWorkspaceRequestsUseDistinctDurableDocumentsWithFriendlyNames** — each request has a separate app-support document; retrying the same request retains its identity, and trailing folder separators do not change its friendly filename.
+- **testEditorWorkspaceRootFolderUsesFriendlyFilenameWithinRequestDirectory** — the filesystem root receives a normal filename without escaping its request directory.
 
 ## Manual validation on a running development build
 

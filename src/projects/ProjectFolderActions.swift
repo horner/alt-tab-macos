@@ -57,7 +57,7 @@ enum ProjectFolderActions {
         request.timeout = timeout
         DispatchQueue.main.asyncAfter(deadline: .now() + 30, execute: timeout)
         queue.async {
-            let result = launch(tool, folder: folder)
+            let result = launch(tool, folder: folder, newWindow: newWindow, requestId: request.id)
             DispatchQueue.main.async {
                 guard requests[tool]?.id == request.id else { return }
                 guard result.error == nil else { finish(request, error: result.error); return }
@@ -131,7 +131,18 @@ enum ProjectFolderActions {
         }
     }
 
-    private static func launch(_ tool: ProjectFolderTool, folder: String) -> (windowId: UInt32?, error: String?) {
+    /// VS Code deduplicates folders even with --new-window, so explicit launches need a distinct workspace.
+    private static func editorPath(folder: String, newWindow: Bool, requestId: UUID) throws -> String {
+        guard newWindow else { return folder }
+        let support = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let workspace = ProjectFolderResolver.editorWorkspaceURL(applicationSupport: support, requestId: requestId, folder: folder)
+        try FileManager.default.createDirectory(at: workspace.deletingLastPathComponent(), withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        // Keep the document after launch errors too: a late window or VS Code session restore may still use it.
+        try ProjectFolderResolver.editorWorkspaceData(folder: folder).write(to: workspace, options: .atomic)
+        return workspace.path
+    }
+
+    private static func launch(_ tool: ProjectFolderTool, folder: String, newWindow: Bool, requestId: UUID) -> (windowId: UInt32?, error: String?) {
         var directory: ObjCBool = false
         guard folder.hasPrefix("/"), FileManager.default.fileExists(atPath: folder, isDirectory: &directory), directory.boolValue else {
             return (nil, "The project folder is unavailable: \(folder). Use Folder… to choose its new location.")
@@ -143,15 +154,17 @@ enum ProjectFolderActions {
         let output = Pipe()
         process.standardOutput = output
         process.standardError = output
-        if tool == .terminal {
-            process.launchPath = "/usr/bin/osascript"
-            let shell = loginShell()
-            process.arguments = ["-e", ProjectFolderResolver.terminalScript, ProjectFolderResolver.terminalCommand(folder: folder, shell: shell)]
-        } else {
-            process.launchPath = app.appendingPathComponent("Contents/Resources/app/bin/code").path
-            process.arguments = ["--new-window", folder]
+        do {
+            if tool == .terminal {
+                process.launchPath = "/usr/bin/osascript"
+                let shell = loginShell()
+                process.arguments = ["-e", ProjectFolderResolver.terminalScript, ProjectFolderResolver.terminalCommand(folder: folder, shell: shell)]
+            } else {
+                process.launchPath = app.appendingPathComponent("Contents/Resources/app/bin/code").path
+                process.arguments = ["--new-window", try editorPath(folder: folder, newWindow: newWindow, requestId: requestId)]
+            }
+            try process.run()
         }
-        do { try process.run() }
         catch { return (nil, error.localizedDescription) }
         let stop = DispatchWorkItem { if process.isRunning { process.terminate() } }
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 25, execute: stop)
