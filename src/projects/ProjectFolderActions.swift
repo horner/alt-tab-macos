@@ -16,24 +16,159 @@ enum ProjectFolderActions {
 
     private static let queue = DispatchQueue(label: "project-folder-launch", qos: .userInitiated, attributes: .concurrent)
     private static var requests = [ProjectFolderTool: Request]()
+    private static var folderChooser: FolderChooser?
 
     static func chooseFolder(for project: Project, from window: NSWindow?, completion: @escaping () -> Void) {
         guard Projects.isEnabled, Projects.byId[project.id] === project else { return }
-        let panel = NSOpenPanel()
-        panel.title = "Choose a folder for \(project.resolvedName)"
-        panel.prompt = "Use Folder"
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        panel.canCreateDirectories = true
-        if let path = project.folderPath { panel.directoryURL = URL(fileURLWithPath: path, isDirectory: true) }
-        let selected: (NSApplication.ModalResponse) -> Void = { response in
-            guard response == .OK, let url = panel.url, Projects.isEnabled, Projects.byId[project.id] === project else { return }
-            project.folderPath = url.path
-            DispatchQueue.main.async(execute: completion)
+        if let folderChooser, folderChooser.project === project, folderChooser.isVisible {
+            folderChooser.makeKeyAndOrderFront(nil)
+            return
         }
-        if let window, window.isVisible { panel.beginSheetModal(for: window, completionHandler: selected) }
-        else { panel.begin(completionHandler: selected) }
+        folderChooser?.close()
+        let chooser = FolderChooser(project: project, completion: completion)
+        folderChooser = chooser
+        chooser.present(from: window)
+    }
+
+    private final class FolderChooser: NSPanel, NSTextFieldDelegate {
+        let project: Project
+        private let completion: () -> Void
+        private let field = NSTextField(frame: NSRect(x: 20, y: 116, width: 420, height: 24))
+        private let detail = NSTextField(wrappingLabelWithString: "")
+        private let use = NSButton(title: NSLocalizedString("Use Folder", comment: "Project folder action"), target: nil, action: nil)
+        private var validationRevision = 0
+        override var canBecomeKey: Bool { true }
+        override var canBecomeMain: Bool { false }
+
+        init(project: Project, completion: @escaping () -> Void) {
+            self.project = project
+            self.completion = completion
+            super.init(contentRect: NSRect(x: 0, y: 0, width: 560, height: 184), styleMask: [.titled, .closable, .nonactivatingPanel], backing: .buffered, defer: false)
+            title = "Choose a folder for \(project.resolvedName)"
+            collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+            isFloatingPanel = true
+            hidesOnDeactivate = false
+            isReleasedWhenClosed = false
+            isExcludedFromWindowsMenu = true
+            setAccessibilitySubrole(.floatingWindow)
+            makeContent()
+            field.stringValue = project.folderPath ?? ""
+            field.delegate = self
+            initialFirstResponder = field
+            updateInput()
+        }
+
+        required init?(coder: NSCoder) { fatalError("Class only supports programmatic initialization") }
+
+        func present(from parent: NSWindow?) {
+            if let parent, parent.isVisible { parent.beginSheet(self); return }
+            center()
+            makeKeyAndOrderFront(nil)
+        }
+
+        override func close() {
+            validationRevision += 1
+            if let attachedSheet { endSheet(attachedSheet, returnCode: .cancel) }
+            if let sheetParent { sheetParent.endSheet(self) }
+            super.close()
+            // AppKit can re-enter while closing a window; defer releasing our last ownership.
+            DispatchQueue.main.async { [weak self] in
+                guard let self, ProjectFolderActions.folderChooser === self else { return }
+                ProjectFolderActions.folderChooser = nil
+            }
+        }
+
+        override func cancelOperation(_ sender: Any?) { close() }
+
+        private func makeContent() {
+            let label = NSTextField(labelWithString: NSLocalizedString("Folder path", comment: "Project folder path field"))
+            label.frame = NSRect(x: 20, y: 146, width: 520, height: 20)
+            field.maximumNumberOfLines = 1
+            field.cell?.isScrollable = true
+            field.placeholderString = "/Users/name/Projects/My Project"
+            field.setAccessibilityLabel(NSLocalizedString("Folder path", comment: "Project folder path field"))
+            let browse = NSButton(title: NSLocalizedString("Browse…", comment: "Browse for a Project folder"), target: self, action: #selector(browse))
+            browse.bezelStyle = .rounded
+            browse.frame = NSRect(x: 450, y: 112, width: 90, height: 32)
+            detail.frame = NSRect(x: 20, y: 62, width: 520, height: 44)
+            detail.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+            let cancel = NSButton(title: NSLocalizedString("Cancel", comment: ""), target: self, action: #selector(cancelOperation(_:)))
+            for (index, button) in [cancel, use].enumerated() {
+                button.bezelStyle = .rounded
+                button.frame = NSRect(x: 336 + index * 104, y: 16, width: 100, height: 32)
+            }
+            use.target = self
+            use.action = #selector(save)
+            use.keyEquivalent = "\r"
+            cancel.keyEquivalent = "\u{1b}"
+            defaultButtonCell = use.cell as? NSButtonCell
+            [label, field, browse, detail, cancel, use].forEach { contentView?.addSubview($0) }
+        }
+
+        func controlTextDidChange(_ notification: Notification) { updateInput() }
+
+        private func updateInput() {
+            validationRevision += 1
+            use.isEnabled = !field.stringValue.isEmpty
+            detail.textColor = .secondaryLabelColor
+            detail.stringValue = NSLocalizedString("Paste a full folder path, or choose Browse…", comment: "Project folder path instructions")
+        }
+
+        @objc private func browse() {
+            guard attachedSheet == nil else { return }
+            updateInput()
+            let panel = NSOpenPanel()
+            panel.title = title
+            panel.prompt = NSLocalizedString("Choose Folder", comment: "Project folder browser action")
+            panel.canChooseDirectories = true
+            panel.canChooseFiles = false
+            panel.allowsMultipleSelection = false
+            panel.canCreateDirectories = true
+            if let path = project.folderPath { panel.directoryURL = URL(fileURLWithPath: path, isDirectory: true) }
+            panel.beginSheetModal(for: self) { [weak self] response in
+                guard let self, self.isVisible, response == .OK, let url = panel.url,
+                      Projects.isEnabled, Projects.byId[self.project.id] === self.project else { return }
+                self.field.stringValue = url.path
+                self.updateInput()
+            }
+        }
+
+        @objc private func save() {
+            guard Projects.isEnabled, Projects.byId[project.id] === project else { close(); return }
+            let value = field.stringValue
+            validationRevision += 1
+            let revision = validationRevision
+            use.isEnabled = false
+            detail.textColor = .secondaryLabelColor
+            detail.stringValue = NSLocalizedString("Checking folder…", comment: "Project folder validation")
+            ProjectFolderActions.queue.async { [weak self] in
+                let path = ProjectFolderResolver.folderPath(value, homeDirectory: NSHomeDirectory()) { path in
+                    var directory: ObjCBool = false
+                    return FileManager.default.fileExists(atPath: path, isDirectory: &directory) && directory.boolValue
+                }
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, self.isVisible, self.validationRevision == revision else { return }
+                    self.complete(path)
+                }
+            }
+        }
+
+        private func complete(_ path: String?) {
+            guard let path else {
+                use.isEnabled = !field.stringValue.isEmpty
+                detail.textColor = .systemRed
+                detail.stringValue = NSLocalizedString("Enter the full path of an existing folder, or choose Browse…", comment: "Invalid Project folder path")
+                return
+            }
+            let project = project
+            let completion = completion
+            close()
+            DispatchQueue.main.async {
+                guard Projects.isEnabled, Projects.byId[project.id] === project else { return }
+                project.folderPath = path
+                completion()
+            }
+        }
     }
 
     static func open(_ tool: ProjectFolderTool, for project: Project, from window: NSWindow?, newWindow: Bool = false) {

@@ -32,6 +32,12 @@ buttons below the name. Unlinked Desktop labels provide Rename and Menu. Project
 as specified in `../projects/ProjectMenuResolverSpecs.md`. Native title-bar controls affect only their
 own window. Set-wide controls live under Menu → Desktop: <name>; Show All restores closed labels,
 while Bring All to Front respects closures.
+When a primary folder is configured, its full path appears between the name and action buttons as
+selectable, noneditable text. Long paths truncate in the middle visually; the text value and tooltip
+retain the complete path. Native text selection and Command-C copy the selection, and the field's
+Copy Folder Path context action copies the complete path. Dragging across the path selects text
+without moving the label. Folder changes update the existing row and window height through ordinary
+Project refreshes; a label without a configured folder has no empty path row.
 Menu opens the same live AltTab menu as the status icon with the clicked label's Project and Desktop
 context. It includes Current window, Project: <name>, Other Projects, Desktop: <name>, Settings, Help
 and Quit, works with the status icon hidden, and retains
@@ -90,6 +96,14 @@ at the tail, keeping the leading number visible. Fullscreen ordinals retain thei
 Embedded whitespace collapses to spaces for presentation; the complete name remains in the model,
 tooltip and accessible label. Native close and minimize buttons remain above the text. The
 small action buttons wrap into additional rows when needed.
+
+## Primary folder path runtime checks
+
+- Configure a primary folder and confirm its path appears below the Project name without overlapping buttons.
+- Select the path, press Command-A and Command-C, and paste into an editable field to verify the full path.
+- With a path wider than its row, verify the tooltip and Copy Folder Path context action retain the full path.
+- Drag to select part of the path and confirm the label window stays in place; ordinary background dragging still works.
+- Change or clear the configured folder and confirm the same label updates and adjusts its height without a restart.
 
 ## Test scenarios
 
