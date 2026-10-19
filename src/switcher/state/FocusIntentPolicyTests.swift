@@ -136,4 +136,61 @@ final class FocusIntentPolicyTests: XCTestCase {
         XCTAssertFalse(policy.mayProceed(pending), "an operation kept acting after a focus it cannot repair to")
         XCTAssertNil(policy.finish(pending, wid: 1, now: 0.3))
     }
+
+    func testWindowlessLaunchHasAGenerationWithoutARepairTarget() {
+        var policy = FocusIntentPolicy()
+        let pending = policy.supersede()
+        XCTAssertTrue(policy.mayProceed(pending))
+        XCTAssertNil(policy.current)
+    }
+
+    func testWindowAndDesktopChoicesShareOneGenerationSequence() {
+        var policy = FocusIntentPolicy()
+        let firstWindow = policy.request(wid: 1, pid: safari, now: 0)
+        let windowless = policy.supersede()
+        let desktop = policy.supersede()
+        let nextWindow = policy.request(wid: 2, pid: terminal, now: 0.2)
+        XCTAssertLessThan(firstWindow, windowless)
+        XCTAssertLessThan(windowless, desktop)
+        XCTAssertLessThan(desktop, nextWindow)
+        XCTAssertFalse(policy.mayProceed(firstWindow))
+        XCTAssertFalse(policy.mayProceed(windowless))
+        XCTAssertFalse(policy.mayProceed(desktop))
+        XCTAssertTrue(policy.mayProceed(nextWindow))
+    }
+
+    func testNewWindowChoiceCancelsDelayedWindowlessSuccessAndFallback() {
+        assertDelayedWindowlessCompletionsCancelled { intents in
+            _ = intents.request(wid: 2, pid: self.terminal)
+        }
+    }
+
+    func testNewDesktopChoiceCancelsDelayedWindowlessSuccessAndFallback() {
+        assertDelayedWindowlessCompletionsCancelled { intents in
+            intents.supersede()
+        }
+    }
+
+    private func assertDelayedWindowlessCompletionsCancelled(choosing next: (FocusIntents) -> Void) {
+        let intents = FocusIntents()
+        let pending = intents.supersede()
+        XCTAssertTrue(intents.mayProceed(pending))
+        let release = DispatchSemaphore(value: 0)
+        let completions = ["successful launch", "failed launch fallback"].map { outcome in
+            let completed = expectation(description: outcome)
+            DispatchQueue.global(qos: .userInitiated).async {
+                guard release.wait(timeout: .now() + 5) == .success else {
+                    XCTFail("launch completion was never released")
+                    completed.fulfill()
+                    return
+                }
+                XCTAssertFalse(intents.mayProceed(pending), "\(outcome) could reactivate the superseded app")
+                completed.fulfill()
+            }
+            return completed
+        }
+        next(intents)
+        completions.forEach { _ in release.signal() }
+        wait(for: completions, timeout: 5)
+    }
 }

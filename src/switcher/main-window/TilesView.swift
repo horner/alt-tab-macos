@@ -818,7 +818,7 @@ class TilesDocumentView: FlippedView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         // we only handle URLs (i.e. not text, image, or other draggable things)
-        registerForDraggedTypes([NSPasteboard.PasteboardType(kUTTypeURL as String)])
+        registerForDraggedTypes([.URL])
     }
 
     required init?(coder: NSCoder) {
@@ -848,9 +848,19 @@ class TilesDocumentView: FlippedView {
         let urls = (sender.draggingPasteboard.readObjects(forClasses: [NSURL.self]) as? [URL]) ?? []
         guard DragAndDropResolver.canDrop(hasTarget: target != nil, hasWindow: target?.window_ != nil, hasAppBundleURL: appUrl != nil, urlCount: urls.count),
               let appUrl else { return false }
-        let open = try? NSWorkspace.shared.open(urls, withApplicationAt: appUrl, options: [], configuration: [:])
-        if open != nil { App.hideUi() }
-        return open != nil
+        App.hideUi()
+        DispatchQueue.global(qos: .userInitiated).async {
+            NSWorkspace.shared.open(urls, withApplicationAt: appUrl, configuration: NSWorkspace.OpenConfiguration()) { application, error in
+                guard application == nil || error != nil else { return }
+                DispatchQueue.main.async {
+                    let alert = NSAlert()
+                    alert.messageText = NSLocalizedString("Could not open the dropped items", comment: "Drag and drop error")
+                    alert.informativeText = error?.localizedDescription ?? NSLocalizedString("The application could not be opened.", comment: "App picker error")
+                    alert.runModal()
+                }
+            }
+        }
+        return true
     }
 
     override func concludeDragOperation(_ sender: NSDraggingInfo?) {

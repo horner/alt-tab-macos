@@ -40,8 +40,13 @@ interleave; nothing else in `focus()` moves them apart.
   touch already covers it
 - a repair runs under the intent it repairs and allocates no generation, so it cannot supersede that intent
   or provoke a further repair
-- a focus this policy cannot re-assert — AltTab's own window, or a windowless app, which `Window.focus()`
-  reaches without a target wid — still supersedes what is pending, with nothing to repair to
+- a focus this policy cannot re-assert — a Desktop choice, AltTab's own window, or a windowless app —
+  advances the same generation sequence and supersedes pending work, with nothing to repair to.
+  `supersede()` returns its generation so asynchronous launch completion can use the shared gate.
+- windowless launches suppress NSWorkspace's automatic activation. Both a successful launch and its
+  failure fallback check the generation immediately before activating on the background completion queue.
+  A newer window, Desktop, own-window, or windowless-app choice invalidates that check; a delayed launch
+  cannot implicitly activate before the policy is consulted. The lock is never held over LaunchServices IPC.
 
 Un-minimizing (step 0) is the one step that runs before the operation has touched the screen, and a supersede
 caught there owes nothing. Counting the restore as a z-order move and repairing on that exit was tried and
@@ -79,3 +84,11 @@ current — bailing out of it would leak the clobber it exists to undo.
   second apart; a repair issued between them does not cover the raise, and the operation still owes one.
 - **testSupersedingWithoutATargetStopsPendingOpsAndOwesNoRepair** — the windowless-app and own-window routes:
   everything pending stops, and no wid is re-asserted because none was named.
+- **testWindowlessLaunchHasAGenerationWithoutARepairTarget** — an unsuperseded application launch can finish,
+  even though it provides no window to repair to.
+- **testWindowAndDesktopChoicesShareOneGenerationSequence** — window requests and targetless choices never
+  reuse generations, including consecutive targetless choices.
+- **testNewWindowChoiceCancelsDelayedWindowlessSuccessAndFallback** — a newer window request invalidates
+  both delayed launch outcomes through the thread-safe shell.
+- **testNewDesktopChoiceCancelsDelayedWindowlessSuccessAndFallback** — a Desktop's `supersede()` invalidates
+  both delayed launch outcomes even though no current window intent remains.

@@ -623,17 +623,23 @@ final class ProjectsMenu: NSObject {
         logMenu("reopenHistory", "requested", sender)
         let bundle = selection.pattern.bundleIdentifier
         DispatchQueue.global(qos: .userInitiated).async {
-            let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle)
-            let opened = app.flatMap { try? NSWorkspace.shared.open([url], withApplicationAt: $0, options: [], configuration: [:]) } != nil
-            DispatchQueue.main.async {
-                Logger.debug { "projects menu action=reopenHistory phase=completed browser=\(bundle) opened=\(opened)" }
-                guard !opened else { return }
-                let alert = NSAlert()
-                alert.messageText = NSLocalizedString("Could not reopen browser history", comment: "Project history error")
-                alert.informativeText = NSLocalizedString("Make sure the original browser is installed and try again.", comment: "Project history error")
-                alert.runModal()
+            guard let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) else {
+                DispatchQueue.main.async { historyReopened(bundle, opened: false) }
+                return
+            }
+            NSWorkspace.shared.open([url], withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration()) { application, error in
+                DispatchQueue.main.async { historyReopened(bundle, opened: application != nil && error == nil) }
             }
         }
+    }
+
+    private static func historyReopened(_ bundle: String, opened: Bool) {
+        Logger.debug { "projects menu action=reopenHistory phase=completed browser=\(bundle) opened=\(opened)" }
+        guard !opened else { return }
+        let alert = NSAlert()
+        alert.messageText = NSLocalizedString("Could not reopen browser history", comment: "Project history error")
+        alert.informativeText = NSLocalizedString("Make sure the original browser is installed and try again.", comment: "Project history error")
+        alert.runModal()
     }
 
     private static func historyAge(_ date: Date?) -> String {

@@ -1,6 +1,11 @@
 import Cocoa
 import ShortcutRecorder
 
+// The unit-test host has no application endpoint configuration in its Info.plist.
+enum Endpoints {
+    static let licenseApiBaseUrl = "https://license.invalid/v1/license"
+}
+
 // Stubs so ProBadgeView.swift compiles in the test target. The real Symbols
 // enum and NSImage.fromSymbol live in TileFontIconView.swift and
 // HelperExtensions.swift respectively, neither of which is in the test
@@ -96,11 +101,9 @@ func noAnimation<T: CALayer>(_ make: () -> T) -> T {
     return make()
 }
 
-// 10.13-safe stand-ins (the test target's deployment floor matches the app's 10.13). The real
-// extensions in HelperExtensions.swift `#available`-gate the 10.14+ system colors; the tests
-// never inspect these values, so plain 10.13-era colors suffice.
+// Test-only stand-ins; tests do not inspect the resolved colors.
 extension NSColor {
-    class var systemAccentColor: NSColor { .alternateSelectedControlColor }
+    class var systemAccentColor: NSColor { .selectedContentBackgroundColor }
     class var tableBorderColor: NSColor { .gridColor }
     class var tableBackgroundColor: NSColor { .windowBackgroundColor }
     class var tableSeparatorColor: NSColor { .gridColor }

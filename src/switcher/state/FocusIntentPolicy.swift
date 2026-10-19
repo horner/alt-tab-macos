@@ -35,6 +35,7 @@ struct FocusIntentPolicy {
     }
 
     private var nextGeneration = UInt64(1)
+    private var latestGeneration: FocusGeneration?
     private(set) var current: Intent?
     /// When each live operation LAST moved the z-order — every such call reports, so the newest stamp is
     /// the one the one-repair rule compares against. Absent means the operation bailed before touching
@@ -46,24 +47,29 @@ struct FocusIntentPolicy {
 
     /// A focus was asked for. It supersedes whatever was pending.
     mutating func request(wid: CGWindowID, pid: pid_t, now: TimeInterval) -> FocusGeneration {
+        let generation = advanceGeneration()
+        current = Intent(generation: generation, wid: wid, pid: pid, at: now)
+        return generation
+    }
+
+    private mutating func advanceGeneration() -> FocusGeneration {
         let generation = FocusGeneration(rawValue: nextGeneration)
         nextGeneration += 1
-        current = Intent(generation: generation, wid: wid, pid: pid, at: now)
+        latestGeneration = generation
         repairedAt = nil
         return generation
     }
 
-    /// A focus that this policy cannot re-assert took over: `Window.focus()` also lands on AltTab's own
-    /// window and on a windowless app, and neither is a wid this can front. Pending operations still have to
-    /// stop, so they are superseded with nothing to repair to.
-    mutating func supersede() {
+    /// Desktop, own-window, and windowless-app choices have no repairable target. Their generation still
+    /// cancels pending work and gates asynchronous windowless activation after launch completes.
+    @discardableResult mutating func supersede() -> FocusGeneration {
         current = nil
-        repairedAt = nil
+        return advanceGeneration()
     }
 
     /// May the operation stamped `generation` run its next step?
     func mayProceed(_ generation: FocusGeneration) -> Bool {
-        current?.generation == generation
+        latestGeneration == generation
     }
 
     /// The operation stamped `generation` moved the target in the z-order, by fronting it, making it key, or
@@ -104,7 +110,7 @@ class FocusIntents {
         withPolicy { $0.request(wid: wid, pid: pid, now: ProcessInfo.processInfo.systemUptime) }
     }
 
-    func supersede() {
+    @discardableResult func supersede() -> FocusGeneration {
         withPolicy { $0.supersede() }
     }
 

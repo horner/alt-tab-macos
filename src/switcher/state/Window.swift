@@ -384,11 +384,9 @@ class Window {
             altTabWindow.makeKeyAndOrderFront(nil)
             WindowThumbnails.previewSelectedIfNeeded()
         } else if self.isWindowlessApp || cgWindowId == nil {
-            FocusIntents.shared.supersede()
+            let generation = FocusIntents.shared.supersede()
             if let bundleUrl = application.bundleURL, self.isWindowlessApp {
-                if (try? NSWorkspace.shared.launchApplication(at: bundleUrl, configuration: [:])) == nil {
-                    application.runningApplication.activate(options: .activateAllWindows)
-                }
+                openWindowlessApp(bundleUrl, generation: generation)
             } else {
                 application.runningApplication.activate(options: .activateAllWindows)
             }
@@ -413,6 +411,19 @@ class Window {
             let generation = FocusIntents.shared.request(wid: cgWindowId!, pid: application.pid)
             BackgroundWork.accessibilityCommandsQueue.addOperation { [weak self] in
                 self?.applyFocus(generation, originSpaceId, originFrontPid)
+            }
+        }
+    }
+
+    private func openWindowlessApp(_ bundleUrl: URL, generation: FocusGeneration) {
+        let runningApplication = application.runningApplication
+        DispatchQueue.global(qos: .userInitiated).async {
+            let configuration = NSWorkspace.OpenConfiguration()
+            configuration.activates = false
+            NSWorkspace.shared.openApplication(at: bundleUrl, configuration: configuration) { application, error in
+                let target = error == nil ? application ?? runningApplication : runningApplication
+                guard FocusIntents.shared.mayProceed(generation) else { return }
+                target.activate(options: .activateAllWindows)
             }
         }
     }

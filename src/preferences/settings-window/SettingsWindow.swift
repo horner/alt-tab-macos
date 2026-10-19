@@ -488,13 +488,10 @@ class SettingsWindow: NSWindow {
         sidebarTableView.headerView = nil
         sidebarTableView.intercellSpacing = NSSize(width: 0, height: 2)
         sidebarTableView.rowHeight = 30
-        sidebarTableView.selectionHighlightStyle = .sourceList
         sidebarTableView.backgroundColor = .clear
         sidebarTableView.focusRingType = .none
         sidebarTableView.usesAlternatingRowBackgroundColors = false
-        if #available(macOS 11.0, *) {
-            sidebarTableView.style = .sourceList
-        }
+        sidebarTableView.style = .sourceList
         sidebarTableView.delegate = self
         sidebarTableView.dataSource = self
         let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(rawValue: "SettingsSidebarColumn"))
@@ -505,7 +502,7 @@ class SettingsWindow: NSWindow {
         parent.addSubview(sidebarScrollView)
         NSLayoutConstraint.activate([
             sidebarScrollView.topAnchor.constraint(equalTo: searchField.bottomAnchor, constant: 12),
-            // The scroll view sits flush to the sidebar edges. The `.sourceList` selection style
+            // The scroll view sits flush to the sidebar edges. The `.sourceList` table style
             // adds its own ~10pt internal inset for the row highlight pill, so the pill ends up
             // aligned with the search field (which itself is inset by `sidebarHorizontalPadding`
             // = 10pt). Insetting the scroll view here would compound that and push the highlight
