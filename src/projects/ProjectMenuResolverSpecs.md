@@ -3,7 +3,8 @@
 The menu bar provides Current window, Project: <name>, Other Projects and Desktop: <name>.
 Show Windows, Settings, license/account actions and Quit remain directly accessible, with
 maintenance under Help. Permission callouts still appear at the top when action is needed.
-Projects disabled hides the first three entries and label controls; desktop naming remains available.
+Projects disabled hides the first three entries and label controls; Project for This Desktop remains
+available and enables Projects when an owner is selected or created.
 
 Restore All Windows to Project Desktops is a top-level action after Other Projects. It is hidden
 with Projects disabled and disabled while a restoration is running or the movement bridge is
@@ -15,7 +16,7 @@ Project: <name> opens its window list directly, followed by Unassigned and Manag
 With no custom Project selected it reads Project: None, explains that no Project is active, and
 still provides unassigned windows and management. Other Projects lists every other custom Project
 as a peer, each opening its own window list. Empty Projects display No Open Windows; no other
-Projects displays No other projects. The Desktop title uses the contextual Desktop's name.
+Projects displays No other projects. The Desktop title uses its owning Project's name, or Desktop N when unowned.
 Browsing a branch does not activate a Project; selecting Show Window in its window submenu does. Window branches refresh
 when opened. History is available through the label button and Manage…, and populates on opening.
 
@@ -28,11 +29,12 @@ The captured object is held weakly and remains fixed throughout the menu present
 focus changes. Closing it disables the operation; a new window reusing its ID cannot replace it.
 
 Move to Project lists all custom Projects and checks current memberships. The sole existing owner
-is disabled, but a member of multiple Projects can move exclusively to any one of them. Choosing
+is disabled, as are Projects without an available Desktop. A member of multiple Projects can move
+exclusively to an assigned Project. Choosing
 a destination moves the captured window's membership after menu dismissal, removes its other
 custom memberships using the existing explicit-exclusion rules, and saves the assignment. It
-does not physically move the window to another Desktop or switch the active Project. Both the
-target window's live identity and destination Project are revalidated before the assignment.
+also moves it to the destination Project's Desktop without switching the active Project. Both the
+target window's live identity and destination Project/Desktop are revalidated before the assignment.
 
 Each live window opens an operations submenu with Show Window, Bring to This Desktop and Move to
 Project. Current window also offers Bring to This Desktop. Physical movement and its availability
@@ -41,14 +43,18 @@ when the enclosing menu opens, including direct Project Windows lists opened fro
 
 Project labels provide Project Windows, History, Rename, Add All Visible Windows and Menu buttons. The first two open
 their lists directly, with no intermediate menu. Rename opens the name prompt for that label's
-Project. Unlinked Desktop labels provide Rename and Menu; Rename opens desktop naming.
+Project. Unowned Desktop labels provide Rename and Menu; Rename opens Project for This Desktop.
+That panel selects one owner or creates a Project and edits its name. Replacing an owner preserves
+the prior Project's windows and history, leaving it unassigned. The panel explains that result.
+Desktop names are never saved independently from their owning Projects. Manage does not offer
+combining Projects sharing a Desktop, and Use Desktop (No Project) appears only for unowned Desktops.
 The native close/minimize controls affect one label. Set-wide Show, Bring to Front, Minimize
 and Close live under Menu → Desktop: <name> and retain their separate visibility semantics.
 
 Actions capture the clicked label's Project ID and Desktop UUID before focus changes and run
 on the next main-loop turn. They never fall back to the globally active Project. This applies
-to direct buttons and contextual Project/Desktop actions in the full Menu, including two linked
-Projects on one Desktop. A deleted Project invalidates its action. Menu-bar openings take a fresh
+to direct buttons and contextual Project/Desktop actions in the full Menu. Label identity is the
+Project ID, and each Desktop has at most one owner. A deleted Project invalidates its action. Menu-bar openings take a fresh
 snapshot of the active Project and current Desktop; a label menu's context lasts only for that
 presentation. Other Projects excludes the contextual Project, and each entry targets its own Project.
 Current window is independent of this Project context and retains the app window captured before opening.
@@ -100,16 +106,17 @@ Desktop snapshot. Menus opened from labels omit creation from the active window.
   hovering its branch must not do so.
 - Focus an app window, then open a label's Menu. Verify Current window still names that app window,
   including when automatic Project visibility is enabled. Check single, multiple and no memberships.
-  Move a window to another Project and verify exclusive assignment without changing Desktops.
+  Move a window to another Project and verify exclusive assignment and its destination Desktop.
 - Close the captured window or delete the destination while a move menu is open; neither action
   may assign another window or recreate the deleted Project.
 - Reopen a Project branch after a window opens or closes and verify its window list refreshes.
   Verify History populates only when opened and still supports focusing/reopening its entries.
-- With two Projects linked to one Desktop, open Windows/History and Rename on each label.
-  Verify each list and prompt belongs to the clicked label, including on the first click
-  when AltTab is inactive. Cancel naming to leave saved names unchanged.
+- Open Windows/History and Rename on labels on different Desktops. Verify each list and prompt
+  belongs to the clicked Project, including on the first click when AltTab is inactive.
+  Cancel naming to leave saved names and desktop assignments unchanged. Replace the owner through
+  Project for This Desktop and verify the old Project's history and windows remain available.
 - Verify Add All Visible Windows is directly available on linked labels and under Current window,
-  and absent from Manage…. With two Projects on one Desktop, invoke the label button and verify
+  and absent from Manage…. Invoke the label button while another Project is active and verify
   the conflict prompt names that label's Project. Cancel to keep membership unchanged. Check that
   covered windows are included, while minimized, hidden and label windows are excluded.
 - In Add Windows, select multiple rows, scroll away/back and verify checkbox states persist.
@@ -119,8 +126,8 @@ Desktop snapshot. Menus opened from labels omit creation from the active window.
   restores individual closures while Bring All to Front preserves them.
 
 Open Project Folder opens the selected Project's files from its current/other Project
-menu, a label's Project Windows list or the Attic. The Desktop menu instead reveals
-the shared desktops.yaml through Show Desktops File in Finder. Each Project action uses
+menu, a label's Project Windows list or the Attic. The Desktop menu edits its Project ownership
+through Project for This Desktop. Each Project action uses
 the captured Project ID rather than whichever Project is active when the action runs.
 The main menu and Projects settings also provide Open Projects Folder and Open Diagnostics
 Folder, including when Projects is disabled. Folder resolution and Finder opening are

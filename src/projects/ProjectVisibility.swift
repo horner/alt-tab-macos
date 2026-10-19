@@ -18,10 +18,12 @@ enum ProjectVisibility {
         guard observer == nil else { return }
         saved = CachedUserDefaults.json("projectsAutoMinimizedWindows", [ProjectWindowIdentity].self)
         enabled = isEnabled
-        observer = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in
-            guard enabled != isEnabled else { return }
-            enabled = isEnabled
-            selectionChanged()
+        observer = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: nil) { _ in
+            DispatchQueue.main.async {
+                guard enabled != isEnabled else { return }
+                enabled = isEnabled
+                selectionChanged()
+            }
         }
         refresh()
     }

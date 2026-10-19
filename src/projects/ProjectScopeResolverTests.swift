@@ -2,7 +2,8 @@ import XCTest
 
 final class ProjectScopeResolverTests: XCTestCase {
     private func shown(project: Bool = true, current: Bool = false, member: Bool = true, space: UInt64 = 2,
-                       screen: Bool = false, minimized: Bool = false, phantom: Bool = false, unassigned: Bool = false) -> Bool {
+                       screen: Bool = false, minimized: Bool = false, phantom: Bool = false, unassigned: Bool = false,
+                       ownsCurrentDesktop: Bool = false) -> Bool {
         let scope = ProjectScopeResolver.resolve(hasActiveProject: project, currentOnly: current,
             visibleOnly: true, nonVisibleOnly: false, screenOnly: true, visibleSpaceIds: [1, 3], currentSpaceId: 1)
         let window = WindowState(id: "w", isPhantom: phantom, isWindowlessApp: false, isFullscreen: false,
@@ -12,7 +13,7 @@ final class ProjectScopeResolverTests: XCTestCase {
         let local = ProjectMembershipResolver.unassignedOnDesktop(spaceId: 1,
             windowSpaces: ["w": [space]], assigned: unassigned ? [] : ["w"])
         let members = ProjectMembershipResolver.activeMembers(isEnabled: project, activeIsCustom: project,
-            members: member ? ["w"] : [], unassignedOnDesktop: local)
+            members: member ? ["w"] : [], unassignedOnDesktop: local, ownsCurrentDesktop: ownsCurrentDesktop)
         return WindowFilterResolver.shouldShow(window, app, hideMinimized: true,
             onlyVisibleSpaces: scope.visibleOnly, onlyNonVisibleSpaces: scope.nonVisibleOnly,
             onlyPreferredScreen: scope.screenOnly, visibleSpaceIds: scope.spaceIds,
@@ -48,15 +49,22 @@ final class ProjectScopeResolverTests: XCTestCase {
     }
 
     func testUnassignedCurrentDesktopWindowPassesProjectFilter() {
-        XCTAssertTrue(shown(member: false, space: 1, unassigned: true))
-        XCTAssertFalse(shown(member: false, space: 2, unassigned: true))
-        XCTAssertFalse(shown(member: false, space: 1, unassigned: false))
+        XCTAssertTrue(shown(member: false, space: 1, unassigned: true, ownsCurrentDesktop: true))
+        XCTAssertFalse(shown(member: false, space: 2, unassigned: true, ownsCurrentDesktop: true))
+        XCTAssertFalse(shown(member: false, space: 1, unassigned: false, ownsCurrentDesktop: true))
+    }
+
+    func testNonownerScopeDoesNotIncludeUnassignedDesktopWindows() {
+        XCTAssertFalse(shown(member: false, space: 1, unassigned: true, ownsCurrentDesktop: false))
+        XCTAssertFalse(shown(current: true, member: false, space: 1, screen: true, unassigned: true, ownsCurrentDesktop: false))
+        XCTAssertTrue(shown(member: true, space: 1, ownsCurrentDesktop: false))
+        XCTAssertTrue(shown(member: true, space: 2, ownsCurrentDesktop: false))
     }
 
     func testUnassignedFallbackStillHonorsOrdinaryFilters() {
-        XCTAssertFalse(shown(member: false, space: 1, minimized: true, unassigned: true))
-        XCTAssertFalse(shown(member: false, space: 1, phantom: true, unassigned: true))
-        XCTAssertFalse(shown(current: true, member: false, space: 1, screen: false, unassigned: true))
-        XCTAssertTrue(shown(current: true, member: false, space: 1, screen: true, unassigned: true))
+        XCTAssertFalse(shown(member: false, space: 1, minimized: true, unassigned: true, ownsCurrentDesktop: true))
+        XCTAssertFalse(shown(member: false, space: 1, phantom: true, unassigned: true, ownsCurrentDesktop: true))
+        XCTAssertFalse(shown(current: true, member: false, space: 1, screen: false, unassigned: true, ownsCurrentDesktop: true))
+        XCTAssertTrue(shown(current: true, member: false, space: 1, screen: true, unassigned: true, ownsCurrentDesktop: true))
     }
 }

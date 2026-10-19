@@ -1,10 +1,11 @@
 # ProjectReattachResolver
 
-Ordinary new windows inherit the custom Project captured when they were discovered, regardless
-of their initial title or matching history. Creation markers, discovery time and the active Project
-are captured before asynchronous work; actual Desktop membership is captured after admission in
-the next main-queue turn. Switching Projects while identity or URL reads run cannot change the
-creation destination. Existing assignments and explicit removals take priority.
+Ordinary new windows inherit the Project owning their creation Desktop, regardless of their
+initial title, matching history, or an explicitly selected unassigned Project. Creation markers,
+discovery time and the Desktop owner are captured before asynchronous work; actual Desktop
+membership is captured after admission in the next main-queue turn. Assignment rechecks that the
+same Project still owns that Desktop and that the window remains there. Switching selections
+cannot change the creation destination. Existing assignments and explicit removals take priority.
 
 The owning app must have launched at least 30 seconds before discovery for a creation marker to
 count as an ordinary new window. Startup discovery and re-admission use restoration instead.
@@ -59,3 +60,5 @@ creation/startup boundaries, stable live ownership, shared identity ownership, e
 ambiguous/dismissed candidates, confirmation persistence/conflicts, and stale review evidence.
 ProjectWindowIdentityTests covers PID/window-ID reuse; ProjectMenuResolverTests covers weak original
 window targets, closed windows and replacement objects.
+
+- `testUnassignedSelectionOrChangedOwnerCannotClaimNewWindow`

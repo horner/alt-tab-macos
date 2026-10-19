@@ -1,7 +1,9 @@
 # ProjectMembershipResolver
 
 A disabled feature or an active Desktop returns `nil`, leaving all existing window filters in charge.
-An enabled custom Project returns its members plus live, unassigned windows on the current Desktop.
+An enabled custom Project returns its explicit members. Only the Project owning the current Desktop
+also includes live, unassigned windows on that Desktop. Selecting an unassigned Project or one whose
+Desktop is missing or elsewhere never borrows or captures windows from the current Desktop.
 Windows assigned to another custom Project and unassigned windows on other Desktops are not added.
 The current Desktop is the single active Space, not every visible Space across displays. Empty or
 unavailable Space information cannot establish local membership; a later Space update can.
@@ -15,8 +17,8 @@ The label Show/Hide preference remains independent. Ordinary window filters stil
 Linked Desktop assignment is retried after discovery, late Space updates and browser URL restoration.
 AltTab's own windows use the same off-main Space query as other ordinary windows; only adopted inactive
 tabs deliberately start without a Space. Switcher rendering uses cached membership immediately, then
-defers assignment of eligible local windows to the active Project. Deferred work rechecks the active
-Project, current Space and live ownership; identity restoration must finish first so a still-pending
+defers assignment of eligible local windows only to the active Project that owns the current Desktop.
+Deferred work rechecks the active Project, current Space, and Desktop ownership; identity restoration must finish first so a still-pending
 saved assignment cannot be overwritten. Unique saved owners and explicit exclusions are respected;
 ambiguous history requires a user choice in the restoration notification. Pending metadata and
 explicitly declined restoration cannot be captured by the linked or active Project.
@@ -29,9 +31,11 @@ assignment conflict prompt. Add and Keep in Both change membership without movin
 Desktop movement runs after dismissal and rechecks the original live objects, target membership,
 Project identity and unchanged home UUID. It uses the verified, non-focusing move path in
 [WindowDesktopMoveSpecs.md](../spaces/WindowDesktopMoveSpecs.md), without selecting a Project or
-switching the active Desktop. Already-home windows need no move. Missing home Desktops,
-unsupported windows and unconfirmed moves retain their new membership and produce one
-non-activating notice listing affected windows. Assignment moves are independent of bulk restore.
+switching the active Desktop. Already-home windows need no move. Move to Project is disabled in
+the window menu when that Project's Desktop is unavailable. The assignment conflict prompt can
+still move membership to an unassigned Project and explains that the windows stay in place.
+Assignment checks Desktop availability again after dismissal. Unsupported windows and unconfirmed
+moves retain their new membership and produce one non-activating notice listing affected windows. Assignment moves are independent of bulk restore.
 
 ## Test scenarios
 
@@ -42,6 +46,8 @@ non-activating notice listing affected windows. Assignment moves are independent
 - **testEmptyCustomKeepsNothing** — an empty custom Project returns an empty set and excludes all candidates.
 - **testWindowMayBelongToSeveralProjects** — overlapping Projects retain independent member sets.
 - **testCustomIncludesMembersAndUnassignedDesktopWindows** — combines remote members with local unassigned windows without borrowing another Project's members.
+- **testSelectingUnassignedOrElsewhereProjectDoesNotBorrowCurrentDesktopWindows** — selecting a Project without the current Desktop preserves only its explicit members.
+- **testLosingDesktopOwnershipRemovesFallbackButPreservesExplicitMembers** — reassignment stops fallback visibility without changing manual shared memberships.
 - **testLateSpaceInformationMakesUnassignedWindowEligible** — an empty initial Space cannot strand a window once its Desktop is known.
 - **testOtherVisibleDesktopDoesNotCountAsCurrentDesktop** — another display's visible Space is not the current Desktop; an all-Spaces window includes it.
 - **testRepairedMembershipKeepsWindowVisible** — deferred assignment preserves the visible candidate set.

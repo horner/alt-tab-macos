@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-AltTab is a macOS window switcher app that brings Windows-style Alt+Tab functionality to macOS. It's written in Swift using AppKit (not SwiftUI) and targets macOS 10.12+.
+AltTab is a macOS window switcher app that brings Windows-style Alt+Tab functionality to macOS. It's written in Swift using AppKit (not SwiftUI) and targets macOS 12.0+.
 
 ## Build & Run
 

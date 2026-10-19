@@ -1,66 +1,42 @@
-# ProjectDesktopResolver
+# Project Desktop ownership
 
-A Desktop may link several Projects. Removing a Desktop carries all of its linked Projects to a
-surviving Desktop temporarily, appending them after its resident Projects without merging their memberships.
-ProjectLifecycleResolverSpecs.md defines the subsequent Keep, Close or Combine choice.
-Project identities, names, history, label identities and user placements survive. Removing a Desktop
-without linked Projects does not create a Project or show a Keep, Close or Combine prompt, regardless
-of its name or application windows. An unlinked destination Desktop does not become a resident Project;
-only the incoming linked Projects are added.
+A Project owns at most one Desktop, and each Desktop has at most one owner. The Project's
+`homeSpaceUuid` is the only saved assignment; an empty value means explicitly unassigned.
+Desktop objects are runtime adapters for the current macOS topology. Their linked Project IDs
+are computed from the owner, and their names are never a separate authority.
 
-The actual destination of a label window takes priority, followed by the destination receiving the
-most previously local member windows. Empty projects use the nearest surviving predecessor, then
-successor, on the same display. A vanished display is not a deleted Desktop; its links are retained.
-Fullscreen exits do not merge Projects. Invalid topology reads retain the last valid state.
+An explicit ownership change clears the displaced Project's assignment without deleting the
+Project or changing its window membership, history, exclusions, name, or identity. Selecting
+no owner clears the prior owner's home assignment. Assigning a Project to another Desktop
+moves that assignment; it cannot leave a second reverse link behind. Cancelable creation
+creates an unassigned Project first and assigns it only when the user accepts.
 
-Moving a Project label window to another live Desktop transfers that Project's link to the actual
-destination. The source keeps its other claims, and the destination keeps its existing claims ahead
-of the arrival. The Project retains its name, members, exclusions, history and label identity. Its
-label, numbered button and Desktop listing use the new link. If the selected Project leaves the
-current Desktop, Follow Desktop selects the remaining first claimant or the Desktop itself.
+Removing or disconnecting a Desktop does not transfer its ownership to any neighboring Desktop.
+The Project retains its missing Desktop UUID, history, windows, and identity, remains available
+without a Desktop number, and can be reassigned explicitly. If the exact Desktop returns, its
+owner is derived again from the saved assignment. Reopening an archived Project on an occupied
+Desktop keeps it unassigned until an explicit ownership change.
 
-WindowServer membership notifications trigger a coalesced topology and label-location read even
-when Project windows are hidden from the switcher. Mission Control exit and Desktop arrival also
-recheck the live label windows. Reads run on the CGS scheduler. Empty, ambiguous, unknown and
-fullscreen destinations do not relink Projects. A removed source Desktop uses the separate merge
-rules above. Observations from an in-flight or superseded app assignment, retired window or edited
-Project link cannot override the newer state. Labels without a linked Project return to their own
-Desktop when moved; they do not create a Project by moving.
+Every Desktop label, title, menu name, and Project number derives from the same owner and current
+Desktop UUID. A Project label uses the Project ID as its window identity. An unowned Desktop is
+named `Desktop N`. Refreshes update existing labels after name or assignment changes. WindowServer
+placement is reconciled to ownership; dragging or stale placement cannot edit saved ownership.
 
-Multiple links and label identities persist. Legacy single links load as one-element lists. The
-Desktop naming panel edits all links without activating AltTab or focusing windows on other Desktops.
-Save dismisses the panel before applying changes and opens or restores every Project label on the
-edited Desktop. Cancel, Escape and closing the panel make no changes. If the Desktop was deleted
-while editing, Save is ignored. Each linked Project has a separate label window. The
-Space switcher and Desktop context show all linked names. Automatic arrival on a Desktop selects its first linked Project (FIFO) when Desktop following is
-enabled. Ordinary topology/name refreshes preserve an explicit Project selection, so secondary
-Projects remain usable until the next Desktop change. Explicit Back navigation retains its saved
-Project restoration; disabling Desktop following also keeps an explicit Project selected. Unassigned
-windows join that selected/default Project, without being copied into every Project on the Desktop.
+Desktop arrival selects its owner when Desktop following is enabled. An ordinary topology or
+name refresh preserves an explicitly selected Project, including an unassigned one. Explicit Back
+navigation retains its saved Project selection. Disabling Desktop following keeps the explicitly
+selected Project. Unassigned application windows may join the Desktop owner under the normal
+membership rules. Selecting a Project without the current Desktop never captures that Desktop's
+windows; explicit and shared window memberships remain available.
 
 ## Tests
 
-- `testMovedLabelUsesItsActualDesktopWhileBothDesktopsRemain`
-- `testUnchangedAndAmbiguousLabelLocationsDoNotRelink`
-- `testLabelRelocationDoesNotOverrideDesktopDeletionOrDisconnection`
-- `testFullscreenLocationsDoNotRelinkProjects`
-- `testMovingALabelToAnotherConnectedDisplayUpdatesItsDesktop`
-- `testLabelFollowsItsActualDestinationBeforeMemberHistory`
-- `testClosedLabelUsesSurvivingMemberWindows`
-- `testEmptyProjectUsesNearestSurvivingDesktopOnSameDisplay`
-- `testDisplayDisconnectionDoesNotMergeItsProjects`
-- `testFullscreenExitAndUnchangedDesktopDoNotMerge`
-- `testMergePreservesEveryProjectWithoutDuplicates`
-- `testRepeatedDesktopClosuresKeepAllProjects`
-
-The link list is a claim queue: saving existing links preserves their order and appends newly linked
-Projects. Removing the first promotes the next; relinking a removed Project appends it. Desktop
-merges append incoming claims after resident claims. The strip uses this same queue to break ties
-between Projects with the same Desktop number.
-
-- `testSavingLinksKeepsClaimOrderInsteadOfCheckboxOrder`
-- `testRemovingFirstClaimPromotesNextAndRelinkingAppends`
-- `testDesktopArrivalSelectsFirstClaimEvenWhenAnotherProjectWasSelected`
+- `testAssigningOwnerClearsDisplacedAssignmentAndPreservesOtherProjects`
+- `testUnassigningDesktopClearsOwnerHome`
+- `testExplicitAssignmentRepairsAllConflictingOwners`
+- `testInvalidAssignmentsDoNotUnassignExistingOwner`
+- `testReassigningCurrentOwnerIsIdempotent`
+- `testDesktopArrivalSelectsOwnerEvenWhenAnotherProjectWasSelected`
 - `testRoutineRefreshPreservesAnExplicitProjectChoice`
 - `testDesktopFollowingCanStillBeDisabled`
-- `testStartupAndDeletedSelectionUseFirstClaimOrDesktop`
+- `testStartupAndDeletedSelectionUseOwnerOrDesktop`

@@ -211,6 +211,90 @@ final class ProjectFileStoreTests: XCTestCase {
         }
     }
 
+    func testOwnershipSchemaRoundTripsExplicitlyUnassignedAndArchivedProjects() throws {
+        var entry = project()
+        entry.homeSpaceUuid = ""
+        entry.desktopOwnershipVersion = 1
+        for closed in [false, true] {
+            entry.isClosed = closed
+            let text = try ProjectYAML.render(ProjectFileDocument(entry: entry, order: 3).node())
+            let decoded = try ProjectYAML.parse(text).0
+            XCTAssertEqual(decoded.entry.homeSpaceUuid, "")
+            XCTAssertEqual(decoded.entry.desktopOwnershipVersion, 1)
+            XCTAssertEqual(decoded.entry.isClosed, closed)
+            XCTAssertEqual(decoded.entry.memberPatterns, ProjectFileDocument.durable(entry).memberPatterns)
+            XCTAssertEqual(decoded.order, 3)
+            XCTAssertThrowsError(try ProjectYAML.parse(text.replacingOccurrences(of: "desktopOwnershipVersion: 1", with: "desktopOwnershipVersion: 99")))
+            XCTAssertThrowsError(try ProjectYAML.parse(text.replacingOccurrences(of: "desktopOwnershipVersion: 1\n", with: "")))
+        }
+        var invalidDesktop = desktop()
+        invalidDesktop.homeSpaceUuid = ""
+        invalidDesktop.spaceUuid = ""
+        invalidDesktop.desktopOwnershipVersion = 1
+        XCTAssertThrowsError(try ProjectYAML.parse(ProjectYAML.render(ProjectFileDocument(entry: invalidDesktop, order: 0).node())))
+    }
+
+    func testOwnershipMigrationSurvivesFileSaveAndRelaunchWithConflictsUnassigned() throws {
+        var losing = project("Other")
+        losing.id = "other-id"
+        losing.homeSpaceUuid = "space-1"
+        let saved = [desktop(), project(), losing]
+        XCTAssertTrue(store.load(legacy: saved, migrated: false), store.errors.description)
+        let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership(store.entries)
+        store.save(migrated)
+        XCTAssertTrue(store.errors.isEmpty, store.errors.description)
+        let restarted = ProjectFileStore(root: root)
+        XCTAssertTrue(restarted.load(legacy: saved, migrated: true), restarted.errors.description)
+        XCTAssertEqual(restarted.entries.first { $0.id == "stable-id" }?.homeSpaceUuid, "space-1")
+        XCTAssertEqual(restarted.entries.first { $0.id == "other-id" }?.homeSpaceUuid, "")
+        XCTAssertNil(restarted.entries.first { $0.kind == "desktop" }?.name)
+        XCTAssertTrue(restarted.entries.allSatisfy { $0.desktopOwnershipVersion == 1 })
+        XCTAssertEqual(ProjectLifecycleResolver.normalizingDesktopOwnership(restarted.entries), restarted.entries)
+    }
+
+    func testInterruptedOwnershipMigrationKeepsExplicitlyUnassignedConflictAfterRelaunch() throws {
+        var losing = project("Other")
+        losing.id = "other-id"
+        var oldDesktop = desktop()
+        oldDesktop.linkedProjectIds = ["stable-id", losing.id]
+        let saved = [oldDesktop, project(), losing]
+        XCTAssertTrue(store.load(legacy: saved, migrated: false), store.errors.description)
+        let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership(store.entries)
+        store.save(migrated.map { $0.kind == "desktop" ? oldDesktop : $0 })
+        XCTAssertTrue(store.errors.isEmpty, store.errors.description)
+        let restarted = ProjectFileStore(root: root)
+        XCTAssertTrue(restarted.load(legacy: [], migrated: true), restarted.errors.description)
+        let resumed = ProjectLifecycleResolver.normalizingDesktopOwnership(restarted.entries)
+        XCTAssertEqual(resumed.first { $0.id == "stable-id" }?.homeSpaceUuid, "space-1")
+        XCTAssertEqual(resumed.first { $0.id == losing.id }?.homeSpaceUuid, "")
+        XCTAssertEqual(resumed.first { $0.id == losing.id }?.memberPatterns, ProjectFileDocument.durable(losing).memberPatterns)
+        XCTAssertEqual(resumed.count, saved.count)
+        restarted.save(resumed)
+        XCTAssertTrue(restarted.errors.isEmpty, restarted.errors.description)
+    }
+
+    func testInterruptedNamedDesktopMigrationResumesWithOnePreservedProject() throws {
+        var oldDesktop = desktop("Desktop notes")
+        oldDesktop.linkedProjectIds = []
+        oldDesktop.windowHistory = project().memberPatterns
+        XCTAssertTrue(store.load(legacy: [oldDesktop], migrated: false), store.errors.description)
+        let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership(store.entries)
+        store.save(migrated.map { $0.kind == "desktop" ? oldDesktop : $0 })
+        XCTAssertTrue(store.errors.isEmpty, store.errors.description)
+        let restarted = ProjectFileStore(root: root)
+        XCTAssertTrue(restarted.load(legacy: [], migrated: true), restarted.errors.description)
+        let resumed = ProjectLifecycleResolver.normalizingDesktopOwnership(restarted.entries)
+        XCTAssertEqual(resumed.filter { $0.kind == "custom" }.count, 1)
+        XCTAssertEqual(resumed.first { $0.kind == "custom" }?.id, "project-desktop-space-1")
+        XCTAssertEqual(resumed.first { $0.kind == "custom" }?.name, oldDesktop.name)
+        XCTAssertEqual(resumed.first { $0.kind == "custom" }?.windowHistory, ProjectFileDocument.durable(oldDesktop).windowHistory)
+        restarted.save(resumed)
+        XCTAssertTrue(restarted.errors.isEmpty, restarted.errors.description)
+        let final = ProjectFileStore(root: root)
+        XCTAssertTrue(final.load(legacy: [], migrated: true), final.errors.description)
+        XCTAssertEqual(ProjectLifecycleResolver.normalizingDesktopOwnership(final.entries), final.entries)
+    }
+
     func testArchiveDeleteAndRelaunchKeepProjectFolderAndUserFiles() throws {
         var entry = project()
         XCTAssertTrue(store.load(legacy: [entry], migrated: false))

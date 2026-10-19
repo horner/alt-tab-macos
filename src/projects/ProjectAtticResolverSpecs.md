@@ -12,9 +12,9 @@ Desktop. Cancel changes nothing. Restore keeps the original Project identity and
 adds its label and Desktop claim, and selects it if that Desktop is still current. A removed
 or fullscreen destination leaves the Project in the Attic. Projects already restored elsewhere
 and disabled Projects cannot trigger a stale restore or browser launch.
-Every Desktop label also offers Restore from Attic…, including Unnamed Space. Its menu captures
+Every Desktop label also offers Restore from Attic…, including unowned Desktop N labels. Its menu captures
 the clicked label's Desktop UUID and parent window; a later active-Desktop change cannot substitute
-another restore destination. Rename… remains available beside it for naming the Desktop.
+another restore destination. Rename… remains available beside it for naming or assigning the owning Project.
 
 Still-open windows must match the saved window ID, PID and process launch date, have no other
 active Project owner and pass the ordinary assignment eligibility checks. They reattach when
@@ -69,3 +69,7 @@ debug logging, production state showed that original only in the Attic and no D1
 label, Rename opened its naming panel (cancelled without saving); Restore from Attic opened the
 original Project's preview explicitly targeting Desktop 13. Restoration was left for the user to
 confirm, so no browser page or application window was reopened or moved during this check.
+
+Explicit restoration assigns the Project as the sole Desktop owner. A displaced Project remains open
+without an assignment and retains its windows and history. Lower-level restoration into an occupied
+Desktop leaves the restored Project unassigned until an explicit ownership operation.

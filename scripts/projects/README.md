@@ -189,9 +189,10 @@ brew update
 brew upgrade --cask horner/projects/alttab-projects
 ```
 
-Quit other AltTab variants before opening AltTabProjects, grant Accessibility and Screen Recording
-access, and activate Pro normally. First-run naming, Projects membership, Desktop navigation, and
-relaunch behavior require hands-on testing. Settings → General offers Export, Reset and Import for
-testing defaults while retaining a backup. The release keeps the existing licensing behavior and
-its distinct identity from AltTabDebug. Minimum macOS and Intel runtime behavior need a real test
-matrix; universal packaging alone does not establish runtime compatibility.
+Quit other AltTab variants before opening AltTabProjects and grant Accessibility and Screen Recording
+access. The current source enables all features without activation and hides purchase UI; existing
+stored license data remains untouched. First-run naming, Projects membership, Desktop navigation,
+and relaunch behavior require hands-on testing. Settings → General offers Export, Reset and Import
+for testing defaults while retaining a backup. Preserve the established signing and bundle identity.
+Minimum macOS and Intel runtime behavior need a real test matrix; universal packaging alone does
+not establish runtime compatibility.

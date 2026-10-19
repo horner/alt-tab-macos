@@ -1,6 +1,36 @@
 import XCTest
 
 final class SpaceLabelResolverTests: XCTestCase {
+    func testUnownedDesktopUsesItsNumberWithoutUnnamedPlaceholder() {
+        let space = SpaceLabelResolver.Space(id: 4, uuid: "desktop", displayIdentifier: "display", desktopNumber: 2, ordinal: 2)
+        let label = SpaceLabelResolver.Label(space: space, name: nil)
+        XCTAssertEqual(label.title, "Desktop 2")
+        XCTAssertEqual(label.text, "Desktop 2")
+    }
+
+    func testUnownedFullscreenUsesSpaceOrdinal() {
+        let space = SpaceLabelResolver.Space(id: 9, uuid: "fullscreen", displayIdentifier: "display", desktopNumber: 0, ordinal: 3)
+        let label = SpaceLabelResolver.Label(space: space, name: nil)
+        XCTAssertEqual(label.title, "Fullscreen · Space 3")
+        XCTAssertEqual(label.text, "Fullscreen · Space 3")
+    }
+
+    func testOwnedLabelTitleAndTextUseOneProjectName() {
+        let space = SpaceLabelResolver.Space(id: 4, uuid: "desktop", displayIdentifier: "display", desktopNumber: 2, ordinal: 2)
+        let label = SpaceLabelResolver.Label(space: space, name: "Research", identity: "project")
+        XCTAssertEqual(label.title, "Research · Desktop 2")
+        XCTAssertEqual(label.text, "2 · Research")
+        XCTAssertEqual(label.id, "project")
+    }
+
+    func testPlacementRepairRejectsWrongEmptyAndMultipleDesktops() {
+        XCTAssertTrue(SpaceLabelResolver.needsPlacementRepair(actual: [3], expected: 4))
+        XCTAssertTrue(SpaceLabelResolver.needsPlacementRepair(actual: [], expected: 4))
+        XCTAssertTrue(SpaceLabelResolver.needsPlacementRepair(actual: [3, 4], expected: 4))
+        XCTAssertFalse(SpaceLabelResolver.needsPlacementRepair(actual: [4], expected: 4))
+        XCTAssertFalse(SpaceLabelResolver.needsPlacementRepair(actual: nil, expected: 4))
+    }
+
     func testLaunchOpensExistingAndNewLabelsBehindApplicationWindows() {
         var visibility = SpaceLabelResolver.Visibility()
         visibility.openOnLaunch()

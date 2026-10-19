@@ -39,7 +39,7 @@ final class ProjectsSheet: SheetWindow {
         let groups = StackView([], .vertical)
         self.groups = groups
         if preferencesObserver == nil {
-            preferencesObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            preferencesObserver = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: nil) { [weak self] _ in
                 DispatchQueue.main.async { self?.refreshWarning() }
             }
         }

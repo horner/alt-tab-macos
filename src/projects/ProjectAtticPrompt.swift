@@ -29,13 +29,17 @@ final class ProjectAtticPrompt: NSObject, NSTableViewDataSource, NSTableViewDele
         alert.informativeText = pages.isEmpty
             ? NSLocalizedString("Your Project will return to this Desktop with its name and history. Windows that have been closed must be reopened in their apps.", comment: "Project Attic restoration without browser pages")
             : NSLocalizedString("Your Project’s name and history are saved. Choose any browser pages to reopen below. Browsers decide whether pages open as tabs or windows; other app sessions must be reopened in those apps.", comment: "Project Attic restoration explanation")
+        let owner = Projects.owner(for: desktopUuid)
+        if let owner {
+            alert.informativeText += "\n\n" + String(format: NSLocalizedString("%@ will stay open without a Desktop. Its windows and history are kept.", comment: "Restoring a replacement Desktop owner"), owner.resolvedName)
+        }
         alert.accessoryView = accessory()
         alert.addButton(withTitle: NSLocalizedString("Restore Project", comment: "Restore from Project Attic"))
         alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "")).keyEquivalent = "\u{1b}"
         ProjectPrompt.present(alert, from: parent) { response in
             guard response == .alertFirstButtonReturn else { return }
             let move = self.bringWindows.state == .on
-            DispatchQueue.main.async { self.restore(bringWindows: move, from: parent) }
+            DispatchQueue.main.async { self.restore(bringWindows: move, replacing: owner?.id, from: parent) }
         }
     }
 
@@ -109,13 +113,22 @@ final class ProjectAtticPrompt: NSObject, NSTableViewDataSource, NSTableViewDele
         if sender.state == .on { selected.insert(key) } else { selected.remove(key) }
     }
 
-    private func restore(bringWindows: Bool, from parent: NSWindow?) {
+    private func restore(bringWindows: Bool, replacing ownerId: String?, from parent: NSWindow?) {
         guard Projects.isEnabled, Projects.closedProjects.contains(entry) else { return }
+        if Projects.owner(for: desktopUuid)?.id != ownerId,
+           let desktop = Projects.spaces.first(where: { $0.uuid == desktopUuid && $0.desktopNumber > 0 }) {
+            present(desktopNumber: desktop.desktopNumber, from: parent)
+            return
+        }
         guard let project = Projects.reopen(id: entry.id, on: desktopUuid, bringWindows: bringWindows) else {
             let alert = NSAlert()
             alert.messageText = NSLocalizedString("That Desktop is no longer available", comment: "Project Attic missing destination")
             alert.informativeText = NSLocalizedString("Your Project is still in the Project Attic. Restore it from another Desktop.", comment: "Project Attic destination recovery")
             ProjectPrompt.present(alert, from: parent) { _ in }
+            return
+        }
+        guard Projects.link(Projects.forSpace(uuid: desktopUuid), to: project) else {
+            Projects.close(project, snapshot: entry)
             return
         }
         let patterns = ProjectAtticResolver.pagesToOpen(in: entry, selected: selected, alreadyOpen: Self.openPageKeys())

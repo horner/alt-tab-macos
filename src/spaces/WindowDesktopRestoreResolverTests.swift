@@ -21,6 +21,16 @@ final class WindowDesktopRestoreResolverTests: XCTestCase {
         XCTAssertEqual(decision([]), .unassigned)
     }
 
+    func testProjectsWithoutDesktopAssignmentsLeaveWindowsInPlace() {
+        XCTAssertEqual(decision([""]), .unassigned)
+        XCTAssertEqual(decision(["", ""]), .unassigned)
+    }
+
+    func testAssignedAndUnassignedSharedProjectsDoNotGuessDestination() {
+        XCTAssertEqual(decision(["second", ""]), .conflictingProjects)
+        XCTAssertEqual(decision(["", "second"]), .conflictingProjects)
+    }
+
     func testSharedProjectsWithTheSameHomeMoveOnlyOnce() {
         XCTAssertEqual(decision(["second", "second"]), .move(.init(id: 2, uuid: "second")))
     }
@@ -33,7 +43,6 @@ final class WindowDesktopRestoreResolverTests: XCTestCase {
 
     func testDeletedHomeDesktopDoesNotFallBackToItsOldNumber() {
         XCTAssertEqual(decision(["deleted-second"]), .missingDesktop)
-        XCTAssertEqual(decision([""]), .missingDesktop)
     }
 
     func testUnknownFullscreenAndAllDesktopSourcesAreSkipped() {

@@ -18,7 +18,9 @@ final class ProjectLifecyclePrompt: NSObject, NSWindowDelegate {
 
     static func start() {
         guard shared.observer == nil else { return }
-        shared.observer = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { _ in refresh() }
+        shared.observer = NotificationCenter.default.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: nil) { _ in
+            DispatchQueue.main.async { refresh() }
+        }
     }
 
     static func refresh() {

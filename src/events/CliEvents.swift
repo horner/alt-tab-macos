@@ -89,6 +89,13 @@ class CliServer {
                 }
             )
         }
+        if rawValue == "--refresh-project-labels" {
+            SpaceLabelWindows.refreshTopology()
+            return noOutput
+        }
+        if rawValue == "--project-labels" {
+            return SpaceLabelWindows.diagnostics()
+        }
         if rawValue == "--qa-state" {
             return qaState()
         }
@@ -422,7 +429,7 @@ class CliClient {
     static func detectCommand() -> String? {
         let args = CommandLine.arguments
         if args.count == 2 && !args[1].starts(with: "--logs=") {
-            if args[1] == "--list" || args[1] == "--detailed-list" || args[1] == "--qa-state" || args[1] == "--qa-telemetry" || args[1] == "--hide" || args[1].hasPrefix("--qa-mark=") || args[1].hasPrefix("--focus=") || args[1].hasPrefix("--focusUsingLastFocusOrder=") || args[1].hasPrefix("--show=") {
+            if args[1] == "--list" || args[1] == "--detailed-list" || args[1] == "--qa-state" || args[1] == "--project-labels" || args[1] == "--refresh-project-labels" || args[1] == "--qa-telemetry" || args[1] == "--hide" || args[1].hasPrefix("--qa-mark=") || args[1].hasPrefix("--focus=") || args[1].hasPrefix("--focusUsingLastFocusOrder=") || args[1].hasPrefix("--show=") {
                 return args[1]
             }
         }

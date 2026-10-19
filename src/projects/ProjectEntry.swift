@@ -5,6 +5,7 @@ struct ProjectEntry: Codable, Equatable {
     var kind: String
     var spaceUuid: String?
     var homeSpaceUuid: String
+    var desktopOwnershipVersion: Int?
     var name: String?
     var autoName: String?
     var iconFileName: String?
@@ -20,7 +21,7 @@ struct ProjectEntry: Codable, Equatable {
     var pendingDesktopRemoval = false
     var closedWindows: [ProjectWindowPattern]?
 
-    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = [], memberPatterns: [ProjectWindowPattern] = [], excludedPatterns: [ProjectWindowPattern] = [], windowHistory: [ProjectWindowPattern] = [], linkedProjectIds: [String] = [], labelUuid: String? = nil, isClosed: Bool = false, pendingDesktopRemoval: Bool = false) {
+    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = [], memberPatterns: [ProjectWindowPattern] = [], excludedPatterns: [ProjectWindowPattern] = [], windowHistory: [ProjectWindowPattern] = [], linkedProjectIds: [String] = [], labelUuid: String? = nil, isClosed: Bool = false, pendingDesktopRemoval: Bool = false, desktopOwnershipVersion: Int? = nil) {
         self.isClosed = isClosed
         self.pendingDesktopRemoval = pendingDesktopRemoval
         self.windowHistory = windowHistory
@@ -30,6 +31,7 @@ struct ProjectEntry: Codable, Equatable {
         self.kind = kind
         self.spaceUuid = spaceUuid
         self.homeSpaceUuid = homeSpaceUuid
+        self.desktopOwnershipVersion = desktopOwnershipVersion
         self.name = name
         self.autoName = autoName
         self.iconFileName = iconFileName
@@ -50,6 +52,7 @@ struct ProjectEntry: Codable, Equatable {
         id = (try? c?.decode(String.self, forKey: .id)) ?? spaceUuid.map { "desktop-\($0)" } ?? UUID().uuidString
         kind = (try? c?.decode(String.self, forKey: .kind)) ?? (spaceUuid == nil ? "custom" : "desktop")
         homeSpaceUuid = (try? c?.decode(String.self, forKey: .homeSpaceUuid)) ?? spaceUuid ?? ""
+        desktopOwnershipVersion = try? c?.decode(Int.self, forKey: .desktopOwnershipVersion)
         name = try? c?.decode(String.self, forKey: .name)
         autoName = try? c?.decode(String.self, forKey: .autoName)
         iconFileName = try? c?.decode(String.self, forKey: .iconFileName)

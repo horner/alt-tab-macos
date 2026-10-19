@@ -80,8 +80,12 @@ enum ProjectReattachResolver {
         return !declined && savedOwners.count == 1 ? savedOwners : []
     }
 
-    static func allowsActiveAssignment(isNew: Bool, applicationAge: TimeInterval, onCurrentDesktop: Bool) -> Bool {
+    static func isOrdinaryNewWindow(isNew: Bool, applicationAge: TimeInterval, onCurrentDesktop: Bool) -> Bool {
         isNew && applicationAge >= 30 && onCurrentDesktop
+    }
+
+    static func allowsActiveAssignment(isNew: Bool, applicationAge: TimeInterval, onCurrentDesktop: Bool, ownsCreationDesktop: Bool) -> Bool {
+        ownsCreationDesktop && isOrdinaryNewWindow(isNew: isNew, applicationAge: applicationAge, onCurrentDesktop: onCurrentDesktop)
     }
 
     static func allowsAutomaticAssignment(to projectId: String, savedOwners: Set<String>, liveOwners: Set<String>) -> Bool {

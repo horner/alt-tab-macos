@@ -18,6 +18,8 @@ final class ProjectLifecycleResolverTests: XCTestCase {
         XCTAssertTrue(closed.isClosed)
         XCTAssertFalse(closed.pendingDesktopRemoval)
         source.isClosed = true
+        source.homeSpaceUuid = ""
+        source.desktopOwnershipVersion = 1
         source.pendingDesktopRemoval = false
         XCTAssertEqual(closed, source)
         XCTAssertEqual(try JSONDecoder().decode(ProjectEntry.self, from: JSONEncoder().encode(closed)), closed)
@@ -197,5 +199,126 @@ final class ProjectLifecycleResolverTests: XCTestCase {
         other.id = "another-project"
         let entries = [canonical, other, alias]
         XCTAssertEqual(ProjectLifecycleResolver.repairingEmptyDesktopAliases(entries), entries)
+    }
+
+    private func desktop(_ uuid: String = "desktop", name: String? = nil, linked: [String] = []) -> ProjectEntry {
+        ProjectEntry(id: "desktop-" + uuid, kind: "desktop", spaceUuid: uuid, homeSpaceUuid: uuid,
+            name: name, autoName: nil, linkedProjectIds: linked)
+    }
+
+    func testOwnershipMigrationPrefersLinkedOwnerAndPreservesConflictingProjectsUnassigned() throws {
+        var first = entry("first")
+        first.homeSpaceUuid = "other"
+        let second = entry("second")
+        let saved = [desktop(name: "Separate desktop name", linked: [second.id, first.id]), first, second]
+        let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership(saved)
+        XCTAssertEqual(migrated.count, 3)
+        XCTAssertEqual(migrated[1].homeSpaceUuid, "")
+        XCTAssertEqual(migrated[2].homeSpaceUuid, "desktop")
+        XCTAssertEqual(migrated[1].windowHistory, first.windowHistory)
+        XCTAssertEqual(migrated[1].members, first.members)
+        XCTAssertEqual(migrated[2].name, second.name)
+        XCTAssertNil(migrated[0].name)
+        XCTAssertNil(migrated[0].autoName)
+        XCTAssertTrue(migrated[0].linkedProjectIds.isEmpty)
+        XCTAssertTrue(migrated.allSatisfy { $0.desktopOwnershipVersion == 1 })
+        let reloaded = try JSONDecoder().decode([ProjectEntry].self, from: JSONEncoder().encode(migrated))
+        XCTAssertEqual(ProjectLifecycleResolver.normalizingDesktopOwnership(reloaded), migrated)
+    }
+
+    func testHomeAssignmentRepairsLegacyProjectEvenWhenItAlreadyHasALabelIdentity() {
+        let source = entry()
+        let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership([desktop(), source])
+        XCTAssertEqual(migrated[1].homeSpaceUuid, "desktop")
+        XCTAssertEqual(migrated[1].labelUuid, source.labelUuid)
+        XCTAssertTrue(migrated[0].linkedProjectIds.isEmpty)
+    }
+
+    func testCompetingLegacyHomesChooseStableOwnerRegardlessOfFileOrder() {
+        let first = entry("a")
+        let second = entry("z")
+        for saved in [[first, second], [second, first]] {
+            let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership(saved)
+            XCTAssertEqual(migrated.first { $0.id == first.id }?.homeSpaceUuid, "desktop")
+            XCTAssertEqual(migrated.first { $0.id == second.id }?.homeSpaceUuid, "")
+            XCTAssertEqual(migrated.count, 2)
+        }
+    }
+
+    func testVersionedAssignmentWinsOverStaleLegacyDesktopLinksAfterInterruptedSave() {
+        var owner = entry("owner")
+        owner.desktopOwnershipVersion = 1
+        let stale = entry("stale")
+        let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership([desktop(linked: [stale.id]), stale, owner])
+        XCTAssertEqual(migrated.first { $0.id == owner.id }?.homeSpaceUuid, "desktop")
+        XCTAssertEqual(migrated.first { $0.id == stale.id }?.homeSpaceUuid, "")
+    }
+
+    func testExplicitlyUnassignedProjectNeverRegainsDesktopFromLegacyLinksOrName() {
+        var source = entry()
+        source.homeSpaceUuid = ""
+        source.desktopOwnershipVersion = 1
+        let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership([desktop(name: "Stale name", linked: [source.id]), source])
+        XCTAssertEqual(migrated.count, 2)
+        XCTAssertEqual(migrated[1], source)
+        XCTAssertTrue(migrated[0].linkedProjectIds.isEmpty)
+        XCTAssertNil(migrated[0].name)
+    }
+
+    func testNamedUnownedLegacyDesktopBecomesProjectWithoutLosingRecords() throws {
+        var source = desktop(name: "Saved name")
+        source.members = [identity]
+        source.windowHistory = [pattern]
+        source.excludedPatterns = [pattern]
+        source.iconFileName = "icon.png"
+        let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership([source])
+        let project = try XCTUnwrap(migrated.first { $0.kind == "custom" })
+        XCTAssertEqual(project.id, "project-desktop-desktop")
+        XCTAssertEqual(project.homeSpaceUuid, source.homeSpaceUuid)
+        XCTAssertEqual(project.name, source.name)
+        XCTAssertEqual(project.members, source.members)
+        XCTAssertEqual(project.windowHistory, source.windowHistory)
+        XCTAssertEqual(project.excludedPatterns, source.excludedPatterns)
+        XCTAssertEqual(project.iconFileName, source.iconFileName)
+        XCTAssertEqual(project.labelUuid, "desktop")
+        XCTAssertEqual(ProjectLifecycleResolver.normalizingDesktopOwnership(migrated), migrated)
+    }
+
+    func testNamedDesktopMigrationKeepsDistinctNamesAndNeverOverwritesAnExistingId() throws {
+        var existing = entry("project-desktop-desktop")
+        existing.homeSpaceUuid = "other"
+        existing.name = "Saved name"
+        let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership([desktop(name: "Saved name"), existing])
+        let project = try XCTUnwrap(migrated.first { $0.id == "project-desktop-desktop-2" })
+        XCTAssertEqual(project.name, "Saved name 2")
+        XCTAssertEqual(project.homeSpaceUuid, "desktop")
+        XCTAssertEqual(migrated.first { $0.id == existing.id }?.windowHistory, existing.windowHistory)
+        XCTAssertEqual(ProjectLifecycleResolver.normalizingDesktopOwnership(migrated), migrated)
+    }
+
+    func testArchivedProjectRemainsUnassignedAndIsNotRecreatedByItsDesktopAlias() {
+        var source = entry()
+        source.isClosed = true
+        var alias = desktop(name: source.name)
+        alias.labelUuid = source.labelUuid
+        let migrated = ProjectLifecycleResolver.normalizingDesktopOwnership([alias, source])
+        XCTAssertEqual(migrated.count, 2)
+        XCTAssertTrue(migrated[1].isClosed)
+        XCTAssertEqual(migrated[1].homeSpaceUuid, "")
+        XCTAssertEqual(migrated[1].windowHistory, source.windowHistory)
+    }
+
+    func testUnavailableDesktopAssignmentIsPreservedUntilRuntimeCanResolveIt() {
+        var source = entry()
+        source.desktopOwnershipVersion = 1
+        XCTAssertEqual(ProjectLifecycleResolver.normalizingDesktopOwnership([source]), [source])
+    }
+
+    func testUnassignedProjectsCannotCombineBecauseEmptyHomesDoNotIdentifyADesktop() {
+        var source = entry()
+        var target = entry("target")
+        source.homeSpaceUuid = ""
+        target.homeSpaceUuid = ""
+        XCTAssertFalse(ProjectLifecycleResolver.canCombine(source, into: target))
     }
 }

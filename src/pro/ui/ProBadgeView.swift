@@ -62,6 +62,7 @@ enum ProGradient {
     }
 
     static func makeProTextAttachment(font: NSFont, baselineOffset: CGFloat = 0) -> NSAttributedString {
+        guard !LicenseManager.shared.isProductManaged else { return NSAttributedString(string: "") }
         return makeGradientTextAttachment(ProBadgeView.proLabel, font: font, baselineOffset: baselineOffset)
     }
 
@@ -88,6 +89,7 @@ enum ProGradient {
     /// an `NSImage` so it can be used where only images are accepted — e.g. `NSMenuItem.image`, which
     /// is what `NSPopUpButton` draws in its button face when the popup is closed.
     static func makeFullProBadgeImage() -> NSImage {
+        guard !LicenseManager.shared.isProductManaged else { return NSImage(size: NSSize(width: 1, height: 1)) }
         let badge = ProBadgeView()
         badge.setSelected(false)
         let size = badge.fittingSize
@@ -338,6 +340,7 @@ class ProBadgeView: NSView {
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
+        isHidden = LicenseManager.shared.isProductManaged
         // Register the "Pro" tag with the search index if a section build is in progress —
         // mirrors what the post-construction walk in `SettingsWindow.collectSearchContent` does
         // when it spots a `ProBadgeView`, just without needing the walk to find it after.

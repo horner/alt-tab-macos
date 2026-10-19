@@ -150,6 +150,11 @@ final class UpgradeButton: ProGradientButton {
     }
 
     func refreshTitle() {
+        isHidden = LicenseManager.shared.isProductManaged
+        guard !LicenseManager.shared.isProductManaged else {
+            heightConstraint.constant = 0
+            return
+        }
         let result = NSMutableAttributedString()
         let mainAttrs: [NSAttributedString.Key: Any] = [
             .foregroundColor: NSColor.white,
@@ -1073,7 +1078,7 @@ class SettingsWindow: NSWindow {
     }
 
     @objc private func contentViewBoundsDidChange(_ notification: Notification) {
-        guard !isShowingUpgradeView else { return }
+        guard !LicenseManager.shared.isProductManaged, !isShowingUpgradeView else { return }
         let currentY = rightScrollView.contentView.bounds.minY
         if isProgrammaticScrollInProgress {
             lastContentScrollY = currentY

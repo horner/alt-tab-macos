@@ -60,7 +60,7 @@ Use the same app target with explicit Projects release settings, keeping the bra
 
 6. **Validate the download experience and publish.** Test the actual ZIP after a browser download, on a clean account or another Mac, before publishing the draft. Cover first launch, Accessibility and Screen Recording permission setup, ordinary window switching, Projects creation and switching, Desktop navigation, browser restoration, saved data after relaunch, login launch, and installing the next version over the previous one. Verify the selected license policy, the user's Pro migration, and that upstream update/feedback/crash services receive no requests. Any licensing requests must match the chosen policy. Quit other AltTab variants during shortcut checks.
 
-   Run the relevant existing tests plus focused tests for distribution-specific behavior once builds are authorized. Test Apple silicon and Intel before claiming both are supported. The current deployment setting is macOS 10.14.4, but the Projects feature's supported macOS range must be established by testing; do not infer compatibility from that setting alone. Include clear setup instructions, tested macOS versions, known limitations, attribution, existing license notices, and the exact source tag in the release notes. Publish the reviewed draft at `https://github.com/horner/alt-tab-macos/releases`.
+   Run the relevant existing tests plus focused tests for distribution-specific behavior once builds are authorized. Test Apple silicon and Intel before claiming both are supported. The current deployment setting is macOS 12.0, but the Projects feature's supported macOS range must be established by testing; do not infer compatibility from that setting alone. Include clear setup instructions, tested macOS versions, known limitations, attribution, existing license notices, and the exact source tag in the release notes. Publish the reviewed draft at `https://github.com/horner/alt-tab-macos/releases`.
 
 7. **Publish the Homebrew cask.** Keep both the app assets and cask in the existing `horner/alt-tab-macos` repository. Add `Casks/alttab-projects.rb` to its default branch, currently `master`, after disabling the inherited publishing workflow there. The release implementation stays on `projects-release`; the default branch receives the small cask definition and its version updates. A cask present only on the release branch will not be found by a normal tap of the repository's default branch.
 
@@ -95,9 +95,9 @@ Use a new version and tag for every published binary; keep previous downloads av
 
 Update the Homebrew cask after each release's assets are publicly available and verified. This gives friends an upgrade path without an in-app updater. Add in-app automatic updates only if useful later; that requires the fork's own Sparkle signing keys and public feed, matching release asset URLs, version ordering, and an end-to-end upgrade test. It should be a separate milestone.
 
-## Decisions still needed
+## Release policy and remaining validation
 
-- Friends-build feature policy remains undecided. The user reports personal Pro activation; preserve existing licensing behavior until they choose how friends receive feature access.
+- Current AltTabProjects source enables all features through an in-memory Pro state, hides purchase UI, and preserves stored license data. Validate this policy on a fresh installation and after relaunch.
 - Keep bundle ID `com.horner.alt-tab-projects` and the selected Medical Informatics Engineering Developer ID team `X5873NL7XM` stable. The configured `alttab-projects` profile notarized version 0.1.0 successfully; verify actual app behavior on the other Mac before public release.
 - Identify friends' macOS versions and whether Intel support is needed to set the actual test matrix.
 

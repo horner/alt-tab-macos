@@ -4,9 +4,11 @@ The top-level AltTab menu offers Restore All Windows to Project Desktops when Pr
 window-moving bridge are available. It operates on currently tracked open windows from all
 Projects. It does not reopen closed windows or infer a Project for an unassigned window.
 
-Each custom Project's `homeSpaceUuid` identifies its proper Desktop. Shared windows move once when
-all their Projects have the same home UUID. Conflicting homes and missing home Desktops are
-skipped. Already-home windows are counted without a move. The same source eligibility rules as
+Each Project's desktop assignment identifies its destination. Windows with no Project or only
+Projects without desktop assignments remain unassigned. A window shared by an assigned Project
+and an unassigned Project is skipped as a conflict; it never borrows the assigned Project's Desktop.
+Shared windows move once only when all their Projects agree on a nonempty destination UUID.
+Conflicting assignments and missing Desktops are skipped. Already-home windows are counted without a move. The same source eligibility rules as
 [WindowDesktopMoveSpecs.md](WindowDesktopMoveSpecs.md) apply: fullscreen windows, tab groups,
 multiple/unknown Space membership and AltTab-owned windows are not moved.
 
@@ -40,7 +42,8 @@ reopening results. Identical titles stay separate; closed windows cannot resolve
 
 ## Verification
 
-`WindowDesktopRestoreResolverTests` covers shared-home agreement and conflict, no owner, missing
+`WindowDesktopRestoreResolverTests` covers shared-home agreement and conflict, no owner, empty
+Project assignments, mixed assigned/unassigned membership, missing
 and renumbered Desktops, unsupported sources, ownership changes and confirmed-result accounting.
 The movement and Project-visibility suites continue to cover bridge admission and Bring behavior.
 Summary tests also pin the association between a window and its reason, including failed moves,
