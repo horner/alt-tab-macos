@@ -128,6 +128,14 @@ the release-change observations must cover iTerm2 and VS Code reuse/new-window a
 folder picker, including Automation permission behavior. Failed or untested behavior must remain
 `fail` or `pending` and blocks publication; fix the source and prepare a new candidate before retrying.
 
+Computer Use can exercise these checks against the installed app. Attach by the full
+`/Applications/AltTabProjects.app` path, since LaunchServices can retain records for backup and
+staging copies. If attachment still reports a previous bundle identifier after replacement,
+restart the native Computer Use helper and attach again; resetting its JavaScript session alone
+did not clear cached app metadata during 0.1.5 validation. Preserve the app identity and existing
+macOS permissions. Record observed UI outcomes, and leave a check pending when automation has
+not exercised it.
+
 Record `tester`, `tested_at` as an ISO timestamp with timezone, `installed_app` as the absolute
 bundle path in `/Applications` or `~/Applications`, and `running_pid` after the relaunch test. For example,
 `pgrep -x AltTabProjects` lists candidate PIDs and `codesign --display --verbose=4 +<pid>` identifies
