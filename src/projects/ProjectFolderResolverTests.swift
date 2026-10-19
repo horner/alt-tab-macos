@@ -12,6 +12,53 @@ final class ProjectFolderResolverTests: XCTestCase {
         XCTAssertNil(ProjectFolderResolver.reusable(windows, members: ["missing"], tool: .terminal))
     }
 
+    func testFolderPathPreservesExistingLiteralWhitespaceAndSpecialCharacters() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let folder = root.appendingPathComponent(" Project ' \" $HOME $(touch INJECTED) `touch OTHER`\n ", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        XCTAssertEqual(ProjectFolderResolver.folderPath(folder.path, homeDirectory: root.path, isDirectory: directoryExists), folder.path)
+    }
+
+    func testFolderPathTrimsPastedWhitespaceOnlyAfterTryingLiteralPath() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let folder = root.appendingPathComponent("My Project", isDirectory: true)
+        let trailing = root.appendingPathComponent("My Project ", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: trailing, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        XCTAssertEqual(ProjectFolderResolver.folderPath(" \t\(folder.path)\n", homeDirectory: root.path, isDirectory: directoryExists), folder.path)
+        XCTAssertEqual(ProjectFolderResolver.folderPath(trailing.path, homeDirectory: root.path, isDirectory: directoryExists), trailing.path)
+    }
+
+    func testFolderPathExpandsHomeWithoutInterpretingShellExpressions() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let folder = root.appendingPathComponent("My Project", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        XCTAssertEqual(ProjectFolderResolver.folderPath("~/My Project", homeDirectory: root.path, isDirectory: directoryExists), folder.path)
+        XCTAssertEqual(ProjectFolderResolver.folderPath("~", homeDirectory: root.path, isDirectory: directoryExists), root.path)
+        XCTAssertNil(ProjectFolderResolver.folderPath("~someone/My Project", homeDirectory: root.path, isDirectory: directoryExists))
+        XCTAssertNil(ProjectFolderResolver.folderPath("$HOME/My Project", homeDirectory: root.path, isDirectory: directoryExists))
+        XCTAssertNil(ProjectFolderResolver.folderPath("My Project", homeDirectory: root.path, isDirectory: directoryExists))
+    }
+
+    func testFolderPathRejectsMissingPathsAndRegularFiles() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("README.md")
+        try Data().write(to: file)
+        XCTAssertNil(ProjectFolderResolver.folderPath(root.appendingPathComponent("missing").path, homeDirectory: root.path, isDirectory: directoryExists))
+        XCTAssertNil(ProjectFolderResolver.folderPath(file.path, homeDirectory: root.path, isDirectory: directoryExists))
+        XCTAssertNil(ProjectFolderResolver.folderPath(" \t\n", homeDirectory: root.path, isDirectory: directoryExists))
+    }
+
+    private func directoryExists(_ path: String) -> Bool {
+        var directory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: path, isDirectory: &directory) && directory.boolValue
+    }
+
     func testLaunchRejectsOldWindowsOtherApplicationsAndDiscoveryReadmissions() {
         var launch = ProjectFolderResolver.Launch(projectId: "p", tool: .editor, existingIds: ["old"])
         launch.discover(id: "old", bundleIdentifier: ProjectFolderTool.editor.bundleIdentifier, isNew: true)

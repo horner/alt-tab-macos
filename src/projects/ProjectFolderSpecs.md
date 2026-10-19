@@ -2,9 +2,21 @@
 
 Each Project may store one primary `folderPath`. The Project label always shows iTerm2,
 VS Code, and Folder… controls. Desktop-only labels do not show these controls. Folder…
-selects or replaces the primary folder. A tool click without a configured folder opens
-the picker and launches only after selection. Cancel leaves the Project unchanged.
+opens an editable full folder path with Browse…, Cancel and Use Folder controls.
+The current folder is prefilled. Browse… opens the native directory picker; choosing a
+directory fills the path field, while canceling Browse leaves the entered path and folder
+dialog open. Use Folder accepts only an existing directory, then saves it and dismisses
+the dialog. Invalid or missing paths remain editable with an inline error.
+A tool click without a configured folder opens this dialog and launches only after Use
+Folder succeeds. Cancel or closing the dialog leaves the Project unchanged and launches nothing.
 The first pass supports one folder; it does not create symlinks.
+
+Full absolute paths and `~`/`~/` home paths are accepted without shell interpretation.
+Validation first tries the literal path so significant whitespace, quotes and shell
+metacharacters in existing folder names are preserved. Only if that path is unavailable
+does it trim surrounding paste whitespace and try again. Relative paths, other-user tilde
+paths, regular files and missing folders are rejected. Filesystem validation runs off-main;
+editing or closing the dialog invalidates older results before they can save or launch.
 
 A normal tool click focuses the most recently focused eligible window of that application
 already belonging to the Project. Minimized windows can be reused; phantom windows,
@@ -45,6 +57,10 @@ processes receive termination after 25 seconds. Late results cannot claim window
 
 ## Automated scenarios
 
+- **testFolderPathPreservesExistingLiteralWhitespaceAndSpecialCharacters** — existing folders keep significant whitespace and literal quotes or shell metacharacters.
+- **testFolderPathTrimsPastedWhitespaceOnlyAfterTryingLiteralPath** — surrounding pasted whitespace can be removed without preferring a trimmed namesake over an existing literal folder.
+- **testFolderPathExpandsHomeWithoutInterpretingShellExpressions** — own-home shorthand expands, while relative paths, other-user tildes and shell expressions are rejected.
+- **testFolderPathRejectsMissingPathsAndRegularFiles** — unavailable folders, regular files and blank input cannot be saved.
 - **testEditorWorkspacePreservesLiteralAbsoluteFolderPaths** — JSON round trips spaces, quotes, shell metacharacters, backslashes, newlines and Unicode without changing the folder path.
 - **testEditorWorkspaceRequestsUseDistinctDurableDocumentsWithFriendlyNames** — each request has a separate app-support document; retrying the same request retains its identity, and trailing folder separators do not change its friendly filename.
 - **testEditorWorkspaceRootFolderUsesFriendlyFilenameWithinRequestDirectory** — the filesystem root receives a normal filename without escaping its request directory.
@@ -55,6 +71,10 @@ processes receive termination after 25 seconds. Late results cannot claim window
 - Change focus among two member windows; a normal click focuses the most recent one.
 - Change a terminal's directory, then click iTerm2 again; the directory stays unchanged.
 - Right-click New Window and verify a separate member window opens in the primary folder.
-- Cancel the folder picker; no application launches and the stored path stays unchanged.
+- Paste a full path containing spaces and use it; verify the stored folder and launch location.
+- Browse to a folder and accept it, then Use Folder; the chosen folder persists.
+- Type a path, open Browse and cancel; the typed path and folder dialog remain available.
+- Try a missing folder, regular file and relative path; the dialog stays open with a useful error.
+- Cancel the folder dialog; no application launches and the stored path stays unchanged.
 - Try a moved/deleted folder, a missing app, and denied iTerm2 Automation permission.
 - Close/reopen the Project and restart the app; the folder remains configured.

@@ -5,12 +5,32 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         override var mouseDownCanMoveWindow: Bool { true }
     }
 
+    private final class FolderPath: NSTextField {
+        override var mouseDownCanMoveWindow: Bool { false }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseDown(with event: NSEvent) {
+            (window as? SpaceLabelWindow)?.onInteraction?()
+            super.mouseDown(with: event)
+        }
+
+        override func rightMouseDown(with event: NSEvent) {
+            (window as? SpaceLabelWindow)?.onInteraction?()
+            super.rightMouseDown(with: event)
+        }
+
+        @objc func copyFolderPath(_ sender: Any?) {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(stringValue, forType: .string)
+        }
+    }
+
     private final class Button: NSButton {
         override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
         override func mouseDown(with event: NSEvent) {
             let label = window as? SpaceLabelWindow
-            // NSButton's tracking loop can run deferred Project focus before its action is delivered.
+            // Native button tracking can process deferred UI work before delivering the action.
             label?.currentWindow = ProjectsMenu.captureCurrentWindow()
             label?.visibleWindows = ProjectsMenu.captureVisibleWindows(on: label?.renderedLabel?.space.uuid)
             defer { label?.currentWindow = nil; label?.visibleWindows = nil }
@@ -21,10 +41,12 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
     var onClose: (() -> Void)?
     var onInteraction: (() -> Void)?
     private let textLabel = Label(labelWithString: "")
+    private let folderPathLabel = FolderPath(labelWithString: "")
     private var buttons = [NSButton]()
     private var projectButtons = [NSButton]()
     private var folderButton: NSButton?
     private var renderedLabel: SpaceLabelResolver.Label?
+    private var renderedFolderPath: String?
     private var renderedSize = NSSize.zero
     private var position: SpaceLabelResolver.Position?
     private let positionKey: String
@@ -72,6 +94,7 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         textLabel.lineBreakMode = .byTruncatingTail
         textLabel.maximumNumberOfLines = 1
         view.addSubview(textLabel)
+        configureFolderPath(in: view)
         projectButtons = [
             addButton(NSLocalizedString("Project Windows", comment: "Project windows menu"),
                 help: NSLocalizedString("Open this project's window list", comment: "Project label button help"), action: #selector(openWindows(_:))),
@@ -97,21 +120,39 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
 
     func update(_ label: SpaceLabelResolver.Label, on screen: NSScreen) {
         MainThreadStall.step()
-        let folder = ProjectsMenu.context(for: label).projectId.flatMap { Projects.byId[$0]?.folderPath }
+        let folder = ProjectsMenu.context(for: label).projectId.flatMap { Projects.byId[$0]?.folderPath }.flatMap { $0.isEmpty ? nil : $0 }
         folderButton?.toolTip = folder ?? NSLocalizedString("Choose this Project’s primary folder", comment: "Project folder button help")
         let visibleFrame = screen.visibleFrame
-        if renderedLabel != label || renderedSize != visibleFrame.size || title != label.title || displayedText != label.text {
-            updateText(label, visibleSize: visibleFrame.size)
+        if renderedLabel != label || renderedFolderPath != folder || renderedSize != visibleFrame.size || title != label.title || displayedText != label.text {
+            updateText(label, folder: folder, visibleSize: visibleFrame.size)
         }
-        let height = textLabel.frame.height + controlsHeight + 50
+        let height = textLabel.frame.maxY + 30
         let target = SpaceLabelResolver.frame(visibleFrame: visibleFrame, height: height, position: position, stackIndex: label.stackIndex)
         positioning = true
         defer { positioning = false }
         if frame != target { setFrame(target, display: true) }
     }
 
-    private func updateText(_ label: SpaceLabelResolver.Label, visibleSize: NSSize) {
+    private func configureFolderPath(in view: NSView) {
+        folderPathLabel.isEditable = false
+        folderPathLabel.isSelectable = true
+        folderPathLabel.isHidden = true
+        folderPathLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        folderPathLabel.textColor = .secondaryLabelColor
+        folderPathLabel.lineBreakMode = .byTruncatingMiddle
+        folderPathLabel.maximumNumberOfLines = 1
+        folderPathLabel.setAccessibilityLabel(NSLocalizedString("Primary folder", comment: "Project primary folder path"))
+        let menu = NSMenu()
+        let item = NSMenuItem(title: NSLocalizedString("Copy Folder Path", comment: "Copy a Project's primary folder path"), action: #selector(FolderPath.copyFolderPath(_:)), keyEquivalent: "")
+        item.target = folderPathLabel
+        menu.addItem(item)
+        folderPathLabel.menu = menu
+        view.addSubview(folderPathLabel)
+    }
+
+    private func updateText(_ label: SpaceLabelResolver.Label, folder: String?, visibleSize: NSSize) {
         renderedLabel = label
+        renderedFolderPath = folder
         renderedSize = visibleSize
         title = label.title
         setAccessibilityLabel(title)
@@ -122,10 +163,21 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         projectButtons.forEach { $0.isHidden = !hasProject }
         let width = (visibleSize.width / 2).rounded() - 32
         controlsHeight = layoutButtons(width: width)
+        updateFolderPath(folder, width: width)
         textLabel.font = fittingFont(width: width, maxHeight: visibleSize.height / 3)
         let height = ceil(textLabel.cell!.cellSize.height)
-        textLabel.frame = NSRect(x: 16, y: controlsHeight + 20, width: width, height: height)
+        let textBottom = folderPathLabel.isHidden ? controlsHeight + 20 : folderPathLabel.frame.maxY + 8
+        textLabel.frame = NSRect(x: 16, y: textBottom, width: width, height: height)
         contentView?.layer?.cornerRadius = 10
+    }
+
+    private func updateFolderPath(_ folder: String?, width: CGFloat) {
+        folderPathLabel.isHidden = folder == nil
+        guard let folder else { return }
+        if folderPathLabel.stringValue != folder { folderPathLabel.stringValue = folder }
+        folderPathLabel.toolTip = folder
+        let height = ceil(folderPathLabel.cell!.cellSize.height)
+        folderPathLabel.frame = NSRect(x: 16, y: controlsHeight + 20, width: width, height: height)
     }
 
     func avoidOverlap(_ occupied: [CGRect], on screen: NSScreen, migrated: Bool) {

@@ -20,6 +20,19 @@ enum ProjectFolderResolver {
             .min { $0.focusOrder < $1.focusOrder }?.id
     }
 
+    static func folderPath(_ value: String, homeDirectory: String, isDirectory: (String) -> Bool) -> String? {
+        if let path = absoluteFolderPath(value, homeDirectory: homeDirectory), isDirectory(path) { return path }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed != value, let path = absoluteFolderPath(trimmed, homeDirectory: homeDirectory), isDirectory(path) else { return nil }
+        return path
+    }
+
+    private static func absoluteFolderPath(_ value: String, homeDirectory: String) -> String? {
+        if value == "~" { return homeDirectory }
+        if value.hasPrefix("~/") { return homeDirectory + String(value.dropFirst()) }
+        return value.hasPrefix("/") ? value : nil
+    }
+
     static func shellQuoted(_ value: String) -> String {
         "'" + value.replacingOccurrences(of: "'", with: "'\"'\"'") + "'"
     }
