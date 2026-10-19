@@ -3,7 +3,8 @@
 Each Project may store one primary `folderPath`. The Project label always shows iTerm2,
 VS Code, and Folder… controls. Desktop-only labels do not show these controls. Folder…
 opens an editable full folder path with Browse…, Cancel and Use Folder controls.
-The current folder is prefilled. Browse… opens the native directory picker; choosing a
+The current folder is prefilled and selected when the dialog opens or an existing dialog
+is brought forward, so Command-C immediately copies its full path. Browse… opens the native directory picker; choosing a
 directory fills the path field, while canceling Browse leaves the entered path and folder
 dialog open. Use Folder accepts only an existing directory, then saves it and dismisses
 the dialog. Invalid or missing paths remain editable with an inline error.
@@ -72,6 +73,7 @@ processes receive termination after 25 seconds. Late results cannot claim window
 - Change a terminal's directory, then click iTerm2 again; the directory stays unchanged.
 - Right-click New Window and verify a separate member window opens in the primary folder.
 - Paste a full path containing spaces and use it; verify the stored folder and launch location.
+- Open Folder… with an existing path and press Command-C immediately; verify the full path is copied without a selection gesture. Repeat after bringing an existing dialog forward.
 - Browse to a folder and accept it, then Use Folder; the chosen folder persists.
 - Type a path, open Browse and cancel; the typed path and folder dialog remain available.
 - Try a missing folder, regular file and relative path; the dialog stays open with a useful error.

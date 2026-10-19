@@ -22,6 +22,7 @@ enum ProjectFolderActions {
         guard Projects.isEnabled, Projects.byId[project.id] === project else { return }
         if let folderChooser, folderChooser.project === project, folderChooser.isVisible {
             folderChooser.makeKeyAndOrderFront(nil)
+            folderChooser.selectPath()
             return
         }
         folderChooser?.close()
@@ -61,9 +62,20 @@ enum ProjectFolderActions {
         required init?(coder: NSCoder) { fatalError("Class only supports programmatic initialization") }
 
         func present(from parent: NSWindow?) {
-            if let parent, parent.isVisible { parent.beginSheet(self); return }
-            center()
-            makeKeyAndOrderFront(nil)
+            if let parent, parent.isVisible {
+                parent.beginSheet(self)
+            } else {
+                center()
+                makeKeyAndOrderFront(nil)
+            }
+            selectPath()
+        }
+
+        func selectPath() {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.isVisible, self.attachedSheet == nil else { return }
+                self.field.selectText(nil)
+            }
         }
 
         override func close() {
@@ -130,6 +142,7 @@ enum ProjectFolderActions {
                       Projects.isEnabled, Projects.byId[self.project.id] === self.project else { return }
                 self.field.stringValue = url.path
                 self.updateInput()
+                self.selectPath()
             }
         }
 

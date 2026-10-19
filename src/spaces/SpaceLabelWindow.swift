@@ -20,8 +20,18 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         }
 
         @objc func copyFolderPath(_ sender: Any?) {
+            guard !stringValue.isEmpty else { return }
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(stringValue, forType: .string)
+        }
+    }
+
+    private final class CopyPathButton: NSButton {
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseDown(with event: NSEvent) {
+            (window as? SpaceLabelWindow)?.onInteraction?()
+            super.mouseDown(with: event)
         }
     }
 
@@ -42,6 +52,7 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
     var onInteraction: (() -> Void)?
     private let textLabel = Label(labelWithString: "")
     private let folderPathLabel = FolderPath(labelWithString: "")
+    private let copyPathButton = CopyPathButton(title: NSLocalizedString("Copy Path", comment: "Copy a Project's primary folder path"), target: nil, action: nil)
     private var buttons = [NSButton]()
     private var projectButtons = [NSButton]()
     private var folderButton: NSButton?
@@ -148,6 +159,16 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         menu.addItem(item)
         folderPathLabel.menu = menu
         view.addSubview(folderPathLabel)
+        copyPathButton.target = folderPathLabel
+        copyPathButton.action = #selector(FolderPath.copyFolderPath(_:))
+        copyPathButton.controlSize = .small
+        copyPathButton.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        copyPathButton.bezelStyle = .rounded
+        copyPathButton.toolTip = NSLocalizedString("Copy the full folder path", comment: "Project folder path copy button help")
+        copyPathButton.setAccessibilityLabel(NSLocalizedString("Copy Folder Path", comment: "Copy a Project's primary folder path"))
+        copyPathButton.isHidden = true
+        copyPathButton.sizeToFit()
+        view.addSubview(copyPathButton)
     }
 
     private func updateText(_ label: SpaceLabelResolver.Label, folder: String?, visibleSize: NSSize) {
@@ -166,18 +187,23 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
         updateFolderPath(folder, width: width)
         textLabel.font = fittingFont(width: width, maxHeight: visibleSize.height / 3)
         let height = ceil(textLabel.cell!.cellSize.height)
-        let textBottom = folderPathLabel.isHidden ? controlsHeight + 20 : folderPathLabel.frame.maxY + 8
+        let textBottom = folderPathLabel.isHidden ? controlsHeight + 20 : max(folderPathLabel.frame.maxY, copyPathButton.frame.maxY) + 8
         textLabel.frame = NSRect(x: 16, y: textBottom, width: width, height: height)
         contentView?.layer?.cornerRadius = 10
     }
 
     private func updateFolderPath(_ folder: String?, width: CGFloat) {
         folderPathLabel.isHidden = folder == nil
+        copyPathButton.isHidden = folder == nil
         guard let folder else { return }
         if folderPathLabel.stringValue != folder { folderPathLabel.stringValue = folder }
         folderPathLabel.toolTip = folder
         let height = ceil(folderPathLabel.cell!.cellSize.height)
-        folderPathLabel.frame = NSRect(x: 16, y: controlsHeight + 20, width: width, height: height)
+        let copyWidth = min(width, copyPathButton.intrinsicContentSize.width)
+        let rowHeight = max(height, copyPathButton.frame.height)
+        let bottom = controlsHeight + 20
+        folderPathLabel.frame = NSRect(x: 16, y: bottom + (rowHeight - height) / 2, width: max(0, width - copyWidth - 8), height: height)
+        copyPathButton.frame = NSRect(x: 16 + width - copyWidth, y: bottom, width: copyWidth, height: rowHeight)
     }
 
     func avoidOverlap(_ occupied: [CGRect], on screen: NSScreen, migrated: Bool) {
