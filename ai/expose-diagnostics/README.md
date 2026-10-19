@@ -28,7 +28,9 @@ The minimal AppKit reproduction requires no AltTab code. No older macOS installa
 
 Adding three transparent 2×2 `.managed` windows to the probe yields five Exposé entries: two real windows and three blank entries. Changing only the helpers to `.stationary` yields two entries.
 
-AltTab's desktop anchors use `.managed` in `src/spaces/DesktopWindows.swift`; the live keyboard test exposes its ten labels plus eleven blank entries (the supplied earlier screenshot had ten blank entries). The three-window control proves that managed transparent helpers contribute blank entries; it does not assign every blank runtime entry to a particular window. Desktop navigation with stationary helpers was not tested, so no production change was made.
+The earlier AltTab keyboard test exposed ten labels plus eleven blank entries (the supplied screenshot had ten blank entries). The three-window control proves that managed transparent helpers contribute blank entries; it does not assign every blank runtime entry to a particular window.
+
+An October 19, 2026 navigation probe compared focusable anchors assigned to an empty Desktop. Stationary anchors did not switch Desktops; transient anchors moved back to the current Desktop. A managed anchor reached its destination, but ordering it out selected an older key window and returned to the origin. Promoting an ordered stationary anchor to managed before focus, then restoring stationary behavior after confirmed arrival, preserved the destination and key window on repeated trips. `src/spaces/DesktopWindows.swift` uses this last approach, with stale-request guards and bounded cleanup. Visible Project labels remain managed.
 
 ## Public reproduction and local evidence
 
@@ -69,4 +71,4 @@ The probe implements the HID event schema described by [Mac Mouse Fix's referenc
 
 All four diagnostic programs compiled successfully. The A/B/A and helper comparisons above ran on the user's machine. The diagnostic tools did not edit production source, app signatures, bundle identities, preferences or project files. The temporary probe app and recorders were stopped and focus returned to Codex.
 
-These diagnostics validate the reproduction tools independently of the shipping application's build. The investigation does not implement a production fix.
+These diagnostics validate the reproduction tools independently of the shipping application's build. The standalone programs remain diagnostic tools. The production anchor change addresses blank entries separately from the accessory-app gesture targeting issue above.
