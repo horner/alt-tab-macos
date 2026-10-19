@@ -59,7 +59,7 @@ def cask(version, checksum, url, token):
   desc "Window and Desktop switcher with saved Projects"
   homepage "https://github.com/horner/alt-tab-macos"
 
-  depends_on macos: ">= :monterey"
+  depends_on macos: :monterey
 
   app "AltTabProjects.app"
 end
