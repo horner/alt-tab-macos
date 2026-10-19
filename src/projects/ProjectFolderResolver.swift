@@ -29,6 +29,18 @@ enum ProjectFolderResolver {
         return "/bin/sh -c \(shellQuoted(command))"
     }
 
+    static func editorWorkspaceURL(applicationSupport: URL, requestId: UUID, folder: String) -> URL {
+        let folderName = URL(fileURLWithPath: folder, isDirectory: true).standardizedFileURL.lastPathComponent
+        let name = folderName.isEmpty || folderName == "/" ? "Root" : folderName
+        return applicationSupport.appendingPathComponent("AltTabProjects/ProjectWorkspaces", isDirectory: true)
+            .appendingPathComponent(requestId.uuidString, isDirectory: true)
+            .appendingPathComponent(name).appendingPathExtension("code-workspace")
+    }
+
+    static func editorWorkspaceData(folder: String) throws -> Data {
+        try JSONSerialization.data(withJSONObject: ["folders": [["path": folder]]], options: [.prettyPrinted, .sortedKeys])
+    }
+
     // iTerm2's scripting dictionary defines window id as the integer accepted by screencapture -l.
     static let terminalScript = """
         on run argv

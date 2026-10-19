@@ -48,6 +48,33 @@ final class ProjectFolderResolverTests: XCTestCase {
         XCTAssertTrue(launch.matches(id: "new", windowId: 1))
     }
 
+    func testEditorWorkspacePreservesLiteralAbsoluteFolderPaths() throws {
+        let folder = "/tmp/space ' quote \" $(touch INJECTED) `touch OTHER`\\project\n日本語"
+        let data = try ProjectFolderResolver.editorWorkspaceData(folder: folder)
+        let document = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: [[String: String]]])
+        XCTAssertEqual(document, ["folders": [["path": folder]]])
+    }
+
+    func testEditorWorkspaceRequestsUseDistinctDurableDocumentsWithFriendlyNames() {
+        let support = URL(fileURLWithPath: "/Users/test/Library/Application Support", isDirectory: true)
+        let firstId = UUID()
+        let secondId = UUID()
+        let first = ProjectFolderResolver.editorWorkspaceURL(applicationSupport: support, requestId: firstId, folder: "/tmp/My Project/")
+        let second = ProjectFolderResolver.editorWorkspaceURL(applicationSupport: support, requestId: secondId, folder: "/tmp/My Project")
+        XCTAssertNotEqual(first, second)
+        XCTAssertEqual(first, ProjectFolderResolver.editorWorkspaceURL(applicationSupport: support, requestId: firstId, folder: "/tmp/My Project"))
+        XCTAssertEqual(first.path, "/Users/test/Library/Application Support/AltTabProjects/ProjectWorkspaces/\(firstId.uuidString)/My Project.code-workspace")
+        XCTAssertEqual(second.lastPathComponent, "My Project.code-workspace")
+    }
+
+    func testEditorWorkspaceRootFolderUsesFriendlyFilenameWithinRequestDirectory() {
+        let support = URL(fileURLWithPath: "/Users/test/Library/Application Support", isDirectory: true)
+        let requestId = UUID()
+        let workspace = ProjectFolderResolver.editorWorkspaceURL(applicationSupport: support, requestId: requestId, folder: "/")
+        XCTAssertEqual(workspace.lastPathComponent, "Root.code-workspace")
+        XCTAssertEqual(workspace.deletingLastPathComponent().lastPathComponent, requestId.uuidString)
+    }
+
     func testTerminalCommandTreatsFolderAsLiteralShellData() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let folder = root.appendingPathComponent("space ' quote \" $(touch INJECTED) `touch OTHER`\nproject")
