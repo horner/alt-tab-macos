@@ -24,10 +24,16 @@ def is_macho(path):
         return handle.read(4) in MACH_MAGICS
 
 
+def verify_architectures(path, runner=None):
+    # Xcode 27's lipo rejects multiple architectures in one -verify_arch call.
+    for architecture in ("arm64", "x86_64"):
+        (runner or run)("lipo", path, "-verify_arch", architecture)
+
+
 def sign_app(app, identity):
     files = {path.resolve() for path in app.rglob("*") if path.is_file() and is_macho(path)}
     for path in sorted(files):
-        run("lipo", path, "-verify_arch", "arm64", "x86_64")
+        verify_architectures(path)
     bundles = {path.resolve() for path in app.rglob("*")
                if path.is_dir() and path.suffix in (".app", ".framework", ".xpc")}
     timestamp = "--timestamp=none" if identity == "-" else "--timestamp"
@@ -83,7 +89,7 @@ def main():
         parser.error("Expected a three-component numeric app version")
     if info["CFBundleIdentifier"] != "com.horner.alt-tab-projects":
         parser.error("Unexpected bundle identity")
-    run("lipo", source / "Contents/MacOS/AltTabProjects", "-verify_arch", "arm64", "x86_64")
+    verify_architectures(source / "Contents/MacOS/AltTabProjects")
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     app = output / "AltTabProjects.app"

@@ -150,18 +150,24 @@ final class ProjectAtticPrompt: NSObject, NSTableViewDataSource, NSTableViewDele
         let remaining = patterns.filter { $0.bundleIdentifier != bundle }
         guard !urls.isEmpty else { openPages(remaining, for: project); return }
         DispatchQueue.global(qos: .userInitiated).async {
-            let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle)
-            let opened = app.flatMap { try? NSWorkspace.shared.open(urls, withApplicationAt: $0, options: [], configuration: [:]) } != nil
-            DispatchQueue.main.async {
-                if !opened {
-                    let browser = bundle == "com.apple.Safari" ? "Safari" : "Chrome"
-                    ProjectRestoreNotice.showSummary(title: NSLocalizedString("Project restored; some pages could not be opened", comment: "Project Attic browser failure"), rows: [
-                        .init(title: browser, detail: NSLocalizedString("Make sure the original browser is installed. Your saved pages remain in the Project’s Window History.", comment: "Project Attic recovery failure"))
-                    ])
-                }
-                openPages(remaining, for: project)
+            guard let app = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundle) else {
+                DispatchQueue.main.async { pagesOpened(false, browser: bundle, remaining: remaining, project: project) }
+                return
+            }
+            NSWorkspace.shared.open(urls, withApplicationAt: app, configuration: NSWorkspace.OpenConfiguration()) { application, error in
+                DispatchQueue.main.async { pagesOpened(application != nil && error == nil, browser: bundle, remaining: remaining, project: project) }
             }
         }
+    }
+
+    private static func pagesOpened(_ opened: Bool, browser bundle: String, remaining: [ProjectWindowPattern], project: Project) {
+        if !opened {
+            let browser = bundle == "com.apple.Safari" ? "Safari" : "Chrome"
+            ProjectRestoreNotice.showSummary(title: NSLocalizedString("Project restored; some pages could not be opened", comment: "Project Attic browser failure"), rows: [
+                .init(title: browser, detail: NSLocalizedString("Make sure the original browser is installed. Your saved pages remain in the Project’s Window History.", comment: "Project Attic recovery failure"))
+            ])
+        }
+        openPages(remaining, for: project)
     }
 
     private final class PageCell: NSView {

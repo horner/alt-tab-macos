@@ -25,6 +25,29 @@ final class ProjectFileStoreTests: XCTestCase {
         return store.projectsDirectory.appendingPathComponent(folder).appendingPathComponent("project.yaml")
     }
 
+    func testFolderPathSurvivesYAMLRoundTripAndExternalChanges() throws {
+        var entry = project()
+        entry.folderPath = "/Volumes/Work/Project 'One'"
+        XCTAssertTrue(store.load(legacy: [entry], migrated: false))
+        XCTAssertEqual(store.entries.first?.folderPath, entry.folderPath)
+        let url = try yamlURL()
+        let decoded = try YAMLDecoder().decode(ProjectFileDocument.self, from: String(contentsOf: url))
+        XCTAssertEqual(decoded.entry.folderPath, entry.folderPath)
+        let text = try String(contentsOf: url).replacingOccurrences(of: "Project 'One'", with: "Project Two")
+        try text.write(to: url, atomically: true, encoding: .utf8)
+        let reloaded = ProjectFileStore(root: root)
+        XCTAssertTrue(reloaded.load(legacy: [], migrated: true))
+        XCTAssertEqual(reloaded.entries.first?.folderPath, "/Volumes/Work/Project Two")
+    }
+
+    func testOlderProjectWithoutFolderStillDecodes() throws {
+        let entry = project()
+        let data = try JSONEncoder().encode(entry)
+        XCTAssertNil(try JSONDecoder().decode(ProjectEntry.self, from: data).folderPath)
+        let yaml = try YAMLEncoder().encode(ProjectFileDocument(entry: entry, order: 0))
+        XCTAssertNil(try YAMLDecoder().decode(ProjectFileDocument.self, from: yaml).entry.folderPath)
+    }
+
     func testMigrationRoundTripSeparatesRuntimeAndPreservesNotes() throws {
         let entry = project()
         XCTAssertTrue(store.load(legacy: [entry], migrated: false), store.errors.description)

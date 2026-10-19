@@ -14,6 +14,7 @@ final class Project {
     var kind: Kind
     var homeSpaceUuid: String
     var name: String? { didSet { if name != oldValue { Projects.save() } } }
+    var folderPath: String? { didSet { if folderPath != oldValue { Projects.save() } } }
     var autoName: String? { didSet { if autoName != oldValue { Projects.save() } } }
     var members = Set<String>()
     var memberIdentities = [ProjectWindowIdentity]()
@@ -271,6 +272,7 @@ enum Projects {
         // discoveryLanded consumes the WindowServer creation marker after appendWindow returns.
         // Capture it now so startup discovery and re-admission never count as a new window.
         let isNew = window.cgWindowId.map { Windows.recentlyCreatedWindows.contains($0) } ?? false
+        ProjectFolderActions.windowDiscovered(window, isNew: isNew)
         creationContexts[window.tracked.id] = CreationContext(isNew: isEnabled && isNew, observedAt: Date(), spaceId: Spaces.currentSpaceId,
             project: desktopOwner(on: Spaces.currentSpaceId))
         DispatchQueue.main.async { [weak window] in
@@ -328,6 +330,7 @@ enum Projects {
         ProjectPersistence.scheduleSnapshot()
         guard canBelongToProject(window), !WindowDesktopMove.preservesMembership(window) else { return }
         let id = window.tracked.id
+        if ProjectFolderActions.windowReady(window) { creationContexts.removeValue(forKey: id); return }
         if let context = creationContexts.removeValue(forKey: id), let identity,
            ProjectReattachResolver.isOrdinaryNewWindow(isNew: context.isNew,
                applicationAge: context.observedAt.timeIntervalSince(identity.processLaunchedAt),
@@ -682,7 +685,7 @@ enum Projects {
             iconFileName: iconFileNames[project.id], members: project.memberIdentities,
             excludedMembers: project.excludedMembers, memberPatterns: project.memberPatterns, excludedPatterns: project.excludedPatterns,
             windowHistory: project.windowHistory, labelUuid: project.labelUuid,
-            pendingDesktopRemoval: false, desktopOwnershipVersion: 1)
+            pendingDesktopRemoval: false, desktopOwnershipVersion: 1, folderPath: project.folderPath)
     }
 
     static func keepAfterDesktopRemoval(_ project: Project) {
@@ -812,6 +815,7 @@ enum Projects {
         project.memberIdentities = entry.members
         project.excludedMembers = entry.excludedMembers
         project.labelUuid = entry.labelUuid
+        project.folderPath = entry.folderPath
         project.name = entry.name
         project.autoName = entry.autoName
         iconFileNames[project.id] = entry.iconFileName
@@ -882,6 +886,7 @@ enum Projects {
             let rulesChanged = previous.memberPatterns != loaded.memberPatterns || previous.excludedPatterns != loaded.excludedPatterns
             project.kind = loaded.kind
             project.homeSpaceUuid = loaded.homeSpaceUuid
+            project.folderPath = loaded.folderPath
             project.name = loaded.name
             project.autoName = loaded.autoName
             project.windowHistory = loaded.windowHistory

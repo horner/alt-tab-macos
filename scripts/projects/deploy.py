@@ -161,7 +161,7 @@ class Deploy:
         signature = self.run("codesign", "-dv", "--verbose=4", app, check=False)
         require(signature.returncode == 0 and "Authority=Developer ID Application:" in signature.stderr
                 and f"TeamIdentifier={TEAM}" in signature.stderr.splitlines(), "The app has an unexpected signing identity.")
-        self.run("lipo", app / "Contents/MacOS/AltTabProjects", "-verify_arch", "arm64", "x86_64")
+        package.verify_architectures(app / "Contents/MacOS/AltTabProjects", self.run)
         self.run("xcrun", "stapler", "validate", app)
         self.run("spctl", "--assess", "--type", "execute", app)
 

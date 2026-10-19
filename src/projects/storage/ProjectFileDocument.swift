@@ -7,7 +7,7 @@ struct ProjectFileDocument: Codable {
     var isDeleted: Bool
     private enum CodingKeys: String, CodingKey {
         case schemaVersion, order, isDeleted, id, kind, spaceUuid, homeSpaceUuid, desktopOwnershipVersion, name, autoName, iconFileName
-        case windowHistory, memberPatterns, excludedPatterns, linkedProjectIds, labelUuid, isClosed, closedWindows
+        case folderPath, windowHistory, memberPatterns, excludedPatterns, linkedProjectIds, labelUuid, isClosed, closedWindows
     }
 
     init(entry: ProjectEntry, order: Int, isDeleted: Bool = false) {
@@ -45,7 +45,7 @@ struct ProjectFileDocument: Codable {
             linkedProjectIds: try c.decodeIfPresent([String].self, forKey: .linkedProjectIds) ?? [],
             labelUuid: try c.decodeIfPresent(String.self, forKey: .labelUuid),
             isClosed: try c.decodeIfPresent(Bool.self, forKey: .isClosed) ?? false,
-            desktopOwnershipVersion: ownershipVersion)
+            desktopOwnershipVersion: ownershipVersion, folderPath: try c.decodeIfPresent(String.self, forKey: .folderPath))
         entry.closedWindows = try c.decodeIfPresent([ProjectWindowPattern].self, forKey: .closedWindows)
         guard (entry.memberPatterns + entry.excludedPatterns + entry.windowHistory + (entry.closedWindows ?? [])).allSatisfy({ !$0.bundleIdentifier.isEmpty }) else {
             throw ProjectFileError.invalid("Window patterns need a bundleIdentifier")

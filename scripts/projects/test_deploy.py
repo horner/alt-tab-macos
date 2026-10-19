@@ -136,6 +136,18 @@ class DeployTests(unittest.TestCase):
         self.d.validate_package()
         self.d.verify_archive.assert_called_once_with(self.d.output / "AltTabProjects.zip")
 
+    def test_universal_verification_rejects_either_missing_architecture(self):
+        for missing in ("arm64", "x86_64", None):
+            def verify(*args):
+                if args[-1] == missing:
+                    raise subprocess.CalledProcessError(1, args)
+            with self.subTest(missing=missing):
+                if missing:
+                    with self.assertRaises(subprocess.CalledProcessError):
+                        deploy.package.verify_architectures(Path("fixture"), verify)
+                else:
+                    deploy.package.verify_architectures(Path("fixture"), verify)
+
     def test_modified_zip_is_rejected(self):
         self.package_fixture()
         (self.d.output / "AltTabProjects.zip").write_bytes(b"replacement")

@@ -312,7 +312,7 @@ class ExceptionEditorView: NSView {
     }
 
     private func resolveHeaderAsync(for bundleId: String) {
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .userInitiated).async { [self] in
             let info = AppDisplayInfo.resolve(bundleId: bundleId)
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.entry.bundleIdentifier == bundleId else { return }
