@@ -51,7 +51,7 @@ final class ProjectFileStore {
             try nameUnnamedProjects()
             if !migrated {
                 for (order, entry) in legacy.enumerated() where !documents.contains(where: { $0.entry.id == entry.id }) {
-                    try create(ProjectFileDocument(entry: entry, order: order))
+                    try create(ProjectFileDocument(entry: legacyEntryForImport(entry), order: order))
                 }
                 read()
             }
@@ -64,6 +64,15 @@ final class ProjectFileStore {
             errors.append(error.localizedDescription)
             return false
         }
+    }
+
+    private func legacyEntryForImport(_ entry: ProjectEntry) -> ProjectEntry {
+        guard entry.kind == "custom", let name = ProjectNameResolver.normalized(entry.name),
+              projectNames.contains(where: { Self.slug($0) == Self.slug(name) }) else { return entry }
+        // Preference domains share this directory; a different legacy ID must not replace its existing namesake.
+        var imported = entry
+        imported.name = ProjectNameResolver.available("\(name) (imported)", existing: projectNames)
+        return imported
     }
 
     func directory(for projectId: String) -> URL? {

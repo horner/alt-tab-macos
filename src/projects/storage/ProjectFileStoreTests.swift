@@ -367,6 +367,81 @@ final class ProjectFileStoreTests: XCTestCase {
         XCTAssertEqual(restarted.records.count, 1)
     }
 
+    func testLegacyNameCollisionPreservesBothProjectsAndCurrentDesktopOwner() throws {
+        var canonical = project()
+        canonical.desktopOwnershipVersion = 1
+        XCTAssertTrue(store.load(legacy: [canonical], migrated: false))
+        let canonicalURL = try yamlURL()
+        let canonicalYAML = try Data(contentsOf: canonicalURL)
+        let notesURL = canonicalURL.deletingLastPathComponent().appendingPathComponent("README.md")
+        let notes = Data("Existing notes must survive importing another preference domain.\n".utf8)
+        try notes.write(to: notesURL)
+        var legacy = project("RÉSÉARCH")
+        legacy.id = "zz-legacy-id"
+        legacy.folderPath = "/Volumes/Work/Legacy"
+        legacy.iconFileName = "legacy.png"
+        legacy.labelUuid = "legacy-label"
+        legacy.memberPatterns = [ProjectWindowPattern(bundleIdentifier: "com.apple.TextEdit", title: "Legacy member")]
+        legacy.excludedPatterns = [ProjectWindowPattern(bundleIdentifier: "com.apple.Safari", title: "Legacy exclusion")]
+        legacy.windowHistory = [ProjectWindowPattern(bundleIdentifier: "com.apple.finder", title: "Legacy history")]
+        legacy.closedWindows = [ProjectWindowPattern(bundleIdentifier: "com.apple.Terminal", title: "Legacy archive")]
+        let restarted = ProjectFileStore(root: root)
+        XCTAssertTrue(restarted.load(legacy: [legacy], migrated: false), restarted.errors.description)
+        var expected = ProjectFileDocument.durable(legacy)
+        expected.name = "RÉSÉARCH (imported)"
+        XCTAssertEqual(restarted.entries.first { $0.id == legacy.id }, expected)
+        XCTAssertEqual(try Data(contentsOf: canonicalURL), canonicalYAML)
+        XCTAssertEqual(try Data(contentsOf: notesURL), notes)
+        XCTAssertEqual(restarted.directory(for: legacy.id)?.lastPathComponent, "research-imported")
+        let normalized = ProjectLifecycleResolver.normalizingDesktopOwnership(restarted.entries)
+        XCTAssertEqual(normalized.first { $0.id == canonical.id }?.homeSpaceUuid, canonical.homeSpaceUuid)
+        XCTAssertEqual(normalized.first { $0.id == legacy.id }?.homeSpaceUuid, "")
+        XCTAssertEqual(normalized.first { $0.id == legacy.id }?.memberPatterns, legacy.memberPatterns)
+        var added = project("New project")
+        added.id = "new-id"
+        added.homeSpaceUuid = ""
+        added.desktopOwnershipVersion = 1
+        restarted.save(normalized + [added])
+        XCTAssertTrue(restarted.errors.isEmpty, restarted.errors.description)
+        let final = ProjectFileStore(root: root)
+        XCTAssertTrue(final.load(legacy: [legacy], migrated: false), final.errors.description)
+        XCTAssertEqual(Set(final.entries.map(\.id)), [canonical.id, legacy.id, added.id])
+        XCTAssertEqual(final.entries.first { $0.id == legacy.id }?.name, expected.name)
+        XCTAssertEqual(final.entries.first { $0.id == legacy.id }?.homeSpaceUuid, "")
+        XCTAssertEqual(try Data(contentsOf: canonicalURL), canonicalYAML)
+        XCTAssertEqual(try Data(contentsOf: notesURL), notes)
+    }
+
+    func testPartialLegacyImportUsesDistinctNamesAndDoesNotReimportAcrossDomains() throws {
+        let canonical = project()
+        var reserved = project("Research (imported)")
+        reserved.id = "reserved-id"
+        reserved.isClosed = true
+        XCTAssertTrue(store.load(legacy: [canonical, reserved], migrated: false))
+        store.save([canonical])
+        XCTAssertTrue(store.errors.isEmpty, store.errors.description)
+        let originalFiles = try Dictionary(uniqueKeysWithValues: [canonical.id, reserved.id].map { id in
+            let url = try XCTUnwrap(store.directory(for: id)).appendingPathComponent("project.yaml")
+            return (url, try Data(contentsOf: url))
+        })
+        var first = project()
+        first.id = "legacy-a"
+        var second = project()
+        second.id = "legacy-b"
+        let partial = ProjectFileStore(root: root)
+        XCTAssertTrue(partial.load(legacy: [first], migrated: false), partial.errors.description)
+        XCTAssertEqual(partial.entries.first { $0.id == first.id }?.name, "Research (imported) 2")
+        let resumed = ProjectFileStore(root: root)
+        XCTAssertTrue(resumed.load(legacy: [first, second], migrated: false), resumed.errors.description)
+        XCTAssertEqual(resumed.entries.first { $0.id == first.id }?.name, "Research (imported) 2")
+        XCTAssertEqual(resumed.entries.first { $0.id == second.id }?.name, "Research (imported) 3")
+        let syncedDomain = ProjectFileStore(root: root)
+        XCTAssertTrue(syncedDomain.load(legacy: [first, second], migrated: false), syncedDomain.errors.description)
+        XCTAssertEqual(syncedDomain.records.count, 4)
+        XCTAssertEqual(Set(syncedDomain.entries.map(\.id)), [canonical.id, first.id, second.id])
+        for (url, data) in originalFiles { XCTAssertEqual(try Data(contentsOf: url), data) }
+    }
+
     func testDuplicateIdsAreRejectedWithoutOverwritingEitherFile() throws {
         XCTAssertTrue(store.load(legacy: [project()], migrated: false))
         let url = try yamlURL()

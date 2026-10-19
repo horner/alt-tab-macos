@@ -32,8 +32,17 @@ Pattern lists have deterministic ordering. Observations do not rewrite YAML.
 Migration imports missing IDs from the legacy `projects` preference, verifies the
 written YAML, then sets `projectsFileStoreMigrated`. The original preference is
 retained unchanged as a recovery copy. Existing YAML always wins over legacy data;
-an interrupted migration resumes without duplicating IDs. A separate defaults
-recovery cache retains last valid files for invalid YAML at the next launch. This
+an interrupted migration resumes without duplicating IDs. Preference domains share this
+directory, so a missing legacy custom ID can collide with an existing project's folder
+name. Only during legacy import, that incoming project receives `<name> (imported)`
+with the normal numeric suffix when needed. IDs, ownership metadata, patterns, history
+and other fields are retained; existing project files and notes remain unchanged.
+Archived and tombstoned names remain reserved. An already imported ID is never renamed
+or imported again, including when another preference domain has not set its migration
+flag. Normal edits and arbitrary duplicate YAML names still report errors.
+Ownership normalization preserves an established version 1 Desktop owner and leaves
+conflicting unversioned imports unassigned without discarding their membership.
+A separate defaults recovery cache retains last valid files for invalid YAML at the next launch. This
 cache is not authoritative when a valid file exists. Its version 2 wrapper separately
 stores projects and desktops and can read the original folder-keyed recovery cache.
 
@@ -79,7 +88,8 @@ invalid edits preserve the file and last valid project.
 ProjectFileStoreTests exercises migration/relaunch, runtime separation, no-op
 writes, comments, conflict merging, validation, recovery, duplicate IDs, archives,
 deletes, named/moved folders, interrupted layout migration, backup preservation,
-distinct names, Desktop comment merging, diagnostic boot naming and atomic editor events.
+distinct names, cross-domain legacy name collisions, partial-import retries, Desktop
+ownership preservation, Desktop comment merging, diagnostic boot naming and atomic editor events.
 Manual integration: launch the app, rename a project in YAML, verify its menu and
 label update, introduce/fix an invalid field, and restart AltTab without closing
 other apps to verify live identity restoration and the same diagnostic boot folder.
