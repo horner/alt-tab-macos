@@ -19,7 +19,8 @@ enum DesktopWindows {
             isReleasedWhenClosed = false
             hidesOnDeactivate = false
             isExcludedFromWindowsMenu = true
-            collectionBehavior = [.managed, .ignoresCycle]
+            // Stationary windows stay out of Exposé; managed transparent windows produce blank entries.
+            collectionBehavior = [.stationary, .ignoresCycle]
             setAccessibilitySubrole(.floatingWindow)
         }
     }
