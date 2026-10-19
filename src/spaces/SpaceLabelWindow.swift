@@ -23,6 +23,7 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
     private let textLabel = Label(labelWithString: "")
     private var buttons = [NSButton]()
     private var projectButtons = [NSButton]()
+    private var folderButton: NSButton?
     private var renderedLabel: SpaceLabelResolver.Label?
     private var renderedSize = NSSize.zero
     private var position: SpaceLabelResolver.Position?
@@ -77,6 +78,7 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
             addButton(NSLocalizedString("History", comment: "Project window history"),
                 help: NSLocalizedString("Open this project's window history", comment: "Project label button help"), action: #selector(openHistory(_:))),
         ]
+        addProjectFolderButtons()
         addButton(NSLocalizedString("Take Snapshot", comment: "Save a visual desktop snapshot"),
             help: NSLocalizedString("Save screenshots and reopening details for this Desktop without closing windows", comment: "Project label snapshot button help"), action: #selector(takeSnapshot(_:)))
         addButton(NSLocalizedString("Rename…", comment: "Project label rename button"),
@@ -95,6 +97,8 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
 
     func update(_ label: SpaceLabelResolver.Label, on screen: NSScreen) {
         MainThreadStall.step()
+        let folder = ProjectsMenu.context(for: label).projectId.flatMap { Projects.byId[$0]?.folderPath }
+        folderButton?.toolTip = folder ?? NSLocalizedString("Choose this Project’s primary folder", comment: "Project folder button help")
         let visibleFrame = screen.visibleFrame
         if renderedLabel != label || renderedSize != visibleFrame.size || title != label.title || displayedText != label.text {
             updateText(label, visibleSize: visibleFrame.size)
@@ -195,6 +199,49 @@ final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
     override func close() {
         savePosition()
         super.close()
+    }
+
+    private func addProjectFolderButtons() {
+        for tool in ProjectFolderTool.allCases {
+            let button = addButton(tool.title, help: String(format: NSLocalizedString("Open or focus %@ for this Project", comment: "Project tool button help"), tool.title), action: #selector(openProjectTool(_:)))
+            button.tag = tool.rawValue
+            let menu = NSMenu()
+            let item = NSMenuItem(title: String(format: NSLocalizedString("New %@ Window", comment: "Project tool menu action"), tool.title), action: #selector(newProjectTool(_:)), keyEquivalent: "")
+            item.target = self
+            item.tag = tool.rawValue
+            menu.addItem(item)
+            button.menu = menu
+            projectButtons.append(button)
+        }
+        let button = addButton(NSLocalizedString("Folder…", comment: "Project folder button"),
+            help: NSLocalizedString("Choose this Project’s primary folder", comment: "Project folder button help"), action: #selector(chooseProjectFolder(_:)))
+        folderButton = button
+        projectButtons.append(button)
+    }
+
+    @objc private func openProjectTool(_ sender: NSButton) {
+        guard let tool = ProjectFolderTool(rawValue: sender.tag) else { return }
+        performFromLabel(sender) { context, button in
+            guard let id = context.projectId, let project = Projects.byId[id] else { return }
+            ProjectFolderActions.open(tool, for: project, from: button.window)
+        }
+    }
+
+    @objc private func newProjectTool(_ sender: NSMenuItem) {
+        guard let label = renderedLabel, let tool = ProjectFolderTool(rawValue: sender.tag),
+              let id = ProjectsMenu.context(for: label).projectId else { return }
+        onInteraction?()
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let project = Projects.byId[id] else { return }
+            ProjectFolderActions.open(tool, for: project, from: self, newWindow: true)
+        }
+    }
+
+    @objc private func chooseProjectFolder(_ sender: NSButton) {
+        performFromLabel(sender) { context, button in
+            guard let id = context.projectId, let project = Projects.byId[id] else { return }
+            ProjectFolderActions.chooseFolder(for: project, from: button.window) { }
+        }
     }
 
     @objc private func openWindows(_ sender: NSButton) {

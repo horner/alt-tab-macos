@@ -8,6 +8,7 @@ struct ProjectEntry: Codable, Equatable {
     var desktopOwnershipVersion: Int?
     var name: String?
     var autoName: String?
+    var folderPath: String?
     var iconFileName: String?
     var members: [ProjectWindowIdentity]
     var excludedMembers: [ProjectWindowIdentity]
@@ -21,7 +22,8 @@ struct ProjectEntry: Codable, Equatable {
     var pendingDesktopRemoval = false
     var closedWindows: [ProjectWindowPattern]?
 
-    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = [], memberPatterns: [ProjectWindowPattern] = [], excludedPatterns: [ProjectWindowPattern] = [], windowHistory: [ProjectWindowPattern] = [], linkedProjectIds: [String] = [], labelUuid: String? = nil, isClosed: Bool = false, pendingDesktopRemoval: Bool = false, desktopOwnershipVersion: Int? = nil) {
+    init(id: String, kind: String, spaceUuid: String?, homeSpaceUuid: String, name: String?, autoName: String?, iconFileName: String? = nil, members: [ProjectWindowIdentity] = [], linkedProjectId: String? = nil, excludedMembers: [ProjectWindowIdentity] = [], memberPatterns: [ProjectWindowPattern] = [], excludedPatterns: [ProjectWindowPattern] = [], windowHistory: [ProjectWindowPattern] = [], linkedProjectIds: [String] = [], labelUuid: String? = nil, isClosed: Bool = false, pendingDesktopRemoval: Bool = false, desktopOwnershipVersion: Int? = nil, folderPath: String? = nil) {
+        self.folderPath = folderPath
         self.isClosed = isClosed
         self.pendingDesktopRemoval = pendingDesktopRemoval
         self.windowHistory = windowHistory
@@ -55,6 +57,7 @@ struct ProjectEntry: Codable, Equatable {
         desktopOwnershipVersion = try? c?.decode(Int.self, forKey: .desktopOwnershipVersion)
         name = try? c?.decode(String.self, forKey: .name)
         autoName = try? c?.decode(String.self, forKey: .autoName)
+        folderPath = try? c?.decode(String.self, forKey: .folderPath)
         iconFileName = try? c?.decode(String.self, forKey: .iconFileName)
         members = (try? c?.decode([ProjectWindowIdentity].self, forKey: .members)) ?? []
         excludedMembers = (try? c?.decode([ProjectWindowIdentity].self, forKey: .excludedMembers)) ?? []

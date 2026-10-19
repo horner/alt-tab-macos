@@ -13,6 +13,13 @@
 /* No comment provided by engineer. */
 "%@ now has a Pro tier" = "%@ now has a Pro tier";
 
+/* Replacing the Desktop owner
+   Restoring a replacement Desktop owner */
+"%@ will stay open without a Desktop. Its windows and history are kept." = "%@ will stay open without a Desktop. Its windows and history are kept.";
+
+/* Snapshot capture date and window count */
+"%@ — %d windows" = "%1$@ — %2$d windows";
+
 /* No comment provided by engineer. */
 "%@ — last seen %@" = "%1$@ — last seen %2$@";
 
@@ -28,8 +35,11 @@
 /* Archived Project history count */
 "%d saved history entries" = "%d saved history entries";
 
-/* No comment provided by engineer. */
+/* Project assignment with a Desktop */
 "%d selected window(s) already belong to: %@. Move removes them from those Projects and moves them to this Project's Desktop. Keep in Both adds them without changing their Desktop or existing memberships." = "%1$d selected window(s) already belong to: %2$@. Move removes them from those Projects and moves them to this Project's Desktop. Keep in Both adds them without changing their Desktop or existing memberships.";
+
+/* Project assignment without an available Desktop */
+"%d selected window(s) already belong to: %@. Move removes them from those Projects. Keep in Both preserves those memberships. This Project has no available Desktop, so the windows stay where they are." = "%1$d selected window(s) already belong to: %2$@. Move removes them from those Projects. Keep in Both preserves those memberships. This Project has no available Desktop, so the windows stay where they are.";
 
 /* Desktop restoration counts */
 "%d skipped · %d could not be moved" = "%1$d skipped · %2$d could not be moved";
@@ -151,6 +161,9 @@
 /* No comment provided by engineer. */
 "Alphabetical Order" = "Alphabetical Order";
 
+/* Project Attic duplicate page */
+"Already open" = "Already open";
+
 /* Optional desktop move when resolving restoration */
 "Also move to the Project’s Desktop" = "Also move to the Project’s Desktop";
 
@@ -198,6 +211,9 @@
 
 /* No comment provided by engineer. */
 "Animations…" = "Animations…";
+
+/* Duplicate project name validation */
+"Another project already uses this name or folder name. Choose a different name." = "Another project already uses this name or folder name. Choose a different name.";
 
 /* No comment provided by engineer. */
 "App Icons" = "App Icons";
@@ -277,6 +293,9 @@
 /* Raise all Project labels button */
 "Bring All to Front" = "Bring All to Front";
 
+/* Project Attic live windows option */
+"Bring open windows to this Desktop (%d)" = "Bring open windows to this Desktop (%d)";
+
 /* Project label menu action */
 "Bring Project Labels to Front" = "Bring Project Labels to Front";
 
@@ -288,6 +307,9 @@
 
 /* No comment provided by engineer. */
 "Cancel" = "Cancel";
+
+/* Cancel a manual desktop snapshot */
+"Cancel Snapshot" = "Cancel Snapshot";
 
 /* No comment provided by engineer. */
 "Capture windows in the background" = "Capture windows in the background";
@@ -307,8 +329,14 @@
 /* Menubar option */
 "Check permissions…" = "Check permissions…";
 
+/* Duplicate project name */
+"Choose a different project name" = "Choose a different project name";
+
 /* Project window picker */
 "Choose the windows to add. Windows from other Desktops are included." = "Choose the windows to add. Windows from other Desktops are included.";
+
+/* Project folder button help */
+"Choose this Project’s primary folder" = "Choose this Project’s primary folder";
 
 /* Ambiguous restoration explanation */
 "Choose where each window belongs." = "Choose where each window belongs.";
@@ -333,9 +361,6 @@
 
 /* No comment provided by engineer. */
 "Close window" = "Close window";
-
-/* Archived Projects menu */
-"Closed Projects" = "Closed Projects";
 
 /* Project combine confirmation */
 "Combine %@ with %@?" = "Combine %1$@ with %2$@?";
@@ -373,6 +398,9 @@
 /* LetsMove replacement alert */
 "Could not move to Applications folder" = "Could not move to Applications folder";
 
+/* Drag and drop error */
+"Could not open the dropped items" = "Could not open the dropped items";
+
 /* Project history error */
 "Could not reopen browser history" = "Could not reopen browser history";
 
@@ -385,11 +413,23 @@
 /* No comment provided by engineer. */
 "Couldn't submit feedback" = "Couldn't submit feedback";
 
+/* Snapshot rendering failure */
+"Couldn’t display snapshot" = "Couldn’t display snapshot";
+
+/* Viewer startup failure */
+"Couldn’t display snapshot. You can open the Markdown externally or reveal it in Finder." = "Couldn’t display snapshot. You can open the Markdown externally or reveal it in Finder.";
+
+/* Project folder open failure */
+"Couldn’t open folder" = "Couldn’t open folder";
+
+/* Snapshot viewer failure */
+"Couldn’t open snapshot" = "Couldn’t open snapshot";
+
 /* No comment provided by engineer. */
 "Crash reports policy" = "Crash reports policy";
 
-/* No comment provided by engineer. */
-"Create a new Project" = "Create a new Project";
+/* Create the Desktop owner */
+"Create a New Project" = "Create a New Project";
 
 /* No comment provided by engineer. */
 "Create GitHub issue" = "Create GitHub issue";
@@ -497,6 +537,9 @@
 /* No comment provided by engineer. */
 "End" = "End";
 
+/* Project name validation */
+"Enter a project name." = "Enter a project name.";
+
 /* No comment provided by engineer. */
 "Exceptions" = "Exceptions";
 
@@ -535,6 +578,9 @@
 
 /* Restoration result window link */
 "Focus this window" = "Focus this window";
+
+/* Project folder button */
+"Folder…" = "Folder…";
 
 /* No comment provided by engineer. */
 "Free" = "Free";
@@ -648,6 +694,9 @@
 /* Keep relocated Project */
 "Keep on Desktop %d" = "Keep on Desktop %d";
 
+/* Project file recovery */
+"Keeping the last valid project" = "Keeping the last valid project";
+
 /* No comment provided by engineer. */
 "Language" = "Language";
 
@@ -678,6 +727,9 @@
 /* No comment provided by engineer. */
 "Light" = "Light";
 
+/* Snapshot viewer loading */
+"Loading snapshot…" = "Loading snapshot…";
+
 /* No comment provided by engineer. */
 "Machine %@" = "Machine %@";
 
@@ -689,6 +741,9 @@
 
 /* Project history error */
 "Make sure the original browser is installed and try again." = "Make sure the original browser is installed and try again.";
+
+/* Project Attic recovery failure */
+"Make sure the original browser is installed. Your saved pages remain in the Project’s Window History." = "Make sure the original browser is installed. Your saved pages remain in the Project’s Window History.";
 
 /* No comment provided by engineer. */
 "Manage activations, view receipts, etc" = "Manage activations, view receipts, etc";
@@ -753,17 +808,17 @@
 /* No comment provided by engineer. */
 "My Account" = "My Account";
 
-/* Desktop menu action */
-"Name This Desktop…" = "Name This Desktop…";
-
-/* Desktop menu action */
-"Name this Desktop…" = "Name this Desktop…";
+/* Manual snapshot without a linked Project */
+"Name this snapshot’s Project" = "Name this snapshot’s Project";
 
 /* No comment provided by engineer. */
 "Never" = "Never";
 
 /* No comment provided by engineer. */
 "Never send crash reports" = "Never send crash reports";
+
+/* Project tool menu action */
+"New %@ Window" = "New %@ Window";
 
 /* App picker title */
 "New app window or message" = "New app window or message";
@@ -789,8 +844,8 @@
 /* Projects menu */
 "No Active Project" = "No Active Project";
 
-/* Empty archived Projects menu */
-"No Closed Projects" = "No Closed Projects";
+/* External snapshot open failure */
+"No application could open this Markdown file." = "No application could open this Markdown file.";
 
 /* No eligible app window */
 "No current window" = "No current window";
@@ -804,11 +859,23 @@
 /* Empty Other Projects menu */
 "No other projects" = "No other projects";
 
+/* Unassigned Desktop */
+"No Project" = "No Project";
+
 /* Desktop restore skip reason */
 "No Project assigned" = "No Project assigned";
 
+/* Empty archived Projects menu */
+"No Projects in the Attic" = "No Projects in the Attic";
+
 /* No comment provided by engineer. */
 "No response from server." = "No response from server.";
+
+/* Project Attic empty recovery list */
+"No saved browser pages are available to reopen." = "No saved browser pages are available to reopen.";
+
+/* Empty snapshot history */
+"No snapshots yet" = "No snapshots yet";
 
 /* No comment provided by engineer. */
 "No thanks — don't ask again" = "No thanks — don't ask again";
@@ -837,6 +904,9 @@
 /* No comment provided by engineer. */
 "OK" = "OK";
 
+/* Project Attic historical page */
+"Older history" = "Older history";
+
 /* No comment provided by engineer. */
 "On Day 15, Pro features revert to the free version." = "On Day 15, Pro features revert to the free version.";
 
@@ -855,8 +925,23 @@
 /* No comment provided by engineer. */
 "Open Accessibility Settings…" = "Open Accessibility Settings…";
 
+/* Open current boot's project diagnostics in Finder */
+"Open Diagnostics Folder" = "Open Diagnostics Folder";
+
+/* Open snapshot with default Markdown app */
+"Open Externally" = "Open Externally";
+
 /* Project window history */
 "Open now" = "Open now";
+
+/* Project tool button help */
+"Open or focus %@ for this Project" = "Open or focus %@ for this Project";
+
+/* Open one project's files in Finder */
+"Open Project Folder" = "Open Project Folder";
+
+/* Open project storage in Finder */
+"Open Projects Folder" = "Open Projects Folder";
 
 /* No comment provided by engineer. */
 "Open Screen Recording Settings…" = "Open Screen Recording Settings…";
@@ -874,7 +959,7 @@
 "Open Trackpad Settings…" = "Open Trackpad Settings…";
 
 /* Project combine preview */
-"Open windows: %d. Saved history entries: %d.\n\nCombine %@ into %@, skipping duplicates. %@ will move to Closed Projects with its original history saved. Application windows stay open and remain on their current Desktops." = "Open windows: %1$d. Saved history entries: %2$d.\n\nCombine %3$@ into %4$@, skipping duplicates. %5$@ will move to Closed Projects with its original history saved. Application windows stay open and remain on their current Desktops.";
+"Open windows: %d. Saved history entries: %d.\n\nCombine %@ into %@, skipping duplicates. %@ will move to the Project Attic with its original history saved. Application windows stay open and remain on their current Desktops." = "Open windows: %1$d. Saved history entries: %2$d.\n\nCombine %3$@ into %4$@, skipping duplicates. %5$@ will move to the Project Attic with its original history saved. Application windows stay open and remain on their current Desktops.";
 
 /* No comment provided by engineer. */
 "Order spaces by" = "Order spaces by";
@@ -936,8 +1021,15 @@
 /* No comment provided by engineer. */
 "Pro Lifetime license activated for %@" = "Pro Lifetime license activated for %@";
 
+/* Desktop owner picker
+   Desktop owner picker label */
+"Project" = "Project";
+
 /* Unnamed custom Project */
 "Project %d" = "Project %d";
+
+/* Archived Projects menu */
+"Project Attic" = "Project Attic";
 
 /* Desktop removal choice window */
 "Project Desktop Closed" = "Project Desktop Closed";
@@ -945,14 +1037,34 @@
 /* Project Desktop move failure */
 "Project Desktop unavailable" = "Project Desktop unavailable";
 
+/* Project folder controls */
+"Project files" = "Project files";
+
+/* Project file error */
+"Project files need attention" = "Project files need attention";
+
+/* Choose the Project owning a Desktop */
+"Project for This Desktop" = "Project for This Desktop";
+
+/* Choose the Desktop owner */
+"Project for This Desktop…" = "Project for This Desktop…";
+
 /* Project label menu section */
 "Project Labels" = "Project Labels";
 
 /* Project label controls */
 "Project labels" = "Project labels";
 
+/* Manual snapshot Project name
+   Project name field
+   Project name field label */
+"Project name" = "Project name";
+
 /* Desktop restore failure */
 "Project or Desktop changed during restore" = "Project or Desktop changed during restore";
+
+/* Project Attic browser failure */
+"Project restored; some pages could not be opened" = "Project restored; some pages could not be opened";
 
 /* Project windows menu */
 "Project Windows" = "Project Windows";
@@ -964,9 +1076,6 @@
    Window Project membership
    Window switcher context */
 "Project: %@" = "Project: %@";
-
-/* Multiple Projects linked to one Desktop */
-"Projects on this Desktop" = "Projects on this Desktop";
 
 /* No comment provided by engineer. */
 "Projects switcher" = "Projects switcher";
@@ -1010,8 +1119,8 @@
 /* Project label rename button */
 "Rename…" = "Rename…";
 
-/* Restore archived Project */
-"Reopen on This Desktop" = "Reopen on This Desktop";
+/* Project Attic page selection */
+"Reopen selected browser pages" = "Reopen selected browser pages";
 
 /* No comment provided by engineer. */
 "Report a bug" = "Report a bug";
@@ -1028,8 +1137,23 @@
 /* No comment provided by engineer. */
 "Restart Now" = "Restart Now";
 
+/* Project Attic restoration */
+"Restore %@ on Desktop %d?" = "Restore %1$@ on Desktop %2$d?";
+
+/* Project Attic label button help */
+"Restore a saved Project on this Desktop" = "Restore a saved Project on this Desktop";
+
 /* Restore all Project window locations */
 "Restore All Windows to Project Desktops" = "Restore All Windows to Project Desktops";
+
+/* Restore a Project from its Desktop label */
+"Restore from Attic…" = "Restore from Attic…";
+
+/* Restore archived Project */
+"Restore on This Desktop…" = "Restore on This Desktop…";
+
+/* Restore from Project Attic */
+"Restore Project" = "Restore Project";
 
 /* Project restoration notice */
 "Restored Project assignments" = "Restored Project assignments";
@@ -1048,6 +1172,21 @@
 
 /* Project name prompt */
 "Save" = "Save";
+
+/* Project label snapshot button help */
+"Save screenshots and reopening details for this Desktop without closing windows" = "Save screenshots and reopening details for this Desktop without closing windows";
+
+/* Desktop snapshot scope */
+"Save screenshots and reopening details for this Desktop’s Project. Windows stay open." = "Save screenshots and reopening details for this Desktop’s Project. Windows stay open.";
+
+/* Project Attic window snapshot */
+"Saved at close" = "Saved at close";
+
+/* Project Attic recovery table */
+"Saved browser pages" = "Saved browser pages";
+
+/* Snapshot without capture date */
+"Saved snapshot" = "Saved snapshot";
 
 /* No comment provided by engineer. */
 "Screen including menu bar" = "Screen including menu bar";
@@ -1169,6 +1308,9 @@
 /* No comment provided by engineer. */
 "Show hidden windows" = "Show hidden windows";
 
+/* Reveal saved snapshot */
+"Show in Finder" = "Show in Finder";
+
 /* Project label reveal duration setting */
 "Show label after switching Spaces" = "Show label after switching Spaces";
 
@@ -1219,6 +1361,18 @@
 
 /* No comment provided by engineer. */
 "Small" = "Small";
+
+/* Snapshot viewer window */
+"Snapshot" = "Snapshot";
+
+/* Missing snapshot metadata */
+"Snapshot details are unavailable. The saved Markdown can still be opened." = "Snapshot details are unavailable. The saved Markdown can still be opened.";
+
+/* Saved Project visual snapshots */
+"Snapshot History" = "Snapshot History";
+
+/* Project visual snapshot history */
+"Snapshots" = "Snapshots";
 
 /* No comment provided by engineer. */
 "Some Pro features have reverted to free defaults." = "Some Pro features have reverted to free defaults.";
@@ -1274,6 +1428,15 @@
 /* No comment provided by engineer. */
 "System Default" = "System Default";
 
+/* Capture the Desktop without closing windows */
+"Take Desktop Snapshot" = "Take Desktop Snapshot";
+
+/* Save a visual desktop snapshot */
+"Take Snapshot" = "Take Snapshot";
+
+/* Project Attic missing destination */
+"That Desktop is no longer available" = "That Desktop is no longer available";
+
 /* No comment provided by engineer. */
 "The App Icons style is a Pro feature." = "The App Icons style is a Pro feature.";
 
@@ -1295,11 +1458,26 @@
 /* No comment provided by engineer. */
 "The application needs to restart to apply the language change." = "The application needs to restart to apply the language change.";
 
+/* Desktop name follows its owner */
+"The Desktop label uses its Project’s name. Renaming the Project updates the label." = "The Desktop label uses its Project’s name. Renaming the Project updates the label.";
+
+/* Project folder open failure explanation */
+"The folder may have been moved or could not be saved." = "The folder may have been moved or could not be saved.";
+
+/* Creating a replacement Desktop owner */
+"The new Project will use this Desktop. %@ will stay open without a Desktop; its windows and history are kept." = "The new Project will use this Desktop. %@ will stay open without a Desktop; its windows and history are kept.";
+
 /* Close Project explanation */
-"The Project will move to Closed Projects. Its name and history are saved for reopening. Application windows and the Desktop stay open." = "The Project will move to Closed Projects. Its name and history are saved for reopening. Application windows and the Desktop stay open.";
+"The Project will move to the Project Attic. Its name, history and list of open windows are saved for restoring later. Application windows and the Desktop stay open." = "The Project will move to the Project Attic. Its name, history and list of open windows are saved for restoring later. Application windows and the Desktop stay open.";
 
 /* No comment provided by engineer. */
 "The server didn't accept the submission. Check your internet connection and try again — your draft is preserved." = "The server didn't accept the submission. Check your internet connection and try again — your draft is preserved.";
+
+/* WebKit process terminated */
+"The snapshot viewer stopped. Open the snapshot from History to try again." = "The snapshot viewer stopped. Open the snapshot from History to try again.";
+
+/* Manual snapshot naming explanation */
+"The snapshot will be saved in a new folder inside your Projects folder. Your windows and Desktop stay open." = "The snapshot will be saved in a new folder inside your Projects folder. Your windows and Desktop stay open.";
 
 /* No comment provided by engineer. */
 "The Titles style is a Pro feature." = "The Titles style is a Pro feature.";
@@ -1321,6 +1499,9 @@
 
 /* No comment provided by engineer. */
 "This permission is needed to show thumbnails and preview of open windows" = "This permission is needed to show thumbnails and preview of open windows";
+
+/* Reassigning a Project Desktop */
+"This Project will use this Desktop. Its windows stay where they are until you move them." = "This Project will use this Desktop. Its windows stay where they are until you move them.";
 
 /* LetsMove replacement alert */
 "This will keep your Downloads folder uncluttered." = "This will keep your Downloads folder uncluttered.";
@@ -1370,6 +1551,9 @@
 /* Desktop restore window app */
 "Unknown app" = "Unknown app";
 
+/* Missing snapshot capture date */
+"Unknown date" = "Unknown date";
+
 /* Project Desktop move failure */
 "Unknown window" = "Unknown window";
 
@@ -1384,9 +1568,6 @@
 
 /* No comment provided by engineer. */
 "Unlock the Titles style with Pro" = "Unlock the Titles style with Pro";
-
-/* Project label without a saved name */
-"Unnamed Space" = "Unnamed Space";
 
 /* No comment provided by engineer. */
 "Up to 9 keyboard shortcuts" = "Up to 9 keyboard shortcuts";
@@ -1453,6 +1634,9 @@
 
 /* Desktop restore failure */
 "Window closed" = "Window closed";
+
+/* Previously seen Project windows */
+"Window History" = "Window History";
 
 /* No comment provided by engineer. */
 "Window is fullscreen" = "Window is fullscreen";
@@ -1526,6 +1710,15 @@
 /* No comment provided by engineer. */
 "Your Pro trial ends in 2 days" = "Your Pro trial ends in 2 days";
 
+/* Project Attic destination recovery */
+"Your Project is still in the Project Attic. Restore it from another Desktop." = "Your Project is still in the Project Attic. Restore it from another Desktop.";
+
+/* Project Attic restoration without browser pages */
+"Your Project will return to this Desktop with its name and history. Windows that have been closed must be reopened in their apps." = "Your Project will return to this Desktop with its name and history. Windows that have been closed must be reopened in their apps.";
+
+/* Project Attic restoration explanation */
+"Your Project’s name and history are saved. Choose any browser pages to reopen below. Browsers decide whether pages open as tabs or windows; other app sessions must be reopened in those apps." = "Your Project’s name and history are saved. Choose any browser pages to reopen below. Browsers decide whether pages open as tabs or windows; other app sessions must be reopened in those apps.";
+
 /* No comment provided by engineer. */
 "Your settings reset every time AltTab restarts." = "Your settings reset every time AltTab restarts.";
 
@@ -1546,69 +1739,3 @@
 
 /* Return to the previous Desktop and Project */
 "↩ Back to %@" = "↩ Back to %@";
-
-/* Project Attic duplicate page */
-"Already open" = "Already open";
-
-/* Project Attic live windows option */
-"Bring open windows to this Desktop (%d)" = "Bring open windows to this Desktop (%d)";
-
-/* Project Attic recovery failure */
-"Make sure the original browser is installed. Your saved pages remain in the Project’s Window History." = "Make sure the original browser is installed. Your saved pages remain in the Project’s Window History.";
-
-/* Empty archived Projects menu */
-"No Projects in the Attic" = "No Projects in the Attic";
-
-/* Project Attic empty recovery list */
-"No saved browser pages are available to reopen." = "No saved browser pages are available to reopen.";
-
-/* Project Attic historical page */
-"Older history" = "Older history";
-
-/* Project combine preview */
-"Open windows: %d. Saved history entries: %d.\n\nCombine %@ into %@, skipping duplicates. %@ will move to the Project Attic with its original history saved. Application windows stay open and remain on their current Desktops." = "Open windows: %1$d. Saved history entries: %2$d.\n\nCombine %3$@ into %4$@, skipping duplicates. %5$@ will move to the Project Attic with its original history saved. Application windows stay open and remain on their current Desktops.";
-
-/* Archived Projects menu */
-"Project Attic" = "Project Attic";
-
-/* Project Attic browser failure */
-"Project restored; some pages could not be opened" = "Project restored; some pages could not be opened";
-
-/* Project Attic page selection */
-"Reopen selected browser pages" = "Reopen selected browser pages";
-
-/* Project Attic restoration */
-"Restore %@ on Desktop %d?" = "Restore %1$@ on Desktop %2$d?";
-
-/* Restore archived Project */
-"Restore on This Desktop…" = "Restore on This Desktop…";
-
-/* Restore from Project Attic */
-"Restore Project" = "Restore Project";
-
-/* Project Attic window snapshot */
-"Saved at close" = "Saved at close";
-
-/* Project Attic recovery table */
-"Saved browser pages" = "Saved browser pages";
-
-/* Project Attic missing destination */
-"That Desktop is no longer available" = "That Desktop is no longer available";
-
-/* Close Project explanation */
-"The Project will move to the Project Attic. Its name, history and list of open windows are saved for restoring later. Application windows and the Desktop stay open." = "The Project will move to the Project Attic. Its name, history and list of open windows are saved for restoring later. Application windows and the Desktop stay open.";
-
-/* Project Attic destination recovery */
-"Your Project is still in the Project Attic. Restore it from another Desktop." = "Your Project is still in the Project Attic. Restore it from another Desktop.";
-
-/* Project Attic restoration explanation */
-"Your Project’s name and history are saved. Choose any browser pages to reopen below. Browsers decide whether pages open as tabs or windows; other app sessions must be reopened in those apps." = "Your Project’s name and history are saved. Choose any browser pages to reopen below. Browsers decide whether pages open as tabs or windows; other app sessions must be reopened in those apps.";
-
-/* Project Attic restoration without browser pages */
-"Your Project will return to this Desktop with its name and history. Windows that have been closed must be reopened in their apps." = "Your Project will return to this Desktop with its name and history. Windows that have been closed must be reopened in their apps.";
-
-/* Restore a Project from its Desktop label */
-"Restore from Attic…" = "Restore from Attic…";
-
-/* Project Attic label button help */
-"Restore a saved Project on this Desktop" = "Restore a saved Project on this Desktop";
