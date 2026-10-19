@@ -1,19 +1,18 @@
 # ProjectScopeResolver
 
-An active custom Project overrides only the Space and screen filters. All Spaces/Screens is the default.
-Current Space/Screen uses the current Space (not every visible Space across displays) and main screen.
-Projects disabled or normal Desktop scope keep the ordinary shortcut filters. Only the Project
-owning the current Desktop includes its unassigned windows, as defined by ProjectMembershipResolver.
-Other Projects show their explicit members, including shared and remote windows. Membership and all
-other filters, including exceptions, hidden/minimized windows and tabs, remain enforced.
+An active custom Project shows its members on every Desktop and screen, together with eligible windows
+on the current Desktop. Local windows remain visible even when assigned to another Project or when
+the selected Project owns a different Desktop. The union is defined by ProjectMembershipResolver.
+Ordinary Space and screen filters cannot narrow this union, and no Project location preference is read.
+Projects disabled or normal Desktop scope keep the ordinary shortcut filters. Exceptions, hidden and
+minimized windows, tab grouping and all other window filters remain enforced. Project label controls
+retain their independent Show/Hide preference and ordinary location filters.
 
 ## Test scenarios
 
-- **testAllLocationsIncludesOffSpaceAndOffScreenMember** — ordinary visible-Space/screen filters cannot hide a Project member in All mode.
-- **testAllLocationsStillExcludesNonmembersAndOtherHiddenWindows** — location overrides do not bypass membership, minimized or phantom exclusion.
-- **testCurrentLocationRequiresCurrentSpaceAndScreen** — current mode requires both the current Space and screen, excluding another display’s visible Space.
+- **testRemoteProjectMemberIgnoresSpaceAndScreenFilters** — remote and temporarily Space-less explicit members remain eligible.
+- **testCurrentDesktopNonmemberAppearsRegardlessOfScreen** — local nonmembers pass without a preferred-screen constraint.
+- **testRemoteNonmemberAndOtherDisplaysDesktopStayExcluded** — only the single current Desktop contributes nonmembers; a window on all Desktops includes it.
+- **testProjectUnionHonorsOrdinaryWindowExclusions** — membership and local fallback both preserve hidden, minimized, phantom, tab and exception exclusion.
 - **testNoActiveProjectPreservesNormalLocationFilters** — ordinary visible-Space/screen settings remain effective outside custom Projects.
-- **testProjectOverridesNonVisibleSpaceSetting** — an ordinary non-visible-Spaces filter is also overridden by the Project scope.
-- **testUnassignedCurrentDesktopWindowPassesProjectFilter** — unassigned local windows pass while remote unassigned windows and another Project's members stay excluded.
-- **testNonownerScopeDoesNotIncludeUnassignedDesktopWindows** — both Project scopes exclude fallback windows for a nonowner while retaining explicit local and remote members.
-- **testUnassignedFallbackStillHonorsOrdinaryFilters** — the fallback preserves minimized, phantom and current-screen restrictions.
+- **testProjectOverridesNonVisibleSpaceSettingWithoutQueryingScreen** — Project scope also overrides non-visible-Spaces filtering without a screen-geometry query.

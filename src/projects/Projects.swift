@@ -189,17 +189,14 @@ enum Projects {
 
     static func activateLabel(_ id: String) {
         guard isEnabled, let project = byId[id], project.isCustom else { return }
-        let changed = active !== project
         active = project
-        if changed { ProjectVisibility.focus(project) }
     }
 
     static var activeMembers: Set<String>? {
         guard isEnabled, let project = active, project.isCustom else { return nil }
-        let ownsCurrentDesktop = desktopOwner(on: Spaces.currentSpaceId) === project
         return ProjectMembershipResolver.activeMembers(isEnabled: true, activeIsCustom: true,
-            members: project.members, unassignedOnDesktop: ownsCurrentDesktop ? unassignedOnCurrentDesktop : [],
-            ownsCurrentDesktop: ownsCurrentDesktop)
+            members: project.members, currentDesktopWindows: ProjectMembershipResolver.onDesktop(
+                spaceId: Spaces.currentSpaceId, windowSpaces: projectWindowSpaces))
     }
 
     private static func desktopOwner(on spaceId: UInt64) -> Project? {
@@ -209,8 +206,11 @@ enum Projects {
 
     private static var unassignedOnCurrentDesktop: Set<String> {
         let assigned = Set(list.filter { $0.isCustom }.flatMap { $0.members })
-        let windowSpaces = Dictionary(uniqueKeysWithValues: Windows.list.filter { canBelongToProject($0) }.map { ($0.tracked.id, $0.spaceIds) })
-        return ProjectMembershipResolver.unassignedOnDesktop(spaceId: Spaces.currentSpaceId, windowSpaces: windowSpaces, assigned: assigned)
+        return ProjectMembershipResolver.unassignedOnDesktop(spaceId: Spaces.currentSpaceId, windowSpaces: projectWindowSpaces, assigned: assigned)
+    }
+
+    private static var projectWindowSpaces: [String: [UInt64]] {
+        Dictionary(uniqueKeysWithValues: Windows.list.filter { canBelongToProject($0) }.map { ($0.tracked.id, $0.spaceIds) })
     }
 
     private static func canBelongToProject(_ window: Window) -> Bool {

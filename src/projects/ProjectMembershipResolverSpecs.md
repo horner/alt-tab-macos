@@ -1,13 +1,13 @@
 # ProjectMembershipResolver
 
 A disabled feature or an active Desktop returns `nil`, leaving all existing window filters in charge.
-An enabled custom Project returns its explicit members. Only the Project owning the current Desktop
-also includes live, unassigned windows on that Desktop. Selecting an unassigned Project or one whose
-Desktop is missing or elsewhere never borrows or captures windows from the current Desktop.
-Windows assigned to another custom Project and unassigned windows on other Desktops are not added.
+An enabled custom Project returns the union of its explicit members and live windows on the current
+Desktop. Local windows remain eligible when assigned to another Project, and the selected Project's
+home Desktop does not affect this union. Showing a local window does not alter its memberships.
+Remote nonmembers are not added.
 The current Desktop is the single active Space, not every visible Space across displays. Empty or
 unavailable Space information cannot establish local membership; a later Space update can.
-An empty Project with no local unassigned windows returns an empty set. Membership
+An empty Project with no local windows returns an empty set. Membership
 narrows the live window list; it never creates candidates or claims exclusive ownership of a window.
 A stale member id therefore cannot make a closed window appear. Window removal also prunes registry
 membership before that id can be reused.
@@ -41,15 +41,13 @@ moves retain their new membership and produce one non-activating notice listing 
 
 - **testDisabledFiltersNothing** — disabled Projects return no filter even with custom members.
 - **testDesktopFiltersNothing** — a Desktop returns no filter, leaving `spacesToShow` in charge.
-- **testCustomKeepsOnlyMembers** — only the custom Project's members pass through a live candidate list.
+- **testCustomIncludesRemoteMembersAndEveryCurrentDesktopWindow** — remote members join local unassigned windows and another Project's local members.
+- **testSelectingDifferentProjectsRetainsCurrentDesktopWindowsWithoutChangingMembership** — selecting another Project changes remote membership scope while local visibility remains independent of ownership.
 - **testGoneWindowDoesNotCreateACandidate** — a stale member id cannot introduce a window absent from the live list.
-- **testEmptyCustomKeepsNothing** — an empty custom Project returns an empty set and excludes all candidates.
+- **testEmptyCustomShowsOnlyCurrentDesktopWindows** — an empty Project still shows eligible local windows and returns an empty set when none exist.
 - **testWindowMayBelongToSeveralProjects** — overlapping Projects retain independent member sets.
-- **testCustomIncludesMembersAndUnassignedDesktopWindows** — combines remote members with local unassigned windows without borrowing another Project's members.
-- **testSelectingUnassignedOrElsewhereProjectDoesNotBorrowCurrentDesktopWindows** — selecting a Project without the current Desktop preserves only its explicit members.
-- **testLosingDesktopOwnershipRemovesFallbackButPreservesExplicitMembers** — reassignment stops fallback visibility without changing manual shared memberships.
-- **testLateSpaceInformationMakesUnassignedWindowEligible** — an empty initial Space cannot strand a window once its Desktop is known.
+- **testAutomaticAssignmentCandidatesExcludeOtherProjectsMembers** — visibility can include another Project's local members without making them automatic assignment candidates.
+- **testLateSpaceInformationMakesWindowEligible** — an empty initial Space cannot strand a window once its Desktop is known.
 - **testOtherVisibleDesktopDoesNotCountAsCurrentDesktop** — another display's visible Space is not the current Desktop; an all-Spaces window includes it.
 - **testRepairedMembershipKeepsWindowVisible** — deferred assignment preserves the visible candidate set.
-- **testMovedUnassignedWindowLeavesOldDesktopFallback** — movement updates eligibility to the destination Desktop.
-- **testDesktopAndDisabledProjectsIgnoreFallbackMembership** — ordinary Desktop and disabled modes retain existing filters.
+- **testMovingNonmemberChangesVisibilityWithoutChangingProject** — leaving the current Desktop removes fallback eligibility without changing the selected Project's memberships.

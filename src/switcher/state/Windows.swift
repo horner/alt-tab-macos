@@ -154,9 +154,9 @@ class Windows {
         let labelVisibility = SpaceLabelWindows.switcherVisibility(windowId: window.cgWindowId, pid: window.application.pid)
         guard labelVisibility != false else { return false }
         let members = labelVisibility == true ? nil : projectMembers
-        let scope = ProjectScopeResolver.resolve(hasActiveProject: members != nil, currentOnly: Preferences.projectsCurrentSpaceOnly,
+        let scope = ProjectScopeResolver.resolve(hasActiveProject: members != nil,
             visibleOnly: f.spacesToShow == .visible, nonVisibleOnly: f.spacesToShow == .nonVisible,
-            screenOnly: f.screensToShow == .showingAltTab, visibleSpaceIds: Spaces.visibleSpaces, currentSpaceId: Spaces.currentSpaceId)
+            screenOnly: f.screensToShow == .showingAltTab, visibleSpaceIds: Spaces.visibleSpaces)
         // `isOnPreferredScreen` is the one irreducibly OS-coupled fact (touches `Spaces.screenSpacesMap` +
         // multi-screen quartz math); passed as `@autoclosure` so it's only evaluated if the cheaper
         // filters above don't already exclude the window.
@@ -177,7 +177,7 @@ class Windows {
             visibleSpaceIds: scope.spaceIds,
             exceptions: f.exceptions,
             activeProjectMembers: members,
-            isOnPreferredScreen: window.isOnScreen(members == nil ? NSScreen.preferred : NSScreen.main ?? NSScreen.preferred))
+            isOnPreferredScreen: window.isOnScreen(NSScreen.preferred))
     }
 
     /// selection + hover methods (all operate on `SwitcherSession.current`)

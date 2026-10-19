@@ -6,11 +6,11 @@ enum ProjectScopeResolver {
         let spaceIds: [UInt64]
     }
 
-    static func resolve(hasActiveProject: Bool, currentOnly: Bool, visibleOnly: Bool,
-                        nonVisibleOnly: Bool, screenOnly: Bool, visibleSpaceIds: [UInt64], currentSpaceId: UInt64) -> Scope {
+    static func resolve(hasActiveProject: Bool, visibleOnly: Bool,
+                        nonVisibleOnly: Bool, screenOnly: Bool, visibleSpaceIds: [UInt64]) -> Scope {
         guard hasActiveProject else {
             return Scope(visibleOnly: visibleOnly, nonVisibleOnly: nonVisibleOnly, screenOnly: screenOnly, spaceIds: visibleSpaceIds)
         }
-        return Scope(visibleOnly: currentOnly, nonVisibleOnly: false, screenOnly: currentOnly, spaceIds: [currentSpaceId])
+        return Scope(visibleOnly: false, nonVisibleOnly: false, screenOnly: false, spaceIds: visibleSpaceIds)
     }
 }
