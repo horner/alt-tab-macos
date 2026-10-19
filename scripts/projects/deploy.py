@@ -5,12 +5,14 @@ import fcntl
 import hashlib
 import json
 import os
+import platform
 import plistlib
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.dont_write_bytecode = True
@@ -26,6 +28,14 @@ IDENTITY = "Developer ID Application: Medical Informatics Engineering, Inc. (X58
 TEAM = "X5873NL7XM"
 BUNDLE = "com.horner.alt-tab-projects"
 ASSETS = ("AltTabProjects.zip", "SHA256SUMS.txt", "build-info.json")
+SMOKE_CHECKS = {
+    "startup_permissions": "Launch the installed app; verify its UI and required permissions without a permission loop.",
+    "switcher_focus": "Summon, cycle, search, dismiss, and focus a selected window.",
+    "projects_desktops": "Check Project membership, Desktop navigation, and labels with real windows.",
+    "settings": "Open Settings and verify existing preferences are retained.",
+    "release_changes": "Exercise the user-visible changes in these release notes and record concrete observations.",
+    "relaunch_persistence": "Quit and relaunch the installed app; verify saved preferences and Projects persist.",
+}
 
 
 def require(condition, message):
@@ -97,6 +107,7 @@ class Deploy:
         self.output = self.root / "build" / f"release-{self.version}"
         self.logs = self.root / "build" / f"deploy-{self.version}"
         self.notes = self.args.notes.resolve()
+        self.smoke_report = (self.args.smoke_report or self.logs / "runtime-smoke.json").resolve()
         require(self.notes.is_file() and self.notes.read_text().strip(), "Provide a nonempty release-notes file with --notes.")
         require("#" not in str(self.output), "GitHub interprets # in asset paths as a label; use a checkout path without #.")
 
@@ -199,6 +210,73 @@ class Deploy:
                      "--notary-profile", self.args.notary_profile, "--output", self.output, log=self.logs / "package.log")
         self.clean_source()
         self.validate_package()
+        self.prepare_smoke_report()
+
+    def prepare_smoke_report(self):
+        if self.smoke_report.exists():
+            return
+        report = dict(schema_version=1, version=self.version, source_commit=self.commit, sha256=self.sha,
+                      installed_app="/Applications/AltTabProjects.app", running_pid=None, tester="", tested_at="",
+                      checks={name: dict(result="pending", observations="", instruction=instruction)
+                              for name, instruction in SMOKE_CHECKS.items()})
+        self.smoke_report.parent.mkdir(parents=True, exist_ok=True)
+        self.smoke_report.write_text(json.dumps(report, indent=2) + "\n")
+
+    def code_signature(self, target, architecture=None):
+        options = ("--architecture", architecture) if architecture else ()
+        result = self.run("codesign", "--display", "--verbose=4", *options, target, check=False)
+        require(result.returncode == 0, f"Cannot inspect the code signature of {target}.")
+        fields = dict(line.split("=", 1) for line in result.stderr.splitlines() if "=" in line)
+        require(re.fullmatch(r"[0-9a-f]{40}", fields.get("CDHash", "")), "Code signature has no expected CDHash.")
+        return fields
+
+    def verify_running_package(self, installed, pid):
+        self.validate_app(installed)
+        with tempfile.TemporaryDirectory(prefix="smoke-", dir=self.logs) as directory:
+            self.run("ditto", "-x", "-k", self.output / "AltTabProjects.zip", directory)
+            packaged = Path(directory) / "AltTabProjects.app"
+            hashes = {arch: self.code_signature(packaged, arch)["CDHash"] for arch in ("arm64", "x86_64")}
+            require(all(self.code_signature(installed, arch)["CDHash"] == value for arch, value in hashes.items()),
+                    "The installed app differs from the exact signed release package.")
+        # Dynamic code inspection detects an older process even after its app files have been replaced.
+        self.run("codesign", "--verify", f"+{pid}")
+        running = self.code_signature(f"+{pid}")
+        executable = installed / "Contents/MacOS/AltTabProjects"
+        require(running.get("Identifier") == BUNDLE and running.get("TeamIdentifier") == TEAM
+                and running["CDHash"] in hashes.values()
+                and Path(running.get("Executable", "")).resolve() == executable.resolve(),
+                "The running process is not the installed release package; quit the old app and relaunch the installed app.")
+        return dict(running_pid=pid, running_cdhash=running["CDHash"], package_cdhashes=hashes)
+
+    def validate_runtime_smoke(self):
+        if self.release and not self.release["draft"]:
+            return
+        require(self.smoke_report.is_file(),
+                f"Runtime smoke testing is required before publication. Run --prepare-only, install and relaunch the exact package, then complete {self.smoke_report}.")
+        report = json.loads(self.smoke_report.read_text())
+        require(isinstance(report, dict), "Runtime smoke report must be a JSON object.")
+        expected = dict(schema_version=1, version=self.version, source_commit=self.commit, sha256=self.sha)
+        require(all(report.get(key) == value for key, value in expected.items()),
+                "Runtime smoke report does not match this version, source commit and ZIP checksum; test this exact package.")
+        require(isinstance(report.get("tester"), str) and report["tester"].strip(), "Record who performed the runtime smoke tests.")
+        require(isinstance(report.get("tested_at"), str) and report["tested_at"].strip(), "Record the actual smoke-test time with its timezone.")
+        tested_at = datetime.fromisoformat(report.get("tested_at", ""))
+        require(tested_at.tzinfo is not None and tested_at <= datetime.now(timezone.utc), "Record the actual smoke-test time with its timezone.")
+        checks = report.get("checks", {})
+        require(isinstance(checks, dict) and all(isinstance(checks.get(name), dict)
+                and checks[name].get("result") == "pass"
+                and isinstance(checks[name].get("observations"), str) and checks[name]["observations"].strip()
+                for name in SMOKE_CHECKS), "Every required runtime smoke check must pass with concrete observations before publication.")
+        installed = Path(report.get("installed_app", ""))
+        require(installed.is_absolute() and installed.name == "AltTabProjects.app"
+                and installed.parent.resolve() in (Path("/Applications").resolve(), (Path.home() / "Applications").resolve()),
+                "Test AltTabProjects.app installed in /Applications or ~/Applications.")
+        pid = report.get("running_pid")
+        require(type(pid) is int and pid > 0, "Record the current PID after relaunching the installed app.")
+        evidence = self.verify_running_package(installed, pid)
+        self.runtime_smoke = dict(report=report, verified_at=datetime.now(timezone.utc).isoformat(),
+                                 system=platform.platform(), architecture=platform.machine(), **evidence)
+        (self.logs / "runtime-smoke-verified.json").write_text(json.dumps(self.runtime_smoke, indent=2) + "\n")
 
     def verify_assets(self, allow_missing=False):
         assets = {asset["name"]: asset for asset in self.release["assets"]}
@@ -215,6 +293,7 @@ class Deploy:
                     require(checksum(Path(directory) / name) == expected, f"GitHub asset {name} differs; it will not be overwritten.")
 
     def publish_release(self):
+        self.validate_runtime_smoke()
         self.clean_source()
         if self.tag_commit() is None:
             remote_commit = self.tag_commit(remote=True)
@@ -293,7 +372,7 @@ class Deploy:
         self.read_source()
         if self.args.dry_run:
             print(f"Preview only: {self.tag} from {self.commit}\nRepository: {REPO}\nNotes: {self.notes}\n"
-                  f"Package: {self.output}\nSteps: preflight → tests → universal build → sign/notarize → draft/upload/verify/publish → cask commit → Homebrew fetch/Gatekeeper\n"
+                  f"Package: {self.output}\nRuntime report: {self.smoke_report}\nSteps: preflight → tests → universal build → sign/notarize → install/relaunch and runtime smoke gate → draft/upload/verify/publish → cask commit → Homebrew fetch/Gatekeeper\n"
                   "No build, credentials check, network request, Git mutation or publication was performed.\n"
                   "Actual deployment requires clean committed source, a new version, and configured credentials; use --resume only for the same source/package.")
             return
@@ -307,13 +386,20 @@ class Deploy:
             self.logs.mkdir(parents=True, exist_ok=True)
             print(f"Deploying {self.tag} ({self.commit}) to {REPO}. Logs: {self.logs}", flush=True)
             for step in (self.prepare_package, self.publish_release, self.update_cask, self.verify_homebrew):
+                if step == self.publish_release and self.args.prepare_only:
+                    print(f"Prepared {self.output / 'AltTabProjects.zip'}. No tag, release or cask was published.\n"
+                          f"Install and relaunch this exact package, complete {self.smoke_report}, then rerun with --resume.")
+                    return
                 print(step.__name__.replace("_", " ").capitalize(), flush=True)
                 step()
             result = dict(version=self.version, source_commit=self.commit, sha256=self.sha,
                           release_url=f"https://github.com/{REPO}/releases/tag/{self.tag}",
-                          notarized=True, public_download_verified=True, homebrew_download_verified=True)
+                          notarized=True, public_download_verified=True, homebrew_download_verified=True,
+                          runtime_smoke=getattr(self, "runtime_smoke", None))
             (self.logs / "deployment.json").write_text(json.dumps(result, indent=2) + "\n")
-            print(f"Deployed: {result['release_url']}\nHomebrew ZIP verified. Installed apps and preferences were not changed.")
+            print(f"Deployed: {result['release_url']}\nHomebrew ZIP verified."
+                  + (f" Runtime evidence: {self.logs / 'runtime-smoke-verified.json'}" if result["runtime_smoke"]
+                     else " Already-public release recovery; no new runtime-test claim."))
 
 
 def main():
@@ -321,6 +407,8 @@ def main():
     parser.add_argument("--notes", type=Path, required=True, help="Nonempty release notes; prepare and review before deploying")
     parser.add_argument("--dry-run", action="store_true", help="Print the local plan only; no builds, network calls or writes")
     parser.add_argument("--resume", action="store_true", help="Continue the same commit/version using its original completed package")
+    parser.add_argument("--prepare-only", action="store_true", help="Build/test/notarize and prepare a runtime report; do not publish")
+    parser.add_argument("--smoke-report", type=Path, help="Completed runtime smoke report; defaults to build/deploy-<version>/runtime-smoke.json")
     parser.add_argument("--identity", default=IDENTITY, help="Developer ID identity name or SHA-1; the established team is required")
     parser.add_argument("--notary-profile", default="alttab-projects", help="notarytool Keychain profile name")
     args = parser.parse_args()

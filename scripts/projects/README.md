@@ -21,12 +21,20 @@ The default branch carries the cask; development can continue in its separate ch
 
    ```sh
    ./deploy.sh --notes /tmp/AltTabProjects-0.1.2.md --dry-run
-   ./deploy.sh --notes /tmp/AltTabProjects-0.1.2.md
+   ./deploy.sh --notes /tmp/AltTabProjects-0.1.2.md --prepare-only
    ```
 
-6. Read the final result and `build/deploy-<version>/deployment.json`. Report the release link,
-   validation results, and anything that still requires hands-on testing. Do not claim first-run
-   UI testing from build or packaging checks alone.
+6. Install and relaunch the exact signed candidate, replacing the existing local app while retaining
+   a backup and its preferences. Perform the [runtime smoke tests](#runtime-smoke-tests-before-publication)
+   and complete `build/deploy-<version>/runtime-smoke.json`. A build or successful ZIP download does
+   not establish that the candidate was installed or tested. Then publish the same package:
+
+   ```sh
+   ./deploy.sh --notes /tmp/AltTabProjects-0.1.2.md --resume
+   ```
+
+7. Read the final result and `build/deploy-<version>/deployment.json`. Report the release link,
+   runtime observations, automated validation, and any remaining test-matrix limitations.
 
 Versions 0.1.0 and [0.1.1](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.1) were
 published manually before this script. The tooling itself does not change the app version. An ordinary attempt to deploy an
@@ -63,7 +71,8 @@ private keys, license keys or exported personal preferences in source, notes or 
 Homebrew may download its style-check tooling. The script grants trust only to
 `horner/projects/alttab-projects` on Homebrew versions that require it. All Homebrew commands disable
 automatic updates, removal of unrelated dependencies, and installation cleanup. The script updates
-only this tap explicitly. It does not install, uninstall, launch or quit any app or change preferences.
+only this tap explicitly. The command does not itself install, uninstall, launch or quit any app or
+change preferences; installing and testing the candidate is a required separate step before publication.
 
 ## What the command does
 
@@ -75,29 +84,70 @@ only this tap explicitly. It does not install, uninstall, launch or quit any app
 3. Runs `scripts/projects/package.py` to sign embedded code and the app, submit it to Apple, staple
    the accepted ticket, and check Gatekeeper. The package contains a ZIP, SHA-256 manifest, cask and
    build metadata identifying the exact source commit. The ZIP is extracted and verified again.
-4. Pushes the release branch and an annotated `projects-v<version>` tag atomically, without force.
+4. `--prepare-only` stops here with the signed ZIP and a pending runtime report. Before any tag or
+   release push, ordinary deployment requires passing runtime observations tied to the exact version,
+   source commit and ZIP checksum. It validates the installed app and the running process against
+   both signed architectures from that ZIP. Replacing app files while an older process is running
+   does not satisfy the gate.
+5. Pushes the release branch and an annotated `projects-v<version>` tag atomically, without force.
    Creates a draft prerelease, uploads the three assets, and verifies their GitHub SHA-256 digests
    (or downloads them to compare when GitHub does not supply a digest). Existing assets are never
    clobbered, and mismatches stop deployment.
-5. Publishes the prerelease and downloads its ZIP anonymously from the public URL. Checks its
+6. Publishes the prerelease and downloads its ZIP anonymously from the public URL. Checks its
    checksum, version, bundle ID, Developer ID team, both architectures, signature, stapled ticket
    and Gatekeeper before pointing the cask at it.
-6. Creates a temporary detached worktree from the fork's current default branch. Changes only
+7. Creates a temporary detached worktree from the fork's current default branch. Changes only
    `Casks/alttab-projects.rb` and the first release download link in `README.md`, commits, and pushes without
    force. The inherited upstream publishing job must remain guarded by
    `github.repository == 'lwouis/alt-tab-macos'`. The script does not edit workflows or upstream.
-7. Adds or updates the `horner/projects` tap, checks cask style, and uses `brew fetch` to download
+8. Adds or updates the `horner/projects` tap, checks cask style, and uses `brew fetch` to download
    the release ZIP. Verifies that actual Homebrew download and the extracted app. It leaves any
    installed AltTabProjects app in place.
 
 Build/package commands alone still do not publish. The implementation behind the shell entry point
 is `scripts/projects/deploy.py`; the signing implementation is `scripts/projects/package.py`.
 
+## Runtime smoke tests before publication
+
+Use `--prepare-only` first. It performs the real tests, universal build, signing, notarization and
+package checks without publishing a tag, GitHub release or cask. It writes a pending JSON report
+at `build/deploy-<version>/runtime-smoke.json`; `--smoke-report /absolute/path/report.json` selects
+another location. Existing reports are preserved rather than overwritten on retry.
+
+Quit the running development or installed AltTab variant. Retain the existing app bundle outside
+its installation location as a backup, then extract `build/release-<version>/AltTabProjects.zip`
+and install its `AltTabProjects.app` in `/Applications`. Replace the whole bundle, rather than
+copying new files over the old bundle. Keep existing preferences and permission grants. Launch
+that installed app by its full path and verify its displayed release version.
+
+Complete every report check with `"result": "pass"` and concrete `"observations"` after exercising
+the behavior: startup and permissions; switcher cycling, search, dismissal and focus; Projects,
+Desktop navigation and labels; Settings and retained preferences; the changes described in these
+release notes; and persistence after quitting and relaunching. For a release with folder launchers,
+the release-change observations must cover iTerm2 and VS Code reuse/new-window actions and the
+folder picker, including Automation permission behavior. Failed or untested behavior must remain
+`fail` or `pending` and blocks publication; fix the source and prepare a new candidate before retrying.
+
+Record `tester`, `tested_at` as an ISO timestamp with timezone, `installed_app` as the absolute
+bundle path in `/Applications` or `~/Applications`, and `running_pid` after the relaunch test. For example,
+`pgrep -x AltTabProjects` lists candidate PIDs and `codesign --display --verbose=4 +<pid>` identifies
+their executable paths. Preserve the generated version, source commit and ZIP checksum fields.
+The publisher checks that the installed signature matches the package's code hashes and that this
+actual running process has the same identity, code hash and installed executable path. It records
+the evidence in `runtime-smoke-verified.json` and the final deployment result.
+
+Resume without changing the source or rebuilding the package. A report for another candidate, an
+older running process, or a missing observation stops deployment before tag creation or publication.
+There is no flag to bypass the runtime gate for an unpublished candidate. Recovery of a release
+already public skips this new gate so its immutable assets and cask can still be verified; that
+recovery does not claim that runtime testing happened before publication. A local smoke test also
+does not establish Intel or older-macOS compatibility beyond the machine actually tested.
+
 ## Output and recovery
 
 - `build/release-<version>/` holds the original signed package. Retain this directory for retries.
-- `build/deploy-<version>/` holds `tooling-tests.log`, `tests.log`, `build.log`, `package.log`, `cask-style.log`,
-  `brew-fetch.log`, and, after success, `deployment.json`.
+- `build/deploy-<version>/` holds `tooling-tests.log`, `tests.log`, `build.log`, `package.log`, the runtime
+  smoke report and verified evidence, `cask-style.log`, `brew-fetch.log`, and, after success, `deployment.json`.
 - `build/projects-tests/` caches test build products. Build output is ignored by Git.
 - An OS file lock prevents two deployments in the same checkout. It releases automatically when
   the process exits, including interruption; a leftover lock file does not need deletion.

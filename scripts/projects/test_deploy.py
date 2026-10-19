@@ -22,7 +22,8 @@ class DeployTests(unittest.TestCase):
             f"PRODUCT_NAME = AltTabProjects\nPRODUCT_BUNDLE_IDENTIFIER = {deploy.BUNDLE}\nTEAM_ID = {deploy.TEAM}\nCURRENT_PROJECT_VERSION = 0.2.0\n")
         notes = self.root / "release notes.md"
         notes.write_text("Projects beta improvements.\n")
-        args = argparse.Namespace(notes=notes, dry_run=False, resume=False, identity=deploy.IDENTITY, notary_profile="test-profile")
+        args = argparse.Namespace(notes=notes, dry_run=False, resume=False, prepare_only=False, smoke_report=None,
+                                  identity=deploy.IDENTITY, notary_profile="test-profile")
         self.d = deploy.Deploy(args, self.root)
         self.head = "a" * 40
         self.d.git = Mock(side_effect=self.source_git)
@@ -57,6 +58,7 @@ class DeployTests(unittest.TestCase):
 
     def release_fixture(self, draft=True, names=deploy.ASSETS):
         self.package_fixture()
+        self.smoke_fixture()
         self.events = []
         self.remote = dict(id=123, tag_name=self.d.tag, draft=draft, prerelease=True,
                            assets=[self.asset(name) for name in names])
@@ -66,6 +68,16 @@ class DeployTests(unittest.TestCase):
         self.d.find_release = lambda: copy.deepcopy(self.remote)
         self.d.run = self.release_command
         self.d.api = self.release_api
+
+    def smoke_fixture(self):
+        self.d.prepare_smoke_report()
+        report = json.loads(self.d.smoke_report.read_text())
+        report.update(tester="Release tester", tested_at="2026-01-01T12:00:00+00:00", running_pid=1234)
+        for check in report["checks"].values():
+            check.update(result="pass", observations="Exercised the named behavior on the installed release.")
+        self.d.smoke_report.write_text(json.dumps(report))
+        self.d.verify_running_package = Mock(return_value=dict(running_pid=1234, running_cdhash="a" * 40))
+        return report
 
     def asset(self, name):
         return dict(name=name, digest=f"sha256:{deploy.checksum(self.d.output / name)}")
@@ -172,6 +184,112 @@ class DeployTests(unittest.TestCase):
         self.assertEqual(calls[0].args[1:3], ("-m", "unittest"))
         self.assertEqual(calls[1].args[:2], ("xcodebuild", "test"))
         self.d.validate_package.assert_called_once()
+
+    def test_prepare_only_never_publishes_and_leaves_pending_report(self):
+        self.package_fixture()
+        self.d.args.prepare_only = True
+        self.d.preflight = Mock()
+        self.d.publish_release = Mock()
+        self.d.update_cask = Mock()
+        self.d.verify_homebrew = Mock()
+        self.d.execute()
+        report = json.loads(self.d.smoke_report.read_text())
+        self.assertEqual(report["sha256"], self.d.sha)
+        self.assertTrue(all(check["result"] == "pending" for check in report["checks"].values()))
+        self.d.publish_release.assert_not_called()
+        self.d.update_cask.assert_not_called()
+        self.d.verify_homebrew.assert_not_called()
+
+    def test_runtime_report_missing_stops_before_tag_or_publication(self):
+        self.release_fixture(names=[])
+        self.d.release = None
+        self.d.smoke_report.unlink()
+        self.d.git.reset_mock()
+        with self.assertRaisesRegex(RuntimeError, "Runtime smoke testing is required"):
+            self.d.publish_release()
+        self.d.git.assert_not_called()
+        self.assertEqual(self.events, [])
+
+    def test_runtime_report_rejects_other_source_version_or_package(self):
+        self.release_fixture()
+        report = json.loads(self.d.smoke_report.read_text())
+        for key, value in [("version", "0.1.0"), ("source_commit", "b" * 40), ("sha256", "b" * 64)]:
+            self.d.smoke_report.write_text(json.dumps(dict(report, **{key: value})))
+            with self.subTest(key=key), self.assertRaisesRegex(RuntimeError, "does not match"):
+                self.d.validate_runtime_smoke()
+        self.d.verify_running_package.assert_not_called()
+
+    def test_every_runtime_check_requires_pass_and_observations(self):
+        self.release_fixture()
+        report = json.loads(self.d.smoke_report.read_text())
+        for name in deploy.SMOKE_CHECKS:
+            for change in [dict(result="pending"), dict(result="fail"), dict(observations="")]:
+                edited = copy.deepcopy(report)
+                edited["checks"][name].update(change)
+                self.d.smoke_report.write_text(json.dumps(edited))
+                with self.subTest(name=name, change=change), self.assertRaisesRegex(RuntimeError, "Every required"):
+                    self.d.validate_runtime_smoke()
+        self.d.verify_running_package.assert_not_called()
+
+    def test_runtime_evidence_is_preserved_without_rewriting_report(self):
+        self.release_fixture()
+        original = self.d.smoke_report.read_bytes()
+        self.d.prepare_smoke_report()
+        self.d.validate_runtime_smoke()
+        self.assertEqual(self.d.smoke_report.read_bytes(), original)
+        evidence = json.loads((self.d.logs / "runtime-smoke-verified.json").read_text())
+        self.assertEqual(evidence["report"]["sha256"], self.d.sha)
+        self.assertEqual(evidence["running_pid"], 1234)
+
+    def test_published_recovery_does_not_require_retroactive_runtime_report(self):
+        self.release_fixture(draft=False)
+        self.d.smoke_report.unlink()
+        self.d.publish_release()
+        self.d.verify_running_package.assert_not_called()
+        self.assertEqual([event[0] for event in self.events], ["curl"])
+
+    def test_replaced_app_files_do_not_allow_an_older_running_process(self):
+        self.package_fixture()
+        self.d.validate_app = Mock()
+        installed = Path("/Applications/AltTabProjects.app")
+        expected = {"arm64": "a" * 40, "x86_64": "b" * 40}
+        for running_hash in ("c" * 40, expected["arm64"], expected["x86_64"]):
+            def signature(target, architecture=None):
+                return dict(CDHash=expected[architecture]) if architecture else dict(
+                    CDHash=running_hash, Identifier=deploy.BUNDLE, TeamIdentifier=deploy.TEAM,
+                    Executable=str(installed / "Contents/MacOS/AltTabProjects"))
+            self.d.code_signature = Mock(side_effect=signature)
+            with self.subTest(running_hash=running_hash):
+                if running_hash == "c" * 40:
+                    with self.assertRaisesRegex(RuntimeError, "running process"):
+                        self.d.verify_running_package(installed, 1234)
+                else:
+                    self.assertEqual(self.d.verify_running_package(installed, 1234)["running_cdhash"], running_hash)
+
+    def test_installed_app_must_match_both_package_architectures(self):
+        self.package_fixture()
+        self.d.validate_app = Mock()
+        installed = Path("/Applications/AltTabProjects.app")
+        def signature(target, architecture=None):
+            return dict(CDHash="b" * 40 if target == installed and architecture == "x86_64" else "a" * 40)
+        self.d.code_signature = Mock(side_effect=signature)
+        with self.assertRaisesRegex(RuntimeError, "installed app differs"):
+            self.d.verify_running_package(installed, 1234)
+        self.assertFalse(any(call.args[0] == "+1234" for call in self.d.code_signature.call_args_list))
+
+    def test_report_cannot_substitute_a_build_output_for_installation(self):
+        self.release_fixture()
+        report = json.loads(self.d.smoke_report.read_text())
+        report["installed_app"] = str(self.d.output / "AltTabProjects.app")
+        self.d.smoke_report.write_text(json.dumps(report))
+        with self.assertRaisesRegex(RuntimeError, "installed in /Applications"):
+            self.d.validate_runtime_smoke()
+        self.d.verify_running_package.assert_not_called()
+
+    def test_dynamic_signature_inspects_process_instead_of_files_on_disk(self):
+        self.d.run = Mock(return_value=argparse.Namespace(returncode=0, stderr=f"CDHash={'a' * 40}\nIdentifier={deploy.BUNDLE}\n"))
+        self.assertEqual(self.d.code_signature("+1234")["Identifier"], deploy.BUNDLE)
+        self.d.run.assert_called_once_with("codesign", "--display", "--verbose=4", "+1234", check=False)
 
     def test_publish_orders_draft_upload_verification_and_public_download(self):
         self.release_fixture(names=[])
@@ -283,7 +401,8 @@ class GitIntegrationTests(unittest.TestCase):
         self.git("commit", "-m", "test: seed repository")
         self.git("push", "-u", "origin", "master")
         self.git("switch", "-c", deploy.BRANCH)
-        self.args = argparse.Namespace(notes=self.root / "notes.md", dry_run=False, resume=False, identity=deploy.IDENTITY, notary_profile="test-profile")
+        self.args = argparse.Namespace(notes=self.root / "notes.md", dry_run=False, resume=False, prepare_only=False,
+                                       smoke_report=None, identity=deploy.IDENTITY, notary_profile="test-profile")
         self.d = deploy.Deploy(self.args, self.root)
         self.d.version = "0.2.0"
         self.d.tag = "projects-v0.2.0"
