@@ -22,6 +22,7 @@ enum DesktopWindows {
             // Managed transparent windows produce blank Exposé entries; only navigation temporarily opts in.
             collectionBehavior = [.stationary, .ignoresCycle]
             setAccessibilitySubrole(.floatingWindow)
+            setAccessibilityElement(false)
         }
     }
 
