@@ -10,6 +10,66 @@ final class ProjectVisibilityResolverTests: XCTestCase {
         Resolver.Window(id: id, spaceIds: spaces, projectIds: projects, isMinimized: minimized, isEligible: eligible)
     }
 
+    func testRestorationPlanNeverMinimizesOrClaimsUnmanagedWindows() {
+        var session = Resolver.Session()
+        let windows = [window("active", ["A"]), window("inactive", ["B"]), window("unassigned", []),
+                       window("remote", ["B"], spaces: [2]), window("manual", ["B"], minimized: true)]
+        XCTAssertTrue(session.restorationPlan(windows).isEmpty)
+        XCTAssertTrue(session.managed.isEmpty)
+    }
+
+    func testRecoveryRequiresSavedIdentityAndMinimizedState() {
+        var session = Resolver.Session()
+        let saved = ProjectWindowIdentity(windowId: "saved", pid: 42, processLaunchedAt: Date(timeIntervalSince1970: 100))
+        session.recover(ProjectWindowIdentity(windowId: "saved", pid: 43, processLaunchedAt: saved.processLaunchedAt), saved: [saved], minimized: true)
+        session.recover(ProjectWindowIdentity(windowId: "saved", pid: 42, processLaunchedAt: Date(timeIntervalSince1970: 200)), saved: [saved], minimized: true)
+        session.recover(ProjectWindowIdentity(windowId: "other", pid: 42, processLaunchedAt: saved.processLaunchedAt), saved: [saved], minimized: true)
+        session.recover(saved, saved: [saved], minimized: false)
+        XCTAssertTrue(session.managed.isEmpty)
+        session.recover(saved, saved: [saved], minimized: true)
+        let commands = session.restorationPlan([window("saved", ["A"], minimized: true), window("other", ["B"], minimized: true)])
+        XCTAssertEqual(commands.map { $0.windowId }, ["saved"])
+        XCTAssertFalse(commands[0].minimize)
+    }
+
+    func testRestorationPlanRestoresOnlyRecordedEligibleWindowsAcrossDesktops() {
+        var session = Resolver.Session()
+        ["local", "remote", "unsupported"].forEach { session.recover($0) }
+        let windows = [window("local", ["A"], minimized: true), window("remote", ["B"], spaces: [2], minimized: true),
+                       window("unsupported", ["B"], minimized: true, eligible: false), window("manual", ["A"], minimized: true)]
+        let commands = session.restorationPlan(windows)
+        XCTAssertEqual(Set(commands.map { $0.windowId }), ["local", "remote"])
+        XCTAssertTrue(commands.allSatisfy { !$0.minimize })
+        commands.forEach { session.complete($0, .changed) }
+        XCTAssertEqual(session.managed, ["unsupported"])
+    }
+
+    func testRestorationPlanKeepsInFlightRecoveryAcrossProjectAndDesktopChanges() {
+        var session = Resolver.Session()
+        session.recover("saved")
+        var saved = window("saved", ["A"], minimized: true)
+        let restore = session.restorationPlan([saved]).first!
+        saved.projectIds = ["B"]
+        saved.spaceIds = [2]
+        XCTAssertTrue(session.restorationPlan([saved]).isEmpty)
+        XCTAssertFalse(restore.isCancelled)
+        session.complete(restore, .changed)
+        XCTAssertTrue(session.managed.isEmpty)
+        XCTAssertTrue(session.restorationPlan([saved]).isEmpty)
+    }
+
+    func testRestorationPlanPreservesManualMinimizeBeforeRecoveryCompletion() {
+        var session = Resolver.Session()
+        session.recover("saved")
+        let saved = window("saved", ["A"], minimized: true)
+        let restore = session.restorationPlan([saved]).first!
+        session.release("saved")
+        XCTAssertTrue(restore.isCancelled)
+        XCTAssertFalse(session.complete(restore, .changed))
+        XCTAssertTrue(session.managed.isEmpty)
+        XCTAssertTrue(session.restorationPlan([saved]).isEmpty)
+    }
+
     func testSwitchMinimizesOnlyOtherProjectsOnCurrentDesktop() {
         var session = Resolver.Session()
         let windows = [window("a", ["A"]), window("b", ["B"]), window("c", ["C"]), window("remote", ["B"], spaces: [2])]

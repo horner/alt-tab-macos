@@ -101,9 +101,9 @@ Newly created windows (for example Chrome **⌘N**) on the current Desktop join 
 Use the top-level **Add active window to → Project** menu to assign the focused window directly to any custom Project, including when no Project is active. The current Project selection is preserved.
 
 
-In **Settings → Controls → Projects…**, **Show from active Project** defaults to **All Spaces/Screens**. Active Project members then appear across Desktops and displays even if the ordinary Filtering settings say “Visible Spaces.” Choose **Current Space/Screen** to restrict them to the current Desktop and main screen. Other filters (such as hidden/minimized windows) remain in effect. Without an active custom Project, ordinary Filtering settings apply.
+Selecting a custom Project shows all of its windows across Desktops and displays, plus every eligible window on the current Desktop, including windows assigned to other Projects. Showing a window does not change its Project membership. Hidden/minimized and other ordinary non-location filters still apply. Without an active custom Project, ordinary Filtering settings apply.
 
-![Project location scope set to All Spaces/Screens in the rebuilt app](screenshots/m3-project-location-scope.jpg)
+Project switching uses Desktop navigation and window focus without automatically minimizing other Projects. Windows automatically minimized by an earlier version are restored when their saved identity is recovered; windows you minimized yourself keep their state. **Settings → Controls → Projects…** explains this scope and offers **Project labels in switcher** to show or hide the labels separately.
 
 **Adding windows already in another Project**
 

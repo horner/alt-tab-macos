@@ -157,11 +157,6 @@ enum WindowDesktopMove {
         pending[window.tracked.id]?.window === window || placements[window.tracked.id]?.window === window
     }
 
-    static func keepsVisible(_ window: Window) -> Bool {
-        guard let request = pending[window.tracked.id] ?? placements[window.tracked.id], request.window === window else { return false }
-        return request.focusOnArrival && request.visibilityGeneration == visibilityGeneration && window.spaceIds.contains(request.destination.id)
-    }
-
     static func selectionChanged() { visibilityGeneration += 1 }
 
     static func forget(_ windows: [Window]) {

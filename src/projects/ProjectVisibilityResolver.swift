@@ -60,8 +60,17 @@ enum ProjectVisibilityResolver {
             managed.insert(id)
         }
 
+        mutating func recover(_ identity: ProjectWindowIdentity, saved: [ProjectWindowIdentity], minimized: Bool) {
+            guard minimized, saved.contains(identity) else { return }
+            recover(identity.windowId)
+        }
+
         func cancelPending() {
             pending.values.forEach { $0.cancel() }
+        }
+
+        mutating func restorationPlan(_ windows: [Window]) -> [Command] {
+            plan(windows, Context(enabled: false, spaceId: nil, projectId: nil))
         }
 
         mutating func plan(_ windows: [Window], _ context: Context) -> [Command] {

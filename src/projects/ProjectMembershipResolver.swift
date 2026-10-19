@@ -1,12 +1,14 @@
 enum ProjectMembershipResolver {
-    static func activeMembers(isEnabled: Bool, activeIsCustom: Bool, members: Set<String>, unassignedOnDesktop: Set<String> = [], ownsCurrentDesktop: Bool = false) -> Set<String>? {
+    static func activeMembers(isEnabled: Bool, activeIsCustom: Bool, members: Set<String>, currentDesktopWindows: Set<String> = []) -> Set<String>? {
         guard isEnabled, activeIsCustom else { return nil }
-        return ownsCurrentDesktop ? members.union(unassignedOnDesktop) : members
+        return members.union(currentDesktopWindows)
+    }
+
+    static func onDesktop(spaceId: UInt64, windowSpaces: [String: [UInt64]]) -> Set<String> {
+        Set(windowSpaces.compactMap { id, spaces in spaces.contains(spaceId) ? id : nil })
     }
 
     static func unassignedOnDesktop(spaceId: UInt64, windowSpaces: [String: [UInt64]], assigned: Set<String>) -> Set<String> {
-        Set(windowSpaces.compactMap { id, spaces in
-            !assigned.contains(id) && spaces.contains(spaceId) ? id : nil
-        })
+        onDesktop(spaceId: spaceId, windowSpaces: windowSpaces).subtracting(assigned)
     }
 }

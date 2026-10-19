@@ -20,12 +20,12 @@ unconfirmed moves without retrying the write. Window removal cancels queued work
 On arrival, the window is focused only if the user is still on the captured Desktop with the same
 Project selection and no open switcher or modal dialog. Manual placement suppresses automatic
 membership capture for that live Window until it closes or AltTab exits. An in-flight restoration
-read must recheck this exception before applying its result. Other Project windows brought here
-remain visible until the next Project selection; later visibility changes follow the normal rules.
+read must recheck this exception before applying its result. Project selection does not minimize
+brought windows or change their membership.
 
 The same mover also serves [Restore All Windows to Project Desktops](WindowDesktopRestoreSpecs.md).
-That caller receives completion instead of a per-window alert and never requests focus or a
-temporary visibility exception. Closing a pending window completes its callback once.
+That caller receives completion instead of a per-window alert and never requests focus. Closing a
+pending window completes its callback once.
 
 ## Private API evidence
 
@@ -42,8 +42,8 @@ or Dock injection are used.
 
 - `WindowDesktopMoveResolverTests` covers source/destination eligibility, unknown and multi-Space
   membership, deleted/reused destinations and exclusive confirmation.
-- `testBroughtWindowStaysVisibleUntilItsExceptionIsCleared` and
-  `testBringCompensatesAnAlreadyIssuedAutomaticMinimize` cover Project visibility interaction.
+- `testRestorationPlanNeverMinimizesOrClaimsUnmanagedWindows` covers the guarantee that Project
+  selection does not automatically minimize brought windows.
 - In the running app, bring a disposable window from another Desktop using its menu. Confirm the
   active Desktop and Project stay unchanged, membership stays unchanged, and focus follows arrival.
 - With an unsupported window, missing destination or closed target, verify there is no move.

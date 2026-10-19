@@ -64,7 +64,7 @@ action names the contextual destination Project and is disabled without a Projec
 candidates; it remains present even without a current app window. The label button uses the clicked
 label's Project and Desktop, including when a different Project was active. It is absent from
 unlinked Desktop labels and from Manage…. The label captures visible candidates before button
-tracking can minimize other Projects' windows; the menu uses its opening snapshot. A deleted
+tracking; the menu uses its opening snapshot. A deleted
 Project or Desktop invalidates the action. Both routes retain the existing membership conflict prompt.
 
 The Add Windows picker remains under Project → Manage…, beneath the contextual Project's name. Add Windows

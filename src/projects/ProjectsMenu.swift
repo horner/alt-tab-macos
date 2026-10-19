@@ -693,7 +693,6 @@ final class ProjectsMenu: NSObject {
         cancelNavigation()
         guard Projects.isEnabled, let id = sender.representedObject as? String, let project = Projects.byId[id] else { return }
         Projects.active = project
-        ProjectVisibility.focus(project)
     }
 
     @objc private static func selectWindow(_ sender: NSMenuItem) {
