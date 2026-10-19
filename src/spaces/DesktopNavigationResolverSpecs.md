@@ -8,16 +8,25 @@ Command-Z returns directly while the window switcher is open, regardless of the 
 
 Returning focuses the remembered window if still eligible, otherwise the destination's most recent window or navigation anchor. While an anchor is unavailable, the system-shortcut fallback honors configured shortcuts, including Command–function-key bindings, and does not send disabled or malformed bindings. Without an explicit binding it retains the Control-digit fallback; macOS must have that shortcut enabled for this fallback to reach an empty Desktop. A confirmed return restores the saved Project if it still exists; ordinary Desktop following handles deleted Projects. The Desktop just left becomes the reverse destination. History is session-local. Duplicate notifications do not overwrite it; deleted Desktops have no return button. Pending Project restoration expires after three seconds and is cancelled by an unrelated Desktop transition.
 
-Each ordinary Desktop also has an invisible, click-through navigation anchor so it remains reachable when no eligible application window is available, including when Project labels are hidden or minimized. Anchors are confined to their assigned Desktop and can become key without becoming main. Their stationary collection behavior excludes them from App Exposé without changing the managed behavior of visible Project labels. Anchors are ordered before application activation when used for navigation; making a destination key without ordering does not reliably switch Desktops.
+Each ordinary Desktop also has an invisible, click-through navigation anchor so it remains reachable when no eligible application window is available, including when Project labels are hidden or minimized. Anchors are confined to their assigned Desktop and can become key without becoming main. At rest, stationary collection behavior excludes them from App Exposé without changing the managed behavior of visible Project labels. Navigation temporarily makes its destination anchor managed before ordering it and activating the application; stationary anchors cannot trigger the Desktop transition. A fresh visibility readback confirming the destination restores stationary behavior while retaining the key window. Ordering out the key anchor can refocus a window on another Desktop and reverse the completed transition.
+
+Each activation has a generation that is captured before asynchronous topology reads. Earlier reads and watchdogs cannot complete a newer request, including a repeated request for the same Desktop. A newly requested read confirms an already-current destination without waiting for a Space-change event. Superseding activation, destination deletion, and a guarded three-second watchdog restore idle behavior without ordering anchors out. No polling is used.
 
 ## Runtime scenarios
 
 - Focus a Project label, then open App Exposé with Control–Down. Visible labels remain selectable, and the invisible navigation anchors contribute no blank entries.
 - Hide or minimize Project labels and navigate to a Desktop with no eligible application window. The destination Desktop becomes current; repeated navigation between empty and occupied Desktops still works.
 - Show Project labels again after anchor navigation. Their Desktop assignments and Exposé participation remain unchanged.
+- After navigation to an empty Desktop, confirm the Desktop remains current and the key anchor contributes no blank App Exposé entry. Repeat navigation in both directions.
 
 ## Test scenarios
 
+- **testAnchorActivationRequiresConfirmedDestinationFromTheSameRequest** — unrelated visibility cannot settle navigation; a fresh destination readback does.
+- **testAlreadyCurrentAnchorSettlesWithoutASpaceChangeEvent** — a destination already visible completes from readback alone.
+- **testNewAnchorActivationRejectsEarlierVisibilityAndTimeoutCallbacks** — superseded callbacks cannot settle a newer destination.
+- **testRepeatedActivationOfTheSameAnchorStillRejectsEarlierCallbacks** — generation checks distinguish repeated requests for the same Desktop.
+- **testAnchorWatchdogCompletesOnlyItsPendingRequest** — timeout completes once and invalidates late readbacks.
+- **testDesktopRemovalCancelsOnlyAnUnavailableAnchorDestination** — removing the destination cancels its pending activation and invalidates its callbacks.
 - **testStartupHasNoReturnDestination** — startup does not invent a previous Desktop.
 - **testDesktopChangeRemembersProjectAndWindow** — an ordinary change retains the complete origin.
 - **testDuplicateSpaceNotificationPreservesReturnDestination** — duplicate notifications do not destroy history.

@@ -192,6 +192,7 @@ enum SpaceLabelWindows {
 
     private static func readSpaces() {
         let requestedRevision = revision
+        let anchorRevision = DesktopWindows.activationRevision
         refreshInFlight = true
         let placements = windows.compactMapValues { entry -> PlacementRead? in
             guard !entry.assigning, !entry.retired, let windowId = entry.windowId,
@@ -217,7 +218,7 @@ enum SpaceLabelWindows {
                 let destinations = visible.map { arrival.update($0, didSwitch: didSwitch) } ?? []
                 spaces = snapshot
                 DesktopRemoval.topologyChanged(snapshot)
-                DesktopWindows.reconcile(snapshot)
+                DesktopWindows.reconcile(snapshot, visibleSpaceIds: visible.map { Set($0.values) }, observedActivationRevision: anchorRevision)
                 Projects.applyDesktopTopology(snapshot)
                 verifyPlacements(placements, locations: locations, snapshot: snapshot)
                 guard enabled else { return }

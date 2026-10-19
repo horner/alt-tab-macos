@@ -4,6 +4,69 @@ final class DesktopNavigationResolverTests: XCTestCase {
     private let first = DesktopNavigationResolver.Destination(spaceUuid: "first", projectId: "research", windowId: "editor")
     private let second = DesktopNavigationResolver.Destination(spaceUuid: "second", projectId: "work", windowId: "browser")
 
+    func testAnchorActivationRequiresConfirmedDestinationFromTheSameRequest() {
+        var activation = DesktopNavigationResolver.AnchorActivation()
+        XCTAssertNil(activation.begin(5))
+        let revision = activation.revision
+        XCTAssertNil(activation.confirmed(visibleSpaceIds: [1], observedRevision: revision))
+        XCTAssertEqual(activation.destination, 5)
+        XCTAssertEqual(activation.confirmed(visibleSpaceIds: [5, 9], observedRevision: revision), 5)
+        XCTAssertNil(activation.destination)
+        XCTAssertNil(activation.expire(revision: revision))
+    }
+
+    func testAlreadyCurrentAnchorSettlesWithoutASpaceChangeEvent() {
+        var activation = DesktopNavigationResolver.AnchorActivation()
+        _ = activation.begin(5)
+        XCTAssertEqual(activation.confirmed(visibleSpaceIds: [5], observedRevision: activation.revision), 5)
+        XCTAssertNil(activation.destination)
+    }
+
+    func testNewAnchorActivationRejectsEarlierVisibilityAndTimeoutCallbacks() {
+        var activation = DesktopNavigationResolver.AnchorActivation()
+        _ = activation.begin(5)
+        let firstRevision = activation.revision
+        XCTAssertEqual(activation.begin(9), 5)
+        let secondRevision = activation.revision
+        XCTAssertNil(activation.confirmed(visibleSpaceIds: [9], observedRevision: firstRevision))
+        XCTAssertNil(activation.expire(revision: firstRevision))
+        XCTAssertEqual(activation.destination, 9)
+        XCTAssertEqual(activation.confirmed(visibleSpaceIds: [9], observedRevision: secondRevision), 9)
+    }
+
+    func testRepeatedActivationOfTheSameAnchorStillRejectsEarlierCallbacks() {
+        var activation = DesktopNavigationResolver.AnchorActivation()
+        _ = activation.begin(5)
+        let firstRevision = activation.revision
+        XCTAssertEqual(activation.begin(5), 5)
+        XCTAssertNil(activation.confirmed(visibleSpaceIds: [5], observedRevision: firstRevision))
+        XCTAssertNil(activation.expire(revision: firstRevision))
+        XCTAssertEqual(activation.destination, 5)
+    }
+
+    func testAnchorWatchdogCompletesOnlyItsPendingRequest() {
+        var activation = DesktopNavigationResolver.AnchorActivation()
+        XCTAssertNil(activation.expire(revision: activation.revision))
+        _ = activation.begin(5)
+        let revision = activation.revision
+        XCTAssertEqual(activation.expire(revision: revision), 5)
+        XCTAssertNil(activation.destination)
+        XCTAssertNil(activation.confirmed(visibleSpaceIds: [5], observedRevision: revision))
+        XCTAssertNil(activation.expire(revision: revision))
+    }
+
+    func testDesktopRemovalCancelsOnlyAnUnavailableAnchorDestination() {
+        var activation = DesktopNavigationResolver.AnchorActivation()
+        _ = activation.begin(5)
+        let revision = activation.revision
+        XCTAssertNil(activation.retain(availableSpaceIds: [1, 5]))
+        XCTAssertEqual(activation.destination, 5)
+        XCTAssertEqual(activation.retain(availableSpaceIds: [1, 9]), 5)
+        XCTAssertNil(activation.destination)
+        XCTAssertNil(activation.confirmed(visibleSpaceIds: [5], observedRevision: revision))
+        XCTAssertNil(activation.expire(revision: revision))
+    }
+
     func testStartupHasNoReturnDestination() {
         var history = DesktopNavigationResolver.History()
         XCTAssertNil(history.entered("first", leaving: nil, now: 0))

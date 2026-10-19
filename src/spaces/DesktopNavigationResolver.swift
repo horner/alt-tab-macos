@@ -1,6 +1,40 @@
 import Foundation
 
 enum DesktopNavigationResolver {
+    struct AnchorActivation {
+        private(set) var revision = 0
+        private(set) var destination: UInt64?
+
+        mutating func begin(_ destination: UInt64) -> UInt64? {
+            let previous = self.destination
+            revision &+= 1
+            self.destination = destination
+            return previous
+        }
+
+        mutating func confirmed(visibleSpaceIds: Set<UInt64>, observedRevision: Int) -> UInt64? {
+            guard observedRevision == revision, let destination, visibleSpaceIds.contains(destination) else { return nil }
+            return finish()
+        }
+
+        mutating func expire(revision: Int) -> UInt64? {
+            guard revision == self.revision else { return nil }
+            return finish()
+        }
+
+        mutating func retain(availableSpaceIds: Set<UInt64>) -> UInt64? {
+            guard let destination, !availableSpaceIds.contains(destination) else { return nil }
+            return finish()
+        }
+
+        private mutating func finish() -> UInt64? {
+            guard let destination else { return nil }
+            self.destination = nil
+            revision &+= 1
+            return destination
+        }
+    }
+
     struct Destination: Equatable {
         let spaceUuid: String
         let projectId: String?
