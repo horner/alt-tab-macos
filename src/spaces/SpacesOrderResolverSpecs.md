@@ -49,6 +49,13 @@ the screen and passes it as `maxColumns`; below that limit everything stays on o
 rows are balanced rather than filled greedily, because a full row trailed by a stub of 2 reads as a
 rendering bug: the tile count is divided by the number of rows the limit forces.
 
+## Panel keyboard behavior
+
+The `SpacesPanel` adapter commits the highlighted Desktop with Return or keypad Enter in both Focus
+and Hold shortcut styles. Escape closes the panel without changing Desktops; other keys retain normal
+AppKit handling. Commit and cancel do nothing when no Spaces session is active. These AppKit actions
+require runtime validation alongside the pure ordering tests below.
+
 ---
 
 ## Test scenarios
