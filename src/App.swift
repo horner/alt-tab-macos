@@ -528,7 +528,6 @@ class App: AppCenterApplication {
         // Needs the AX runloop `BackgroundWork.start()` created, so it cannot go with the launch-time setup.
         AxObserverRegistry.shared.startRecoveryTicks()
         CliEvents.observe()
-        #if !PROJECTS_DISTRIBUTION
         App.sparkleDelegate = SparkleDelegate()
         App.updaterController = SPUStandardUpdaterController(
             startingUpdater: false,
@@ -537,7 +536,6 @@ class App: AppCenterApplication {
         DispatchQueue.main.asyncAfter(deadline: .now() + 30) {
             App.updaterController?.startUpdater()
         }
-        #endif
         PreferencesEvents.initialize()
         BenchmarkRunner.startIfNeeded()
         showSettingsWindowOnFirstLaunchIfNeeded()
@@ -601,7 +599,9 @@ extension App: NSApplicationDelegate {
         LicenseManager.shared.onBeforeProUnlock = { ProTransitionManager.shared.onProUnlocked() }
         LicenseManager.shared.onStateChanged = { state in
             Menubar.refreshLicenseMenuItems()
+            #if !PROJECTS_DISTRIBUTION
             syncLicenseCookie(state: state)
+            #endif
             ProTransitionManager.shared.onLicenseStateChanged()
             UpgradeTab.refreshStatus()
             SettingsWindow.shared?.refreshUpgradeButton()

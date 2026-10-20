@@ -4,12 +4,14 @@ import Sparkle
 class UserDefaultsEvents: NSObject {
     private static var policyObserver = UserDefaultsEvents()
     private static var isObserving = false
+    private var synchronizationScheduled = false
 
     static func observe() {
-        guard !isObserving else { return }
+        guard !isObserving, App.updaterController != nil else { return }
         isObserving = true
-        UserDefaults.standard.addObserver(policyObserver, forKeyPath: "SUAutomaticallyUpdate", options: [.initial, .new], context: nil)
-        UserDefaults.standard.addObserver(policyObserver, forKeyPath: "SUEnableAutomaticChecks", options: [.initial, .new], context: nil)
+        // .initial delivers synchronously; startup has already applied the saved policy.
+        UserDefaults.standard.addObserver(policyObserver, forKeyPath: "SUAutomaticallyUpdate", options: [.new], context: nil)
+        UserDefaults.standard.addObserver(policyObserver, forKeyPath: "SUEnableAutomaticChecks", options: [.new], context: nil)
     }
 
     override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
@@ -18,22 +20,30 @@ class UserDefaultsEvents: NSObject {
 
     private func handleEvent(_ keyPath: String?) {
         Logger.debug { "\(keyPath ?? "keyPath:nil") updatePolicy:\(Preferences.updatePolicy) policyLock:\(GeneralTab.policyLock)" }
-        guard !GeneralTab.policyLock else { return }
-        let id = buttonIdToUpdate()
-        if id == 2 {
-            // Sparkle UI "Automatically download and install updates in the future" doesn't activate periodical checks; we do it manually
-            App.updaterController?.updater.automaticallyChecksForUpdates = true
+        guard !GeneralTab.policyLock, !synchronizationScheduled else { return }
+        synchronizationScheduled = true
+        // Sparkle writes defaults before recalculating dependent flags; wait until its setters finish.
+        DispatchQueue.main.async {
+            self.synchronizationScheduled = false
+            self.synchronizePolicy()
         }
-        GeneralTab.updatesPolicyDropdown?.selectItem(at: id)
-        Preferences.set("updatePolicy", String(id))
     }
 
-    private func buttonIdToUpdate() -> Int {
-        if App.updaterController?.updater.automaticallyDownloadsUpdates == true {
-            return 2
-        } else if App.updaterController?.updater.automaticallyChecksForUpdates == true {
-            return 1
+    private func synchronizePolicy() {
+        guard !GeneralTab.policyLock, let updater = App.updaterController?.updater else { return }
+        GeneralTab.policyLock = true
+        defer { GeneralTab.policyLock = false }
+        let policy = updatePolicy(updater)
+        if policy == .autoInstall {
+            updater.automaticallyChecksForUpdates = true
         }
-        return 0
+        GeneralTab.updatesPolicyDropdown?.selectItem(at: Int(policy.indexAsString)!)
+        Preferences.set("updatePolicy", policy.indexAsString, false)
+    }
+
+    private func updatePolicy(_ updater: SPUUpdater) -> UpdatePolicyPreference {
+        if updater.automaticallyDownloadsUpdates { return .autoInstall }
+        if updater.automaticallyChecksForUpdates { return .autoCheck }
+        return .manual
     }
 }

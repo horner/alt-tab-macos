@@ -17,6 +17,7 @@ from pathlib import Path
 
 sys.dont_write_bytecode = True
 import package
+import updates
 
 ROOT = Path(__file__).resolve().parents[2]
 REPO = "horner/alt-tab-macos"
@@ -133,7 +134,7 @@ class Deploy:
         require(repository["full_name"] == REPO and not repository["private"]
                 and repository.get("permissions", {}).get("push"), f"GitHub authentication needs push access to public {REPO}.")
         self.default_branch = repository["default_branch"]
-        require(self.default_branch != BRANCH, "The Homebrew default branch must be separate from release source.")
+        require(self.default_branch not in (BRANCH, updates.BRANCH), "The Homebrew default branch must be separate from release source and updates.")
         self.release = self.find_release()
         tags = [self.tag_commit(), self.tag_commit(remote=True)]
         require(all(value in (None, self.commit) for value in tags), f"{self.tag} already points to different source. Use a new version.")
@@ -168,11 +169,16 @@ class Deploy:
         info = plistlib.loads((app / "Contents/Info.plist").read_bytes())
         require(info["CFBundleIdentifier"] == BUNDLE and info["CFBundleShortVersionString"] == self.version,
                 "Downloaded app identity or version differs from the release.")
+        require(info.get("CFBundleVersion") == self.version and info.get("SUFeedURL") == updates.FEED_URL
+                and info.get("SUPublicEDKey") == self.sparkle["public_key"]
+                and info.get("LSMinimumSystemVersion") == self.sparkle["minimum_system_version"],
+                "Downloaded app update version, feed, public key or minimum macOS differs from the signed metadata.")
         self.run("codesign", "--verify", "--deep", "--strict", app)
         signature = self.run("codesign", "-dv", "--verbose=4", app, check=False)
-        require(signature.returncode == 0 and "Authority=Developer ID Application:" in signature.stderr
+        require(signature.returncode == 0 and f"Authority={IDENTITY}" in signature.stderr.splitlines()
                 and f"TeamIdentifier={TEAM}" in signature.stderr.splitlines(), "The app has an unexpected signing identity.")
         package.verify_architectures(app / "Contents/MacOS/AltTabProjects", self.run)
+        package.verify_sparkle_bundle(app, self.run)
         self.run("xcrun", "stapler", "validate", app)
         self.run("spctl", "--assess", "--type", "execute", app)
 
@@ -184,6 +190,9 @@ class Deploy:
         self.sha = checksum(self.output / "AltTabProjects.zip")
         require(manifest["sha256"] == self.sha, "Package ZIP checksum mismatch.")
         require((self.output / "SHA256SUMS.txt").read_text() == f"{self.sha}  AltTabProjects.zip\n", "Checksum manifest mismatch.")
+        self.sparkle = updates.validate_metadata(manifest, self.output / "AltTabProjects.zip")
+        package.verify_sparkle_signature(self.output / "AltTabProjects.zip", self.sparkle["signature"], self.run)
+        self.manifest = manifest
         self.cask_text = package.cask(self.version, self.sha, self.url, "alttab-projects")
         require((self.output / "Casks/alttab-projects.rb").read_text() == self.cask_text, "Generated cask differs from the verified package.")
         require(json.loads((self.output / "notarization.json").read_text()).get("status") == "Accepted", "Apple has not accepted this package.")
@@ -197,7 +206,7 @@ class Deploy:
             self.validate_app(Path(directory) / "AltTabProjects.app")
 
     def prepare_package(self):
-        self.run(sys.executable, "-m", "unittest", "discover", "-s", "scripts/projects", "-p", "test_deploy.py",
+        self.run(sys.executable, "-m", "unittest", "discover", "-s", "scripts/projects", "-p", "test_*.py",
                  log=self.logs / "tooling-tests.log")
         self.run("xcodebuild", "test", "-project", "alt-tab-macos.xcodeproj", "-scheme", "Test", "-configuration", "Release",
                  "-derivedDataPath", self.root / "build/projects-tests", log=self.logs / "tests.log")
@@ -211,6 +220,8 @@ class Deploy:
         self.clean_source()
         self.validate_package()
         self.prepare_smoke_report()
+        (self.logs / "appcast-preview.xml").write_bytes(updates.appcast(
+            self.manifest, self.output / "AltTabProjects.zip", self.notes.read_text(), datetime.now(timezone.utc).isoformat()))
 
     def prepare_smoke_report(self):
         if self.smoke_report.exists():
@@ -293,6 +304,7 @@ class Deploy:
                     require(checksum(Path(directory) / name) == expected, f"GitHub asset {name} differs; it will not be overwritten.")
 
     def publish_release(self):
+        self.public_download_verified = False
         self.validate_runtime_smoke()
         self.clean_source()
         if self.tag_commit() is None:
@@ -324,6 +336,53 @@ class Deploy:
             self.run("curl", "--fail", "--silent", "--show-error", "--location", "--retry", "3", "--proto", "=https",
                      "--proto-redir", "=https", "--output", archive, self.url)
             self.verify_archive(archive)
+        self.public_download_verified = True
+
+    def publish_feed(self):
+        require(getattr(self, "public_download_verified", False) and self.release and not self.release["draft"],
+                "Verify the anonymous public ZIP download before publishing the update feed.")
+        require(self.release["tag_name"] == self.tag and self.release["prerelease"],
+                "The update feed must describe this exact friends prerelease.")
+        remote = self.git("ls-remote", "--heads", "origin", f"refs/heads/{updates.BRANCH}")
+        if remote:
+            self.git("fetch", "--no-tags", "origin", f"refs/heads/{updates.BRANCH}:refs/remotes/origin/{updates.BRANCH}")
+        parent = Path(tempfile.mkdtemp(prefix="updates-", dir=self.logs))
+        checkout = parent / "checkout"
+        self.git("worktree", "add", "--detach", checkout, f"origin/{updates.BRANCH}" if remote else self.commit)
+        bootstrap = None
+        try:
+            if not remote:
+                bootstrap = f"projects-updates-bootstrap-{parent.name}"
+                self.git("switch", "--orphan", bootstrap, cwd=checkout)
+            feed = checkout / "appcast.xml"
+            previous = feed.read_bytes() if feed.exists() else None
+            require(not remote or previous is not None, "The existing updates branch has no appcast; preserve it and repair it before publishing.")
+            content = updates.appcast(self.manifest, self.output / "AltTabProjects.zip", self.release.get("body"),
+                                      self.release.get("published_at"), previous)
+            feed.write_bytes(content)
+            (self.logs / "appcast.xml").write_bytes(content)
+            self.git("diff", "--check", cwd=checkout)
+            self.git("add", "--", "appcast.xml", cwd=checkout)
+            changed = self.git("diff", "--cached", "--name-only", cwd=checkout).splitlines()
+            require(set(changed) <= {"appcast.xml"}, "Unexpected staged files in the updates worktree.")
+            if changed:
+                self.git("commit", "-m", f"chore: publish AltTabProjects {self.version} update", cwd=checkout)
+                self.git("push", "origin", f"HEAD:refs/heads/{updates.BRANCH}", cwd=checkout)
+            feed_commit = self.git("rev-parse", "HEAD", cwd=checkout)
+            public = self.logs / "public-appcast.xml"
+            # A commit query avoids GitHub Raw's cached branch response immediately after a push.
+            self.run("curl", "--fail", "--silent", "--show-error", "--location", "--retry", "3", "--proto", "=https",
+                     "--proto-redir", "=https", "--output", public, f"{updates.FEED_URL}?commit={feed_commit}")
+            require(public.read_bytes() == content, "The anonymous public appcast differs from the published feed; retry with --resume.")
+            self.feed_commit = feed_commit
+            if bootstrap:
+                self.git("switch", "--detach", cwd=checkout)
+                self.git("branch", "-d", bootstrap, cwd=checkout)
+        except BaseException:
+            print(f"Updates checkout retained for inspection: {checkout}", file=sys.stderr)
+            raise
+        self.git("worktree", "remove", checkout)
+        parent.rmdir()
 
     def update_cask(self):
         self.git("fetch", "--no-tags", "origin", f"refs/heads/{self.default_branch}:refs/remotes/origin/{self.default_branch}")
@@ -372,7 +431,7 @@ class Deploy:
         self.read_source()
         if self.args.dry_run:
             print(f"Preview only: {self.tag} from {self.commit}\nRepository: {REPO}\nNotes: {self.notes}\n"
-                  f"Package: {self.output}\nRuntime report: {self.smoke_report}\nSteps: preflight → tests → universal build → sign/notarize → install/relaunch and runtime smoke gate → draft/upload/verify/publish → cask commit → Homebrew fetch/Gatekeeper\n"
+                  f"Package: {self.output}\nRuntime report: {self.smoke_report}\nUpdate feed: {updates.FEED_URL}\nSteps: preflight → tests → universal build → sign/notarize/Sparkle-sign → install/relaunch and runtime smoke gate → draft/upload/verify/publish → public ZIP verification → update feed → cask commit → Homebrew fetch/Gatekeeper\n"
                   "No build, credentials check, network request, Git mutation or publication was performed.\n"
                   "Actual deployment requires clean committed source, a new version, and configured credentials; use --resume only for the same source/package.")
             return
@@ -385,9 +444,9 @@ class Deploy:
             self.preflight()
             self.logs.mkdir(parents=True, exist_ok=True)
             print(f"Deploying {self.tag} ({self.commit}) to {REPO}. Logs: {self.logs}", flush=True)
-            for step in (self.prepare_package, self.publish_release, self.update_cask, self.verify_homebrew):
+            for step in (self.prepare_package, self.publish_release, self.publish_feed, self.update_cask, self.verify_homebrew):
                 if step == self.publish_release and self.args.prepare_only:
-                    print(f"Prepared {self.output / 'AltTabProjects.zip'}. No tag, release or cask was published.\n"
+                    print(f"Prepared {self.output / 'AltTabProjects.zip'}. No tag, release, update feed or cask was published.\n"
                           f"Install and relaunch this exact package, complete {self.smoke_report}, then rerun with --resume.")
                     return
                 print(step.__name__.replace("_", " ").capitalize(), flush=True)
@@ -395,6 +454,7 @@ class Deploy:
             result = dict(version=self.version, source_commit=self.commit, sha256=self.sha,
                           release_url=f"https://github.com/{REPO}/releases/tag/{self.tag}",
                           notarized=True, public_download_verified=True, homebrew_download_verified=True,
+                          update_feed_url=updates.FEED_URL, update_feed_commit=self.feed_commit,
                           runtime_smoke=getattr(self, "runtime_smoke", None))
             (self.logs / "deployment.json").write_text(json.dumps(result, indent=2) + "\n")
             print(f"Deployed: {result['release_url']}\nHomebrew ZIP verified."

@@ -2,32 +2,34 @@ import Cocoa
 import Sparkle
 
 class SparkleDelegate: NSObject, SPUUpdaterDelegate {
-    /// Outcome of a Sparkle update check from the app's point of view. We collapse "no update
-    /// found" and "check failed" into `.upToDate` because every caller wants the same
-    /// fallthrough behavior in both cases.
+    /// Availability reported by Sparkle, shared with the feedback preflight.
     enum UpdateCheckResult {
         case updateAvailable(SUAppcastItem)
         case upToDate
     }
 
-    /// Session-scoped cache of the most recent update-check outcome. `nil` until the first
-    /// check (any kind — feedback preflight, manual Preferences click, scheduled background)
-    /// completes. Memory-only by design: a fresh app launch should re-check once.
-    /// Always written through the Sparkle delegate callbacks below, so even a check we
-    /// initiated for one purpose populates the cache for any later caller.
+    /// Memory-only availability shared by checks during this launch.
     var cachedResult: UpdateCheckResult?
 
-    /// One-shot completion handler used by callers that want to drive UI (e.g. the feedback
-    /// window's spinner). Cleared as soon as it fires, so each request gets exactly one
-    /// callback. The cache update is independent of this listener — even if no one's
-    /// subscribed, the result still lands in `cachedResult`.
+    /// One-shot listener for feedback UI; caching does not depend on a listener being present.
     var onNextCheckCompletion: ((UpdateCheckResult) -> Void)?
 
     func feedURLString(for updater: SPUUpdater) -> String? {
         return Endpoints.appcastUrl
     }
 
+    func allowedChannels(for updater: SPUUpdater) -> Set<String> {
+        #if PROJECTS_DISTRIBUTION
+        return ["beta"]
+        #else
+        return []
+        #endif
+    }
+
     func feedParameters(for updater: SPUUpdater, sendingSystemProfile sendingProfile: Bool) -> [[String: String]] {
+        #if PROJECTS_DISTRIBUTION
+        return []
+        #else
         let v = ProcessInfo.processInfo.operatingSystemVersion
         return [
             ["key": "version", "value": App.version],
@@ -36,6 +38,7 @@ class SparkleDelegate: NSObject, SPUUpdaterDelegate {
             ["key": "lang", "value": Locale.preferredLanguages.first ?? "unknown"],
             ["key": "tier", "value": LicenseManager.shared.state.appcastTier],
         ]
+        #endif
     }
 
     func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {

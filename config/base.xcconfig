@@ -22,3 +22,6 @@ DEAD_CODE_STRIPPING = YES
 OTHER_LDFLAGS = $(inherited) -weak_framework ScreenCaptureKit // SDK 26 header bug: a stray `;` between API_AVAILABLE and `@interface SCScreenshotConfiguration` detaches the annotation, so the class ref links strongly and dyld aborts at launch on any macOS below 26
 DOMAIN = alt-tab.app
 API_DOMAIN = alt-tab.app/api
+SPARKLE_FEED_URL = https:/$()/$(DOMAIN)/appcast.xml
+SPARKLE_PUBLIC_ED_KEY = 2e9SQOBoaKElchSa/4QDli/nvYkyuDNfynfzBF6vJK4=
+SPARKLE_CHECK_INTERVAL = 604800

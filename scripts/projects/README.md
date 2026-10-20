@@ -1,8 +1,9 @@
 # Deploy AltTabProjects
 
 Run `./deploy.sh` from the **projects-release** worktree. This is the supported agent entry point
-for publishing a friends prerelease and its Homebrew cask to **horner/alt-tab-macos only**.
-The default branch carries the cask; development can continue in its separate checkout.
+for publishing a friends prerelease, Sparkle update feed and Homebrew cask to **horner/alt-tab-macos only**.
+The default branch carries the cask, `projects-updates` carries `appcast.xml`, and development can
+continue in its separate checkout. All Projects users are eligible for the friends beta channel.
 
 ## Agent workflow
 
@@ -33,7 +34,7 @@ The default branch carries the cask; development can continue in its separate ch
    ./deploy.sh --notes /tmp/AltTabProjects-0.1.2.md --resume
    ```
 
-7. Read the final result and `build/deploy-<version>/deployment.json`. Report the release link,
+7. Read the final result and `build/deploy-<version>/deployment.json`. Report the release and feed links,
    runtime observations, automated validation, and any remaining test-matrix limitations.
 
 Versions 0.1.0 and [0.1.1](https://github.com/horner/alt-tab-macos/releases/tag/projects-v0.1.1) were
@@ -68,6 +69,35 @@ Developer ID by name or SHA-1; `--notary-profile` selects another existing Keych
 `X5873NL7XM` and bundle ID `com.horner.alt-tab-projects` remain mandatory. Do not put passwords,
 private keys, license keys or exported personal preferences in source, notes or release assets.
 
+Sparkle archive signing uses a separate Ed25519 private key in the Keychain account
+`AltTabProjects Sparkle`; it does not use the Developer ID certificate. Its public key is committed
+as `SPARKLE_PUBLIC_ED_KEY` in `config/projects.xcconfig` and embedded as `SUPublicEDKey` in the app.
+Inspect only the public key with:
+
+```sh
+vendor/Sparkle/bin/generate_keys --account 'AltTabProjects Sparkle' -p
+```
+
+The established key must be present on the signing Mac. A new Mac needs that same key provisioned
+securely; do not generate a replacement just to get a build working. Initial key creation uses
+`vendor/Sparkle/bin/generate_keys --account 'AltTabProjects Sparkle'` only during an authorized
+first setup. The package command rejects a Keychain key that differs from the app's public key.
+Private update keys never belong in arguments, environment variables or repository files. Keep
+the Developer ID, team, bundle ID and update key stable across releases.
+
+The persistent Projects appcast is:
+
+```text
+https://raw.githubusercontent.com/horner/alt-tab-macos/projects-updates/appcast.xml
+```
+
+No hosting credentials beyond push access to this fork are needed. The first authorized deployment
+creates the `projects-updates` branch with only `appcast.xml`; subsequent deployments change only
+that file. There is no force push. A missing feed on an existing branch, malformed feed, changed
+entry for an existing version, or newer published version stops feed publication. Do not create a
+production feed as part of a tooling-only change. GitHub Raw can briefly cache the previous feed;
+deployment verifies the public bytes with a commit query after its push.
+
 Homebrew may download its style-check tooling. The script grants trust only to
 `horner/projects/alttab-projects` on Homebrew versions that require it. All Homebrew commands disable
 automatic updates, removal of unrelated dependencies, and installation cleanup. The script updates
@@ -83,7 +113,11 @@ change preferences; installing and testing the candidate is a required separate 
    `scripts/projects/build.sh`.
 3. Runs `scripts/projects/package.py` to sign embedded code and the app, submit it to Apple, staple
    the accepted ticket, and check Gatekeeper. The package contains a ZIP, SHA-256 manifest, cask and
-   build metadata identifying the exact source commit. The ZIP is extracted and verified again.
+   build metadata identifying the exact source commit. The final ZIP is extracted and verified again,
+   including Sparkle's `Autoupdate`, `Updater.app`, framework links/resources, every Mach-O's two
+   architectures and nested signatures. That exact final ZIP is Ed25519 signed with the Projects
+   Keychain account. `build-info.json` records its signature, byte length, minimum macOS, public key
+   and explicit `beta` channel. A candidate appcast preview is saved alongside the deployment logs.
 4. `--prepare-only` stops here with the signed ZIP and a pending runtime report. Before any tag or
    release push, ordinary deployment requires passing runtime observations tied to the exact version,
    source commit and ZIP checksum. It validates the installed app and the running process against
@@ -95,17 +129,25 @@ change preferences; installing and testing the candidate is a required separate 
    clobbered, and mismatches stop deployment.
 6. Publishes the prerelease and downloads its ZIP anonymously from the public URL. Checks its
    checksum, version, bundle ID, Developer ID team, both architectures, signature, stapled ticket
-   and Gatekeeper before pointing the cask at it.
-7. Creates a temporary detached worktree from the fork's current default branch. Changes only
+   and Gatekeeper before publishing its feed or pointing the cask at it.
+7. Appends the signed update to `projects-updates:appcast.xml` through a temporary worktree, then
+   verifies an anonymous download of that feed. Its version, minimum macOS, enclosure URL, exact ZIP
+   byte length and signature come from the verified package. The description contains the public
+   GitHub release's actual notes as escaped plain text, and its publication timestamp stays stable
+   on retries. Prior entries are retained; matching entries are left byte-for-byte unchanged and
+   mismatches or downgrades fail. GitHub prerelease status is not a Sparkle channel: every item is
+   explicitly `beta`, and Projects opts all users into that channel.
+8. Creates a temporary detached worktree from the fork's current default branch. Changes only
    `Casks/alttab-projects.rb` and the first release download link in `README.md`, commits, and pushes without
    force. The inherited upstream publishing job must remain guarded by
    `github.repository == 'lwouis/alt-tab-macos'`. The script does not edit workflows or upstream.
-8. Adds or updates the `horner/projects` tap, checks cask style, and uses `brew fetch` to download
+9. Adds or updates the `horner/projects` tap, checks cask style, and uses `brew fetch` to download
    the release ZIP. Verifies that actual Homebrew download and the extracted app. It leaves any
    installed AltTabProjects app in place.
 
 Build/package commands alone still do not publish. The implementation behind the shell entry point
-is `scripts/projects/deploy.py`; the signing implementation is `scripts/projects/package.py`.
+is `scripts/projects/deploy.py`; archive signing is in `scripts/projects/package.py`, and appcast
+generation is in `scripts/projects/updates.py`. The generated cask declares `auto_updates true`.
 
 ## Runtime smoke tests before publication
 
@@ -146,8 +188,8 @@ the evidence in `runtime-smoke-verified.json` and the final deployment result.
 
 Resume without changing the source or rebuilding the package. A report for another candidate, an
 older running process, or a missing observation stops deployment before tag creation or publication.
-There is no flag to bypass the runtime gate for an unpublished candidate. Recovery of a release
-already public skips this new gate so its immutable assets and cask can still be verified; that
+There is no flag to bypass the runtime gate for an unpublished candidate. Recovery of an updater-enabled release
+already public skips this new gate so its immutable assets, feed and cask can still be verified; that
 recovery does not claim that runtime testing happened before publication. A local smoke test also
 does not establish Intel or older-macOS compatibility beyond the machine actually tested.
 
@@ -156,6 +198,8 @@ does not establish Intel or older-macOS compatibility beyond the machine actuall
 - `build/release-<version>/` holds the original signed package. Retain this directory for retries.
 - `build/deploy-<version>/` holds `tooling-tests.log`, `tests.log`, `build.log`, `package.log`, the runtime
   smoke report and verified evidence, `cask-style.log`, `brew-fetch.log`, and, after success, `deployment.json`.
+  It also holds `appcast-preview.xml` before publication and `appcast.xml`/`public-appcast.xml` after
+  feed publication. The result records the persistent feed URL and verified feed commit.
 - `build/projects-tests/` caches test build products. Build output is ignored by Git.
 - An OS file lock prevents two deployments in the same checkout. It releases automatically when
   the process exits, including interruption; a leftover lock file does not need deletion.
@@ -169,20 +213,26 @@ source commit, version and original package:
 
 Tests run again. A completed package is verified and reused without rebuilding or signing. A partial
 draft gets only its missing assets; matching assets remain untouched. An already published release
-is verified without editing its assets, status or notes, and deployment continues to its cask and
+is verified without editing its assets, status or notes, and deployment continues to its feed, cask and
 Homebrew checks. Existing remote tag objects are fetched rather than recreated.
+
+Version 1.0.5 and older packages lack the required Sparkle metadata/helpers and cannot be resumed
+with this tooling. Historical recovery requires the original release source/tooling and original
+completed package, subject to its source and no-downgrade checks. Do not retrofit update metadata
+or helpers into a published package or replace its assets; release a new updater-enabled version.
 
 If packaging failed before `build-info.json` was written, preserve the incomplete output under a
 different name, then retry. Once a GitHub release exists, recovery requires its original completed
 package; do not rebuild or replace the published ZIP. Do not advance the release branch until the
 deployment has finished. If a newer cask has already shipped, an older deployment cannot roll it back.
 
-A rejected default-branch push leaves the temporary cask checkout under `build/deploy-<version>/`
+A rejected feed or default-branch push leaves its temporary checkout under `build/deploy-<version>/`
 and prints its path. Inspect it if needed; `--resume` prepares a fresh checkout from the latest
-remote default branch. Do not force-push. Remove retained test checkouts with `git worktree remove`
+remote branch. Do not force-push. Remove retained test checkouts with `git worktree remove`
 after review. A local Homebrew tap with edits or a custom branch is preserved and causes verification
 to stop; resolve those changes before retrying. An already published release stays published if a
-later cask or Homebrew step fails.
+later feed, cask or Homebrew step fails. An already published feed also stays in place if a later
+cask or Homebrew step fails. Never replace its ZIP to repair a release; publish a new version.
 
 `--dry-run` is strictly a local preview: it does not build, check credentials, query GitHub, fetch Git
 refs, modify files or publish. It permits uncommitted preparation, but a real run requires a clean
@@ -192,14 +242,38 @@ commit and validates remote state. It is not a successful deployment check.
 
 ```sh
 bash -n deploy.sh
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/projects -p 'test_deploy.py' -v
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/projects -p 'test_*.py' -v
 ./deploy.sh --notes /path/to/reviewed-notes.md --dry-run
 ```
 
 The tests simulate GitHub and signing boundaries and use real temporary Git repositories to check
-cask-only pushes, preserved source work, retries, CI guards, version ordering, and paths containing
+cask/feed-only pushes, preserved source work, retries, publication ordering, CI guards, version ordering,
+signature metadata, helper packaging, and paths containing
 spaces. They do not contact Apple/GitHub or install apps. A real deployment still requires the
 credential and artifact checks above.
+
+## Test an actual Sparkle upgrade without publication
+
+Use disposable test checkouts and a local HTTPS server with a certificate trusted by the test Mac.
+Build two distinct numeric versions, A and B, with the same established Developer ID, team, bundle ID
+and Sparkle public key. Override `CURRENT_PROJECT_VERSION` and `SPARKLE_FEED_URL` at command-line
+build time to use the test versions and test server; do not edit a signed app's `Info.plist`. Use the
+universal Release command from `scripts/projects/build.sh`, then `package.py` with the established
+identity and notarization profile for each build. Keep both completed outputs. These test packages
+must never be passed to `deploy.sh` or published to the production feed.
+
+Serve B's exact signed final ZIP and a test appcast containing its metadata. Generate that appcast
+with `updates.appcast(build_info, zip_path, notes, published_at)`, then change only the test copy's
+channel link and enclosure URL to the local HTTPS URLs. Keep the signature and byte length from B.
+Install A in `/Applications` after retaining a rollback bundle and a preferences backup. Quit other
+AltTab variants, launch A by full path, and use Settings → General → Check for Updates. Observe B's
+notes, download, installation and relaunch; record the displayed version and running process before
+and after. Confirm Projects, settings, stored license data and macOS permissions survive.
+
+Repeat with an empty/no-newer feed, an unreachable server, Later/Cancel/Skip, and a deliberately
+invalid signature; invalid content must not replace A. Exercise the Homebrew-installed location too.
+Restore the rollback bundle and existing preferences when finished. Record the actual architecture
+and macOS version tested; retain pending status for untested Intel/older-macOS or UI scenarios.
 
 ## Build and package separately
 
@@ -240,11 +314,19 @@ brew tap horner/projects https://github.com/horner/alt-tab-macos.git
 brew install --cask horner/projects/alttab-projects
 ```
 
-Update:
+Version 1.0.5 and older have no working updater helpers. Existing users need one manual download
+or Homebrew upgrade to the first updater-enabled release. New installations check daily, show
+Sparkle's update prompt, and install/relaunch after approval. All existing saved update policies
+are retained, including manual policies that some 1.0.5 installations saved without a user choice.
+After upgrading, use Settings → General → Check for updates now… to check immediately, or select
+Check for updates periodically to enable daily checks. The same Updates policy menu can disable
+checks or enable automatic installation. Friends betas are offered to all Projects users.
+
+Homebrew bootstrap or explicit upgrade:
 
 ```sh
 brew update
-brew upgrade --cask horner/projects/alttab-projects
+brew upgrade --cask --greedy horner/projects/alttab-projects
 ```
 
 Quit other AltTab variants before opening AltTabProjects and grant Accessibility and Screen Recording

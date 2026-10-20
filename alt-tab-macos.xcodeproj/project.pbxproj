@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C834C16871E04E0A91B9CD11 /* UpdatePolicyApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07EC7E97E37244DE9A864642 /* UpdatePolicyApplication.swift */; };
+		E292DF85DF9C4D9E80E7F47E /* UpdatePolicyApplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07EC7E97E37244DE9A864642 /* UpdatePolicyApplication.swift */; };
+		19A25852F369484DAD473F71 /* UpdatePolicyApplicationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF0E7AEF7A14AE2AD63CD98 /* UpdatePolicyApplicationTests.swift */; };
 		CF00F4F0FD034A2484FFAA00 /* ProjectsSetupResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56809AB179584C66AA8A85CC /* ProjectsSetupResolver.swift */; };
 		A445D9DF2F9341AE98EA62DC /* ProjectsSetupResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56809AB179584C66AA8A85CC /* ProjectsSetupResolver.swift */; };
 		8AA32DAD987B4AFD89F758FF /* ProjectsSetupResolverTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 644059C4675A4964A369F1EB /* ProjectsSetupResolverTests.swift */; };
@@ -597,6 +600,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		07EC7E97E37244DE9A864642 /* UpdatePolicyApplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdatePolicyApplication.swift; sourceTree = "<group>"; };
+		ABF0E7AEF7A14AE2AD63CD98 /* UpdatePolicyApplicationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdatePolicyApplicationTests.swift; sourceTree = "<group>"; };
+		0B4A179AE1304257BA6C65A2 /* UpdatePolicyApplicationSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UpdatePolicyApplicationSpecs.md; sourceTree = "<group>"; };
+		CCDA16F3AA8D45359FC5AB45 /* SparkleDelegateSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = SparkleDelegateSpecs.md; sourceTree = "<group>"; };
 		56809AB179584C66AA8A85CC /* ProjectsSetupResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsSetupResolver.swift; sourceTree = "<group>"; };
 		644059C4675A4964A369F1EB /* ProjectsSetupResolverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectsSetupResolverTests.swift; sourceTree = "<group>"; };
 		F14D2344288D445B9BFE8C75 /* ProjectsSetupResolverSpecs.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ProjectsSetupResolverSpecs.md; sourceTree = "<group>"; };
@@ -1493,6 +1500,10 @@
 		71FD1536EE94015DF0B9D6E7 /* vendors */ = {
 			isa = PBXGroup;
 			children = (
+				07EC7E97E37244DE9A864642 /* UpdatePolicyApplication.swift */,
+				ABF0E7AEF7A14AE2AD63CD98 /* UpdatePolicyApplicationTests.swift */,
+				0B4A179AE1304257BA6C65A2 /* UpdatePolicyApplicationSpecs.md */,
+				CCDA16F3AA8D45359FC5AB45 /* SparkleDelegateSpecs.md */,
 				D04BA7E3EA104941FE76DA70 /* AppCenterCrashes.swift */,
 				E70C8A1100000000000SP001 /* SparkleDelegate.swift */,
 				D04BAAF79737A0673502FEB5 /* AppCenterApplication.h */,
@@ -2537,6 +2548,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		5FDF9EB52FB358C100703843 /* Copy Sparkle Helpers */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -2545,6 +2557,7 @@
 			inputPaths = (
 				"$(SRCROOT)/scripts/copy_sparkle_helpers.sh",
 				"$(SRCROOT)/vendor/Sparkle/Helpers/Updater.app/Contents/Info.plist",
+				"$(SRCROOT)/vendor/Sparkle/Helpers/Updater.app/Contents/MacOS/Updater",
 				"$(SRCROOT)/vendor/Sparkle/Helpers/Autoupdate",
 				"$(BUILT_PRODUCTS_DIR)/Sparkle_Sparkle.bundle",
 			);
@@ -2553,7 +2566,9 @@
 			);
 			outputPaths = (
 				"$(BUILT_PRODUCTS_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/A/Autoupdate",
+				"$(BUILT_PRODUCTS_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/A/Updater.app/Contents/MacOS/Updater",
 				"$(BUILT_PRODUCTS_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Autoupdate",
+				"$(BUILT_PRODUCTS_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Updater.app",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -2580,6 +2595,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E292DF85DF9C4D9E80E7F47E /* UpdatePolicyApplication.swift in Sources */,
+				19A25852F369484DAD473F71 /* UpdatePolicyApplicationTests.swift in Sources */,
 				12C10C037F7D4C16BF9D2D86 /* ProjectFileDocument.swift in Sources */,
 				EE8F65F8FB6348739F075AF2 /* ProjectYAML.swift in Sources */,
 				633C4D9360D9443C86146ACB /* ProjectFileStore.swift in Sources */,
@@ -2786,6 +2803,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C834C16871E04E0A91B9CD11 /* UpdatePolicyApplication.swift in Sources */,
 				E176DD353C4C40039F378832 /* ProjectFileDocument.swift in Sources */,
 				EC0C7FC4DBFD40BD85D327E8 /* ProjectYAML.swift in Sources */,
 				C79478AB647A4C0BBACF5F64 /* ProjectFileStore.swift in Sources */,

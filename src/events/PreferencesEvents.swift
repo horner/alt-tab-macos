@@ -41,9 +41,9 @@ class PreferencesEvents {
     static func initialize() {
         guard !initialized else { return }
         initialized = true
+        applyUpdatePolicyPreference()
         UserDefaultsEvents.observe()
         ControlsTab.initializePreferencesDependentState()
-        applyUpdatePolicyPreference()
         TrackpadEvents.toggle(Preferences.nextWindowGesture != .disabled)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
             LoginItem.applyCurrentPreference()
@@ -80,10 +80,12 @@ class PreferencesEvents {
     }
 
     private static func applyUpdatePolicyPreference() {
+        guard let updater = App.updaterController?.updater, !GeneralTab.policyLock else { return }
         GeneralTab.policyLock = true
+        defer { GeneralTab.policyLock = false }
         let policy = Preferences.updatePolicy
-        App.updaterController?.updater.automaticallyDownloadsUpdates = policy == .autoInstall
-        App.updaterController?.updater.automaticallyChecksForUpdates = policy == .autoInstall || policy == .autoCheck
-        GeneralTab.policyLock = false
+        UpdatePolicyApplication.apply(automaticChecks: policy != .manual, automaticInstallation: policy == .autoInstall,
+            setChecks: { updater.automaticallyChecksForUpdates = $0 },
+            setDownloads: { updater.automaticallyDownloadsUpdates = $0 })
     }
 }

@@ -1,7 +1,9 @@
 import argparse
+import base64
 import copy
 import json
 import os
+import plistlib
 import shutil
 import subprocess
 import tempfile
@@ -30,6 +32,9 @@ class DeployTests(unittest.TestCase):
         self.d.read_source()
         self.d.logs.mkdir(parents=True)
         self.d.output.mkdir(parents=True)
+        signature = patch.object(deploy.package, "verify_sparkle_signature", create=True)
+        self.signature_check = signature.start()
+        self.addCleanup(signature.stop)
 
     def source_git(self, *args, **kwargs):
         if args[:2] == ("branch", "--show-current"):
@@ -45,7 +50,12 @@ class DeployTests(unittest.TestCase):
         self.d.sha = deploy.checksum(self.d.output / "AltTabProjects.zip")
         manifest = dict(version=self.d.version, source_commit=self.head, bundle_identifier=deploy.BUNDLE,
                         signing_team=deploy.TEAM, notarized=True, uncommitted_changes=False,
-                        archive="AltTabProjects.zip", sha256=self.d.sha)
+                        archive="AltTabProjects.zip", sha256=self.d.sha,
+                        sparkle=dict(signature=base64.b64encode(b"s" * 64).decode(),
+                                     public_key=base64.b64encode(b"k" * 32).decode(), channel="beta",
+                                     minimum_system_version="12.0", length=(self.d.output / "AltTabProjects.zip").stat().st_size))
+        self.d.manifest = manifest
+        self.d.sparkle = manifest["sparkle"]
         (self.d.output / "build-info.json").write_text(json.dumps(manifest))
         (self.d.output / "SHA256SUMS.txt").write_text(f"{self.d.sha}  AltTabProjects.zip\n")
         (self.d.output / "notarization.json").write_text('{"status":"Accepted"}')
@@ -61,6 +71,7 @@ class DeployTests(unittest.TestCase):
         self.smoke_fixture()
         self.events = []
         self.remote = dict(id=123, tag_name=self.d.tag, draft=draft, prerelease=True,
+                           body="Projects beta improvements.", published_at="2026-01-01T12:00:00Z",
                            assets=[self.asset(name) for name in names])
         self.d.release = copy.deepcopy(self.remote)
         self.d.clean_source = Mock()
@@ -85,7 +96,8 @@ class DeployTests(unittest.TestCase):
     def release_command(self, *args, **kwargs):
         self.events.append(args)
         if args[:3] == ("gh", "release", "create"):
-            self.remote = dict(id=123, tag_name=self.d.tag, draft=True, prerelease=True, assets=[])
+            self.remote = dict(id=123, tag_name=self.d.tag, draft=True, prerelease=True, assets=[],
+                               body="Projects beta improvements.", published_at="2026-01-01T12:00:00Z")
         if args[:3] == ("gh", "release", "upload"):
             paths = args[4:args.index("--repo")]
             self.remote["assets"].extend(self.asset(Path(path).name) for path in paths)
@@ -147,6 +159,35 @@ class DeployTests(unittest.TestCase):
         self.package_fixture()
         self.d.validate_package()
         self.d.verify_archive.assert_called_once_with(self.d.output / "AltTabProjects.zip")
+        self.signature_check.assert_called_once_with(self.d.output / "AltTabProjects.zip", self.d.sparkle["signature"], self.d.run)
+
+    def test_invalid_update_signature_stops_before_archive_and_publication(self):
+        self.package_fixture()
+        self.signature_check.side_effect = RuntimeError("Invalid Sparkle signature")
+        with self.assertRaisesRegex(RuntimeError, "Invalid Sparkle signature"):
+            self.d.validate_package()
+        self.d.verify_archive.assert_not_called()
+
+    def test_package_requires_sparkle_metadata(self):
+        manifest = self.package_fixture()
+        del manifest["sparkle"]
+        (self.d.output / "build-info.json").write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(RuntimeError, "no Sparkle signing metadata"):
+            self.d.validate_package()
+
+    def test_downloaded_app_update_settings_must_match_exact_metadata(self):
+        self.package_fixture()
+        app = self.root / "AltTabProjects.app"
+        (app / "Contents").mkdir(parents=True)
+        info = dict(CFBundleIdentifier=deploy.BUNDLE, CFBundleShortVersionString=self.d.version,
+                    CFBundleVersion=self.d.version, SUFeedURL=deploy.updates.FEED_URL,
+                    SUPublicEDKey=self.d.sparkle["public_key"], LSMinimumSystemVersion="12.0")
+        for field, value in (("CFBundleVersion", "999"), ("SUFeedURL", "https://example.invalid/upstream.xml"),
+                             ("SUPublicEDKey", base64.b64encode(b"x" * 32).decode()), ("LSMinimumSystemVersion", "13.0")):
+            (app / "Contents/Info.plist").write_bytes(plistlib.dumps(dict(info, **{field: value})))
+            with self.subTest(field=field), self.assertRaisesRegex(RuntimeError, "update version, feed, public key or minimum"):
+                self.d.validate_app(app)
+        self.d.run.assert_not_called()
 
     def test_universal_verification_rejects_either_missing_architecture(self):
         for missing in ("arm64", "x86_64", None):
@@ -190,6 +231,7 @@ class DeployTests(unittest.TestCase):
         self.d.args.prepare_only = True
         self.d.preflight = Mock()
         self.d.publish_release = Mock()
+        self.d.publish_feed = Mock()
         self.d.update_cask = Mock()
         self.d.verify_homebrew = Mock()
         self.d.execute()
@@ -197,6 +239,7 @@ class DeployTests(unittest.TestCase):
         self.assertEqual(report["sha256"], self.d.sha)
         self.assertTrue(all(check["result"] == "pending" for check in report["checks"].values()))
         self.d.publish_release.assert_not_called()
+        self.d.publish_feed.assert_not_called()
         self.d.update_cask.assert_not_called()
         self.d.verify_homebrew.assert_not_called()
 
@@ -247,6 +290,34 @@ class DeployTests(unittest.TestCase):
         self.d.publish_release()
         self.d.verify_running_package.assert_not_called()
         self.assertEqual([event[0] for event in self.events], ["curl"])
+
+    def test_feed_requires_successful_public_zip_verification(self):
+        self.release_fixture(draft=False)
+        self.d.git.reset_mock()
+        with self.assertRaisesRegex(RuntimeError, "anonymous public ZIP"):
+            self.d.publish_feed()
+        self.d.git.assert_not_called()
+        self.d.verify_archive.side_effect = RuntimeError("Downloaded ZIP differs")
+        with self.assertRaisesRegex(RuntimeError, "Downloaded ZIP differs"):
+            self.d.publish_release()
+        with self.assertRaisesRegex(RuntimeError, "anonymous public ZIP"):
+            self.d.publish_feed()
+
+    def test_feed_requires_exact_public_prerelease(self):
+        self.release_fixture(draft=False)
+        self.d.public_download_verified = True
+        for change in (dict(tag_name="projects-v0.1.0"), dict(prerelease=False), dict(draft=True)):
+            self.d.release = dict(self.remote, **change)
+            with self.subTest(change=change), self.assertRaises(RuntimeError):
+                self.d.publish_feed()
+
+    def test_prepare_package_writes_feed_preview_without_publication(self):
+        self.package_fixture()
+        self.d.prepare_package()
+        feed = (self.d.logs / "appcast-preview.xml").read_text()
+        self.assertIn(self.d.sparkle["signature"], feed)
+        self.assertIn(self.d.url, feed)
+        self.assertIn("Projects beta improvements.", feed)
 
     def test_replaced_app_files_do_not_allow_an_older_running_process(self):
         self.package_fixture()
@@ -369,6 +440,35 @@ class DeployTests(unittest.TestCase):
         self.d.update_cask.assert_not_called()
         self.d.verify_homebrew.assert_not_called()
 
+    def test_pipeline_orders_public_zip_then_feed_then_cask_and_records_feed_commit(self):
+        self.package_fixture()
+        self.d.preflight = Mock()
+        events = []
+        for name in ("prepare_package", "publish_release", "publish_feed", "update_cask", "verify_homebrew"):
+            def step(name=name):
+                events.append(name)
+                if name == "publish_feed":
+                    self.d.feed_commit = "f" * 40
+            step.__name__ = name
+            setattr(self.d, name, step)
+        self.d.execute()
+        self.assertEqual(events, ["prepare_package", "publish_release", "publish_feed", "update_cask", "verify_homebrew"])
+        result = json.loads((self.d.logs / "deployment.json").read_text())
+        self.assertEqual(result["update_feed_url"], deploy.updates.FEED_URL)
+        self.assertEqual(result["update_feed_commit"], "f" * 40)
+
+    def test_feed_failure_stops_before_cask_and_homebrew(self):
+        self.d.preflight = Mock()
+        self.d.prepare_package = Mock(__name__="prepare_package")
+        self.d.publish_release = Mock(__name__="publish_release")
+        self.d.publish_feed = Mock(__name__="publish_feed", side_effect=RuntimeError("feed push rejected"))
+        self.d.update_cask = Mock()
+        self.d.verify_homebrew = Mock()
+        with self.assertRaisesRegex(RuntimeError, "feed push rejected"):
+            self.d.execute()
+        self.d.update_cask.assert_not_called()
+        self.d.verify_homebrew.assert_not_called()
+
     def test_second_deployment_is_blocked_by_os_lock(self):
         self.d.preflight = Mock()
         with (self.root / "build/projects-deploy.lock").open("w") as lock:
@@ -410,6 +510,73 @@ class GitIntegrationTests(unittest.TestCase):
         self.d.logs = self.root / "build/deploy-0.2.0"
         self.d.logs.mkdir(parents=True)
         self.d.cask_text = deploy.package.cask("0.2.0", "a" * 64, "https://github.com/horner/alt-tab-macos/releases/download/projects-v0.2.0/AltTabProjects.zip", "alttab-projects")
+
+    def feed_fixture(self):
+        self.d.output = self.root / "build/release-0.2.0"
+        self.d.output.mkdir(parents=True)
+        archive = self.d.output / "AltTabProjects.zip"
+        archive.write_bytes(b"signed verified ZIP")
+        self.d.manifest = dict(version="0.2.0", sparkle=dict(signature=base64.b64encode(b"s" * 64).decode(),
+                               public_key=base64.b64encode(b"k" * 32).decode(), channel="beta", length=archive.stat().st_size,
+                               minimum_system_version="12.0"))
+        self.d.commit = self.git("rev-parse", "HEAD")
+        self.d.public_download_verified = True
+        self.d.release = dict(tag_name=self.d.tag, draft=False, prerelease=True, body="A reviewed release & notes <safe>.",
+                              published_at="2026-01-01T12:00:00Z")
+        original = self.d.run
+        self.feed_events = []
+        def command(*args, **kwargs):
+            self.feed_events.append(args)
+            if args[0] == "curl":
+                Path(args[args.index("--output") + 1]).write_bytes((self.d.logs / "appcast.xml").read_bytes())
+                return ""
+            return original(*args, **kwargs)
+        self.d.run = command
+
+    def test_feed_bootstrap_and_retry_only_publish_appcast_and_preserve_source(self):
+        self.feed_fixture()
+        (self.root / "personal work.txt").write_text("Keep developer work.")
+        before = self.git("rev-parse", "HEAD")
+        self.d.publish_feed()
+        self.assertEqual(self.git("rev-parse", "HEAD"), before)
+        self.assertEqual(self.git("branch", "--show-current"), deploy.BRANCH)
+        self.assertEqual((self.root / "personal work.txt").read_text(), "Keep developer work.")
+        self.assertEqual(self.git("--git-dir", self.origin, "ls-tree", "--name-only", deploy.updates.BRANCH), "appcast.xml")
+        remote = self.git("--git-dir", self.origin, "show", f"{deploy.updates.BRANCH}:appcast.xml")
+        self.assertIn("<sparkle:channel>beta</sparkle:channel>", remote)
+        self.assertIn("A reviewed release &amp; notes &lt;safe&gt;.", remote)
+        first = self.git("--git-dir", self.origin, "rev-parse", deploy.updates.BRANCH)
+        self.d.publish_feed()
+        self.assertEqual(self.git("--git-dir", self.origin, "rev-parse", deploy.updates.BRANCH), first)
+        pushes = [event for event in self.feed_events if event[:2] == ("git", "push")]
+        self.assertEqual(pushes, [("git", "push", "origin", f"HEAD:refs/heads/{deploy.updates.BRANCH}")])
+        self.assertEqual(self.d.feed_commit, first)
+        self.assertFalse(self.git("branch", "--list", "projects-updates-bootstrap-*"))
+
+    def test_feed_resume_rejects_notes_or_artifact_replacement(self):
+        self.feed_fixture()
+        self.d.publish_feed()
+        first = self.git("--git-dir", self.origin, "rev-parse", deploy.updates.BRANCH)
+        self.d.release["body"] = "Changed notes after publication."
+        with self.assertRaisesRegex(RuntimeError, "not be overwritten"):
+            self.d.publish_feed()
+        self.assertEqual(self.git("--git-dir", self.origin, "rev-parse", deploy.updates.BRANCH), first)
+
+    def test_feed_failed_push_retries_without_force_or_source_change(self):
+        self.feed_fixture()
+        before = self.git("rev-parse", "HEAD")
+        original = self.d.git
+        def fail_push(*args, **kwargs):
+            if args[0] == "push":
+                raise RuntimeError("simulated concurrent feed publication")
+            return original(*args, **kwargs)
+        self.d.git = fail_push
+        with self.assertRaisesRegex(RuntimeError, "simulated concurrent"):
+            self.d.publish_feed()
+        self.d.git = original
+        self.d.publish_feed()
+        self.assertEqual(self.git("rev-parse", "HEAD"), before)
+        self.assertEqual(self.git("--git-dir", self.origin, "ls-tree", "--name-only", deploy.updates.BRANCH), "appcast.xml")
 
     def git(self, *args, cwd=None):
         return subprocess.check_output(["git", *map(str, args)], cwd=cwd or self.root, text=True, stderr=subprocess.PIPE).strip()
@@ -460,7 +627,7 @@ class GitIntegrationTests(unittest.TestCase):
         self.assertEqual(self.git("--git-dir", self.origin, "show", "master:Casks/alttab-projects.rb"), self.d.cask_text.strip())
 
     def test_shell_dry_run_with_spaces_performs_no_build_network_or_writes(self):
-        for name in ["deploy.sh", "scripts/projects/deploy.py", "scripts/projects/package.py"]:
+        for name in ["deploy.sh", "scripts/projects/deploy.py", "scripts/projects/package.py", "scripts/projects/updates.py"]:
             target = self.root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(deploy.ROOT / name, target)

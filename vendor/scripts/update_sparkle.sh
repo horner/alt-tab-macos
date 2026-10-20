@@ -188,9 +188,9 @@ fi
 codesign --force --sign "$SPARKLE_HELPER_IDENT" --options runtime --timestamp "$DEST/Helpers/Updater.app"
 codesign --force --sign "$SPARKLE_HELPER_IDENT" --options runtime --timestamp "$DEST/Helpers/Autoupdate"
 
-# 10. Only the sign_update CLI tool (drop generate_appcast, generate_keys, BinaryDelta).
-cp "$TMP/bin/sign_update" "$DEST/bin/"
-chmod +x "$DEST/bin/sign_update" "$DEST/Helpers/Autoupdate"
+# 10. Keychain key setup and archive signing tools.
+cp "$TMP/bin/sign_update" "$TMP/bin/generate_keys" "$DEST/bin/"
+chmod +x "$DEST/bin/sign_update" "$DEST/bin/generate_keys" "$DEST/Helpers/Autoupdate"
 
 apply_local_patches "$DEST"
 
