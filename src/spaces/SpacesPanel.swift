@@ -23,8 +23,11 @@ class SpacesPanel: GridPanel {
     /// Escape cancels. The window switcher's `cancelShortcut` is `.local`-scoped and gated on a live
     /// `SwitcherSession`, which a Spaces summon never creates, so it cannot serve this panel.
     override func keyDown(with event: NSEvent) {
-        guard event.keyCode == UInt16(kVK_Escape) else { return super.keyDown(with: event) }
-        SpacesSwitcher.hide()
+        switch event.keyCode {
+        case UInt16(kVK_Return), UInt16(kVK_ANSI_KeypadEnter): SpacesSwitcher.focusSelected()
+        case UInt16(kVK_Escape): SpacesSwitcher.hide()
+        default: super.keyDown(with: event)
+        }
     }
 
 }
