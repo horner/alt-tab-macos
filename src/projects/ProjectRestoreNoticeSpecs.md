@@ -1,19 +1,32 @@
 # Project restoration notice
 
-Ordinary new-window assignment and linked-Desktop capture are silent. Their assignment source,
-window ID and Project ID are available in debug logs, without a notification. The heading
-“Restored Project assignments” is reserved for membership recovered from saved historical
-patterns. Retaining a live identity, changing a title/URL, and explicitly assigning a Project
-do not produce a restoration notice. Ambiguous historical matches still offer a choice.
+Ordinary new-window assignment, linked-Desktop capture and historical membership restored on
+the Project's current home Desktop are silent. Their assignment source, window ID and Project ID
+are available in debug logs, without a notification. Retaining a live identity, changing a
+title/URL, and explicitly assigning a Project do not produce a restoration notice. Ambiguous
+historical matches still offer a choice.
+
+A unique historical restoration only produces a notice when the window is on a different
+ordinary Desktop from its Project's available home and a physical move is supported. The Project's
+current home is authoritative; historical observation Desktops do not determine conflicts.
+Unassigned, shared, fullscreen, all-Desktop and unknown-location windows stay quiet. The pure
+placement policy and regression cases are in [ProjectRestoreNoticeResolverSpecs.md](ProjectRestoreNoticeResolverSpecs.md).
+
+Each conflict names the window and Project and offers “Move to Project’s Desktop”. Moving is
+optional and does not change membership or switch the user's Desktop. The action closes the
+notice, yields a main-loop turn, then rechecks the original live Window and Project objects,
+sole ownership, source Desktop, destination ID/UUID, and move availability before submitting.
+Changed or resolved conflicts are discarded before display and again on action; a failed move
+produces a completion detail through this same panel.
 
 Restore All Windows to Project Desktops uses the same non-activating panel for its completion
-summary. A summary waits for any visible page to finish, then appears before queued assignment
+summary. A summary waits for any visible page to finish, then appears before queued conflict
 pages. Its rows report move counts followed by individual window names and skip/failure reasons.
 Summaries paginate at five rows per page, keeping each window with its reason; multi-page headings
 show the page number. Full text is available in label tooltips. Closing the panel clears queued
 pages but the latest Desktop restore result can be reopened from the menu until app exit.
 
-Window names in both assignment notices and Desktop restore details are link-styled buttons.
+Window names in both conflict notices and Desktop restore details are link-styled buttons.
 They accept the first click while another app is active. Clicking dismisses the notice and its
 queued pages, then focuses the original live window on the next main-loop turn. Focus uses the
 normal window path, including unminimizing and switching Desktops when necessary; it does not
@@ -25,13 +38,13 @@ unavailable targets are disabled, and a new window with the same ID or title can
 The last restore result retains those same weak targets when reopened. Counts and reasons are
 plain text; only window names focus windows.
 
-Restored assignments are grouped over one second and displayed in pages of up to five entries.
-Each entry shows its window title (falling back to the app name), destination Project, and whether
-the window is on a different Desktop. Each page initially stays visible for four seconds.
+Restoration conflicts are grouped over one second and displayed one window at a time so each
+move button targets one window. Window titles fall back to the app name. Each page initially
+stays visible for four seconds.
 
 Hovering anywhere inside the notice, including the close button, cancels the hide timer. Moving
 away starts a two-second countdown. Hover works while another app is active and when the
-notice appears underneath a stationary pointer. New assignments wait behind the hovered page.
+notice appears underneath a stationary pointer. New conflicts wait behind the hovered page.
 
 The close button immediately dismisses the notice and discards its queued pages and pending
 one-second batch. Later restorations can show a new notice. Clicking the button works on the

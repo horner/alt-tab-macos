@@ -371,11 +371,7 @@ enum Projects {
                 patternExcluded: isExcluded(id, from: project), isUniquePatternOwner: savedOwners == [project.id]) {
                 if project.members.insert(id).inserted {
                     changed = true
-                    if !identityOwner, let candidate = pattern(for: window) {
-                        let origins = Set(project.memberPatterns.filter { ProjectReattachResolver.matchesObservation($0, candidate) }.compactMap { $0.spaceUuid })
-                        let elsewhere = candidate.spaceUuid.map { !origins.isEmpty && !origins.contains($0) } ?? false
-                        ProjectRestoreNotice.record(window: window, windowName: window.title, projectName: project.resolvedName, differentDesktop: elsewhere)
-                    }
+                    if !identityOwner { ProjectRestoreNotice.record(window: window, project: project) }
                 }
             }
             if project.members.contains(id), let identity, !project.memberIdentities.contains(identity) {

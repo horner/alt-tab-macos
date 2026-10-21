@@ -1,5 +1,6 @@
 import Cocoa
 
+/// Defer focus and move actions one main-loop turn so notice dismissal commits before their IPC.
 enum ProjectRestoreNotice {
     private final class Panel: NSPanel {
         override var canBecomeKey: Bool { false }
@@ -57,7 +58,7 @@ enum ProjectRestoreNotice {
         }
     }
 
-    private typealias Assignment = (windowName: String, projectName: String, differentDesktop: Bool, target: WindowTarget)
+    private typealias Assignment = (windowName: String, project: Project, placement: ProjectRestoreNoticeResolver.Placement, target: WindowTarget)
     private typealias Summary = (title: String, rows: [Row])
     private struct Question {
         let id: String
@@ -106,9 +107,27 @@ enum ProjectRestoreNotice {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
     }
 
-    static func record(window: Window, windowName: String, projectName: String, differentDesktop: Bool) {
-        pending[window.tracked.id + "\u{0}" + projectName] = (windowName, projectName, differentDesktop, WindowTarget(window))
+    static func record(window: Window, project: Project) {
+        guard let placement = placement(for: window), placement.projectId == project.id else { return }
+        let name = ProjectNameResolver.normalized(window.title) ?? window.application.localizedName ?? NSLocalizedString("Unknown window", comment: "Project Desktop conflict window")
+        pending[window.tracked.id] = (name, project, placement, WindowTarget(window))
         scheduleShow()
+    }
+
+    private static func placement(for window: Window) -> ProjectRestoreNoticeResolver.Placement? {
+        let owners = Projects.list.filter { $0.isCustom && $0.members.contains(window.tracked.id) }
+        guard owners.count == 1, let project = owners.first, ProjectAssignmentPrompt.hasDesktop(project) else { return nil }
+        let desktops = Dictionary(uniqueKeysWithValues: Projects.spaces.filter { $0.desktopNumber > 0 }.map { ($0.spaceId, $0.uuid) })
+        guard let placement = ProjectRestoreNoticeResolver.placement(isEligible: WindowDesktopMove.isEligible(window),
+            spaces: window.spaceIds, projectHomes: [project.id: project.homeSpaceUuid], desktops: desktops),
+              WindowDesktopMove.canBring(window, to: placement.destination) else { return nil }
+        return placement
+    }
+
+    private static func liveWindow(for assignment: Assignment) -> Window? {
+        guard Projects.isEnabled, Projects.byId[assignment.project.id] === assignment.project,
+              let window = assignment.target.liveWindow, placement(for: window) == assignment.placement else { return nil }
+        return window
     }
 
     static func showSummary(title: String, rows: [Row]) {
@@ -125,11 +144,12 @@ enum ProjectRestoreNotice {
     private static func flush() {
         showWork = nil
         guard Projects.isEnabled else { dismiss(); return }
-        let assignments = pending.values.sorted { ($0.projectName, $0.windowName) < ($1.projectName, $1.windowName) }
+        let assignments = pending.values.filter { liveWindow(for: $0) != nil }
+            .sorted { ($0.project.resolvedName, $0.windowName) < ($1.project.resolvedName, $1.windowName) }
         pending.removeAll()
         queued.append(contentsOf: assignments)
         showNext()
-        Logger.debug { "projects restoration notice assignments=\(assignments.count) differentDesktop=\(assignments.filter { $0.differentDesktop }.count)" }
+        Logger.debug { "projects restoration notice desktopConflicts=\(assignments.count)" }
     }
 
     private static func showNext() {
@@ -143,25 +163,36 @@ enum ProjectRestoreNotice {
             show(title: summary.title, rows: summary.rows)
             return
         }
+        queued.removeAll { liveWindow(for: $0) == nil }
         guard !queued.isEmpty else { return }
-        let assignments = Array(queued.prefix(5))
-        queued.removeFirst(assignments.count)
-        show(assignments)
+        show(queued.removeFirst())
     }
 
-    private static func show(_ assignments: [Assignment]) {
-        let rows = assignments.map { assignment in
-            Row(title: assignment.windowName, detail: assignment.differentDesktop
-                ? String(format: NSLocalizedString("→ %@ (different Desktop)", comment: "Restored window destination Project"), assignment.projectName)
-                : "→ \(assignment.projectName)", target: assignment.target)
+    private static func show(_ assignment: Assignment) {
+        let detail = String(format: NSLocalizedString("Belongs to %@ on another Desktop", comment: "Restored window Desktop conflict"), assignment.project.resolvedName)
+        guard let view = show(title: NSLocalizedString("Window opened on another Desktop", comment: "Restored window Desktop conflict heading"),
+            rows: [Row(title: assignment.windowName, detail: detail, target: assignment.target)], actionHeight: 40) else { return }
+        addAction(NSLocalizedString("Move to Project’s Desktop", comment: "Resolve restored window Desktop conflict"), y: 14, in: view) {
+            panel?.orderOut(nil)
+            hideWork?.cancel()
+            hideWork = nil
+            DispatchQueue.main.async {
+                if let window = liveWindow(for: assignment) {
+                    WindowDesktopMove.restore(window, to: assignment.placement.destination) { succeeded in
+                        guard !succeeded else { return }
+                        showSummary(title: NSLocalizedString("Desktop move incomplete", comment: "Restored window Desktop conflict move failure"), rows: [
+                            Row(title: assignment.windowName, detail: NSLocalizedString("Desktop move could not be confirmed", comment: "Project Desktop move failure"), target: assignment.target)])
+                    }
+                }
+                showNext()
+            }
         }
-        show(title: NSLocalizedString("Restored Project assignments", comment: "Project restoration notice"), rows: rows)
     }
 
     @discardableResult
-    private static func show(title: String, rows: [Row], actionHeight: CGFloat = 0) -> NSView? {
+    private static func show(title: String, rows: [Row], actionHeight: CGFloat = 0, requiresChoice: Bool = false) -> NSView? {
         guard let screen = NSScreen.main ?? NSScreen.screens.first else { return nil }
-        reviewing = actionHeight > 0
+        reviewing = requiresChoice
         hideWork?.cancel()
         let window = panel ?? Panel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel = window
@@ -205,7 +236,7 @@ enum ProjectRestoreNotice {
         if ordered.count > 1 && !reviewStarted {
             let detail = String(format: NSLocalizedString("%d windows match more than one Project.", comment: "Ambiguous restoration count"), ordered.count)
             guard let view = show(title: NSLocalizedString("Review Project assignments", comment: "Ambiguous restoration heading"),
-                rows: [Row(title: detail, detail: NSLocalizedString("Choose where each window belongs.", comment: "Ambiguous restoration explanation"))], actionHeight: 40) else { return }
+                rows: [Row(title: detail, detail: NSLocalizedString("Choose where each window belongs.", comment: "Ambiguous restoration explanation"))], actionHeight: 40, requiresChoice: true) else { return }
             addAction(NSLocalizedString("Review windows…", comment: "Review ambiguous windows"), y: 14, in: view) {
                 reviewStarted = true
                 refreshReview()
@@ -218,7 +249,7 @@ enum ProjectRestoreNotice {
         let title = question.target.liveWindow?.title ?? question.pattern.title
         let heading = NSLocalizedString("Which Project for this window?", comment: "Ambiguous restoration question")
         guard let view = show(title: heading, rows: [Row(title: "\(app) — \(title)", detail: question.pattern.url ?? question.pattern.title, target: question.target)],
-            actionHeight: CGFloat(92 + displayed.count * 30)) else { return }
+            actionHeight: CGFloat(92 + displayed.count * 30), requiresChoice: true) else { return }
         let move = NoticeButton(checkboxWithTitle: NSLocalizedString("Also move to the Project’s Desktop", comment: "Optional desktop move when resolving restoration"), target: nil, action: nil)
         move.frame = NSRect(x: 16, y: 75, width: 348, height: 22)
         move.font = .systemFont(ofSize: 12)
@@ -338,7 +369,6 @@ enum ProjectRestoreNotice {
         button.onAction = { sender in
             guard target.liveWindow != nil else { sender.isEnabled = false; return }
             dismiss()
-            // Let the notice dismissal commit before the focus path can issue IPC.
             DispatchQueue.main.async { target.liveWindow?.focus() }
         }
         view.addSubview(button)
