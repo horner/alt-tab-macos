@@ -65,6 +65,18 @@ enum DesktopNavigationResolver {
         }
     }
 
+    static func canFocusWindow(pid: Int32, isTerminated: Bool) -> Bool {
+        pid > 0 && !isTerminated
+    }
+
+    static func mostRecentlyFocusedWindow<T>(in windows: [T], process: (T) -> (pid: Int32, isTerminated: Bool),
+                                             isEligible: (T) -> Bool, focusOrder: (T) -> Int) -> T? {
+        windows.filter {
+            let owner = process($0)
+            return canFocusWindow(pid: owner.pid, isTerminated: owner.isTerminated) && isEligible($0)
+        }.min { focusOrder($0) < focusOrder($1) }
+    }
+
     static func destinationSpace(windowSpaces: [UInt64], currentSpace: UInt64, visibleSpaces: [UInt64],
                                  availableSpaces: [UInt64], isWindowlessApp: Bool) -> UInt64? {
         guard !isWindowlessApp, !windowSpaces.contains(currentSpace),

@@ -4,6 +4,26 @@ final class DesktopNavigationResolverTests: XCTestCase {
     private let first = DesktopNavigationResolver.Destination(spaceUuid: "first", projectId: "research", windowId: "editor")
     private let second = DesktopNavigationResolver.Destination(spaceUuid: "second", projectId: "work", windowId: "browser")
 
+    func testInvalidAndTerminatedOwnersCannotWinDesktopFocus() {
+        let windows = [FocusCandidate(id: "invalid", pid: -1), FocusCandidate(id: "ownerless", pid: 0),
+            FocusCandidate(id: "terminated", isTerminated: true), FocusCandidate(id: "live", focusOrder: 30)]
+        XCTAssertEqual(focusTarget(windows), "live")
+        XCTAssertFalse(DesktopNavigationResolver.canFocusWindow(pid: -1, isTerminated: false))
+        XCTAssertFalse(DesktopNavigationResolver.canFocusWindow(pid: 42, isTerminated: true))
+    }
+
+    func testDesktopWithOnlyInvalidOwnersUsesNavigationFallback() {
+        XCTAssertNil(focusTarget([FocusCandidate(id: "invalid", pid: -1), FocusCandidate(id: "terminated", isTerminated: true)]))
+        XCTAssertNil(focusTarget([]))
+    }
+
+    func testDesktopFocusRetainsMruAmongEligibleLiveWindows() {
+        let windows = [FocusCandidate(id: "ineligible", isEligible: false), FocusCandidate(id: "older", focusOrder: 30),
+            FocusCandidate(id: "recent", focusOrder: 5)]
+        XCTAssertEqual(focusTarget(windows), "recent")
+        XCTAssertTrue(DesktopNavigationResolver.canFocusWindow(pid: 42, isTerminated: false))
+    }
+
     func testAnchorActivationRequiresConfirmedDestinationFromTheSameRequest() {
         var activation = DesktopNavigationResolver.AnchorActivation()
         XCTAssertNil(activation.begin(5))
@@ -201,6 +221,19 @@ final class DesktopNavigationResolverTests: XCTestCase {
 
     func testUndoPreservesSearchEditing() {
         XCTAssertFalse(DesktopNavigationResolver.isUndoShortcut(characters: "z", hasCommand: true, hasOtherModifiers: false, isSearchEditing: true))
+    }
+
+    private struct FocusCandidate {
+        let id: String
+        var pid: Int32 = 42
+        var isTerminated = false
+        var isEligible = true
+        var focusOrder = 0
+    }
+
+    private func focusTarget(_ windows: [FocusCandidate]) -> String? {
+        DesktopNavigationResolver.mostRecentlyFocusedWindow(in: windows,
+            process: { ($0.pid, $0.isTerminated) }, isEligible: { $0.isEligible }, focusOrder: { $0.focusOrder })?.id
     }
 
     private func cycle(_ step: Int, selected: Int, back: Bool = false, visible: [Int] = [2, 5, 9],

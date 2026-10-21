@@ -8,6 +8,8 @@ Command-Z returns directly while the window switcher is open, regardless of the 
 
 Returning focuses the remembered window if still eligible, otherwise the destination's most recent window or navigation anchor. While an anchor is unavailable, the system-shortcut fallback honors configured shortcuts, including Command–function-key bindings, and does not send disabled or malformed bindings. Without an explicit binding it retains the Control-digit fallback; macOS must have that shortcut enabled for this fallback to reach an empty Desktop. A confirmed return restores the saved Project if it still exists; ordinary Desktop following handles deleted Projects. The Desktop just left becomes the reverse destination. History is session-local. Duplicate notifications do not overwrite it; deleted Desktops have no return button. Pending Project restoration expires after three seconds and is cancelled by an unrelated Desktop transition.
 
+Representative and remembered windows must have a positive owner PID and an owner not known to be terminated. Selection uses the application's cached liveness state without additional process IPC. Invalid or terminated candidates cannot outrank a live window; if no eligible live candidate remains, the existing navigation-anchor fallback still runs.
+
 Each ordinary Desktop also has an invisible, click-through navigation anchor so it remains reachable when no eligible application window is available, including when Project labels are hidden or minimized. Anchors are confined to their assigned Desktop and can become key without becoming main. They are excluded from accessibility so their invisible key windows do not displace visible controls in accessibility clients. At rest, stationary collection behavior excludes them from App Exposé without changing the managed behavior of visible Project labels. Navigation temporarily makes its destination anchor managed before ordering it and activating the application; stationary anchors cannot trigger the Desktop transition. A fresh visibility readback confirming the destination restores stationary behavior while retaining the key window. Ordering out the key anchor can refocus a window on another Desktop and reverse the completed transition.
 
 Each activation has a generation that is captured before asynchronous topology reads. Earlier reads and watchdogs cannot complete a newer request, including a repeated request for the same Desktop. A newly requested read confirms an already-current destination without waiting for a Space-change event. Superseding activation, destination deletion, and a guarded three-second watchdog restore idle behavior without ordering anchors out. No polling is used.
@@ -21,6 +23,9 @@ Each activation has a generation that is captured before asynchronous topology r
 
 ## Test scenarios
 
+- **testInvalidAndTerminatedOwnersCannotWinDesktopFocus** — a stale MRU window with a negative or zero PID, or a terminated owner, cannot outrank a live destination window.
+- **testDesktopWithOnlyInvalidOwnersUsesNavigationFallback** — an empty or entirely stale destination yields no focus target, allowing the navigation anchor to run.
+- **testDesktopFocusRetainsMruAmongEligibleLiveWindows** — eligible live candidates retain MRU ordering, while other ineligible windows remain excluded.
 - **testAnchorActivationRequiresConfirmedDestinationFromTheSameRequest** — unrelated visibility cannot settle navigation; a fresh destination readback does.
 - **testAlreadyCurrentAnchorSettlesWithoutASpaceChangeEvent** — a destination already visible completes from readback alone.
 - **testNewAnchorActivationRejectsEarlierVisibilityAndTimeoutCallbacks** — superseded callbacks cannot settle a newer destination.

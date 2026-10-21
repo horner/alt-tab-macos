@@ -68,9 +68,11 @@ class SpaceItem {
     }
 
     private func mostRecentlyFocusedWindow() -> Window? {
-        Windows.list
-            .filter { $0.application.pid != AXUIElement.currentProcessPid && $0.spaceIds.contains(spaceId) && !$0.isWindowlessApp && !$0.isMinimized && !$0.isHidden && !$0.isPhantom && !$0.isTabbed }
-            .min { $0.lastFocusOrder < $1.lastFocusOrder }
+        DesktopNavigationResolver.mostRecentlyFocusedWindow(in: Windows.list,
+            process: { ($0.application.pid, $0.application.isTerminated) },
+            isEligible: { $0.application.pid != AXUIElement.currentProcessPid && $0.spaceIds.contains(self.spaceId)
+                && !$0.isWindowlessApp && !$0.isMinimized && !$0.isHidden && !$0.isPhantom && !$0.isTabbed },
+            focusOrder: { $0.lastFocusOrder })
     }
 
 }

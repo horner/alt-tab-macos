@@ -124,7 +124,8 @@ enum DesktopNavigation {
     }
 
     private static func eligible(_ window: Window, on space: SpaceItem) -> Bool {
-        !window.isWindowlessApp && !window.isPhantom && !window.isTabbed && !window.isMinimized && !window.isHidden
+        DesktopNavigationResolver.canFocusWindow(pid: window.application.pid, isTerminated: window.application.isTerminated)
+            && !window.isWindowlessApp && !window.isPhantom && !window.isTabbed && !window.isMinimized && !window.isHidden
             && window.spaceIds.contains(space.spaceId)
     }
 }
