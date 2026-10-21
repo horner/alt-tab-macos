@@ -1,8 +1,8 @@
 cask "alttab-projects" do
-  version "1.0.6"
-  sha256 "da7b812a9024c8fb1016b1058ea0a162dcec6d017ed93c52a58d7b612c89f35a"
+  version "1.0.7"
+  sha256 "772b7548f9b1024827934f26d30887c4d4e343532b26a59bd927b0dc509e6da7"
 
-  url "https://github.com/horner/alt-tab-macos/releases/download/projects-v1.0.6/AltTabProjects.zip"
+  url "https://github.com/horner/alt-tab-macos/releases/download/projects-v1.0.7/AltTabProjects.zip"
   name "AltTabProjects"
   desc "Window and Desktop switcher with saved Projects"
   homepage "https://github.com/horner/alt-tab-macos"
