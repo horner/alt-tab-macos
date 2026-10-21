@@ -10,3 +10,6 @@ These third-party libraries are used:
 
 **AppCenter**
 [Website](https://github.com/microsoft/appcenter-sdk-apple) - [Custom](https://github.com/microsoft/appcenter-sdk-apple/blob/develop/LICENSE)
+
+**Yams**
+[Website](https://github.com/jpsim/Yams) - [MIT License](https://github.com/jpsim/Yams/blob/6.2.2/LICENSE)

@@ -1,6 +1,6 @@
 import Cocoa
 
-/// Off-main scheduler for blocking WindowServer / SkyLight reads (`CGS*`, `CGWindowList*`). Sibling of
+/// Off-main scheduler for blocking WindowServer / SkyLight calls (`CGS*`, `CGWindowList*`). Sibling of
 /// `AXCallScheduler` (Accessibility) and `ProcessCallScheduler` (process & sysctl) — the three front doors
 /// for blocking SDK calls.
 ///

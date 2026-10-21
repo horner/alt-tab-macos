@@ -1,20 +1,17 @@
 # WindowFilterResolver — Specs
 
-> **Line coverage:** `WindowFilterResolver.swift` 100% · _refreshed 2026-05-27 by `/coverage-explore`_
-
 ## Summary
 
 `WindowFilterResolver.shouldShow` decides whether a single window appears in the switcher for the
-current shortcut. It's the per-window predicate behind `Windows.refreshIfWindowShouldBeShownToTheUser`,
+current shortcut and search scope. It's the per-window predicate behind `Windows.shouldShow`,
 extracted as a pure kernel. The caller passes the window's `WindowState`, the owning app's
 `ApplicationState`, the per-shortcut dropdown booleans + the runtime context (frontmost pid, visible
 space ids, exceptions list) as labeled parameters with `false` / `nil` / `[]` defaults — so each test
 spells out only the knob it exercises. The only comparatively expensive fact — `isOnScreen` (multi-
 screen quartz / `Spaces.screenSpacesMap`) — is passed as `@autoclosure` so the kernel evaluates it
 **only when the short-circuit reaches it** (a phantom / hidden / windowless window never triggers an
-`isOnScreen` computation). The other two derived facts (exception match, visible-space membership) are
-pure expressions over the inputs, evaluated inline inside the same short-circuit chain so they're cheap
-to keep eager. This makes the "why is/isn't this window showing?" logic — easily the most combinatorially
+`isOnScreen` computation). Exception matching and visible-space membership are pure expressions over
+the inputs. This makes the "why is/isn't this window showing?" logic — easily the most combinatorially
 fiddly part of the app — fully unit-testable *without* losing the original boolean's laziness.
 
 ## Behavior & edge cases
@@ -23,12 +20,16 @@ The predicate, in order:
 
 1. **Phantom** windows are always excluded (unconditional, first).
 2. Windows matching a **hide-exception** (by bundle-id prefix + the exception's hide rule) are excluded.
-3. **App scope** (`appsToShow`): `.active` keeps only the frontmost app's windows; `.nonActive` excludes them.
-4. **Hidden apps** (⌘H): excluded when the "hide hidden" dropdown is set.
-5. **Windowless apps** (placeholder rows for apps with no open window): shown unless hidden — and they
+   An active-app shortcut can override blanket app exclusions only within the normal search scope.
+3. **All windows search** bypasses project, app, hidden, fullscreen, minimized, space, and display
+   filters. It keeps the windowless-app preference and native-tab grouping. Preferred-screen lookup
+   is never evaluated in this scope. Otherwise, project membership and the filters below apply.
+4. **App scope** (`appsToShow`): `.active` keeps only the frontmost app's windows; `.nonActive` excludes them.
+5. **Hidden apps** (⌘H): excluded when the "hide hidden" dropdown is set.
+6. **Windowless apps** (placeholder rows for apps with no open window): shown unless hidden — and they
    **bypass** the window-only filters below (space/screen/fullscreen/minimized/tab), since those only
    make sense for real windows.
-6. For **real windows**: also exclude fullscreen / minimized (when set), windows not in a visible space
+7. For **real windows**: also exclude fullscreen / minimized (when set), windows not in a visible space
    (`.visible`) or in a visible space (`.nonVisible`), windows off the preferred screen
    (`.showingAltTab`), and non-frontmost native **tabs** (unless tabs are shown as separate windows).
 
@@ -91,3 +92,14 @@ Mirrors `WindowFilterResolverTests.swift` 1:1. Each test flips one knob from an 
 ### J. Combinations
 - **testAllFiltersOnAndWindowPassesEachShows** — every filter on, a window that satisfies all of them shows.
 - **testPhantomBeatsWindowlessShow** — `isPhantom` overrides the windowless "show" path.
+
+### K. All windows search
+- **testAllWindowsSearchBypassesShortcutAndProjectFilters** — broadening includes an otherwise excluded
+  window; narrowing restores the same filters.
+- **testAllWindowsSearchIncludesFrontmostAppAndVisibleSpaces** — also overrides the inverse app/space filters.
+- **testAllWindowsSearchStillExcludesPhantoms** — phantom exclusion remains unconditional.
+- **testAllWindowsSearchHonorsExceptionsEvenFromActiveAppShortcut** — broadening does not bypass explicit exclusions.
+- **testAllWindowsSearchHonorsWindowTitleExceptions** — title exclusions still hide only matching windows.
+- **testAllWindowsSearchPreservesTabGroupingPreference** — separate native tabs remain optional.
+- **testAllWindowsSearchPreservesWindowlessPreference** — apps without windows retain their existing visibility setting.
+- **testAllWindowsSearchDoesNotQueryPreferredScreen** — broadening does not perform an unnecessary screen lookup.

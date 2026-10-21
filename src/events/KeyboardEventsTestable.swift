@@ -5,12 +5,17 @@ class KeyboardEventsTestable {
         var ids = [String: Int]()
         (0..<Preferences.maxShortcutCount).forEach { ids[Preferences.indexToName("nextWindowShortcut", $0)] = $0 }
         (0..<Preferences.maxShortcutCount).forEach { ids[Preferences.indexToName("holdShortcut", $0)] = Preferences.maxShortcutCount + $0 }
+        for (index, switcher) in AuxiliarySwitchers.all.enumerated() {
+            ids[switcher.holdShortcutId] = Preferences.maxShortcutCount * 2 + index * 2
+            ids[switcher.nextShortcutId] = Preferences.maxShortcutCount * 2 + index * 2 + 1
+        }
         return ids
     }
 }
 
 @discardableResult
 func handleKeyboardEvent(_ globalId: Int?, _ shortcutState: ShortcutState?, _ keyCode: UInt32?, _ modifiers: NSEvent.ModifierFlags?, _ isARepeat: Bool, _ event: NSEvent? = nil) -> Bool {
+    if AppPicker.handleKeyDown(event) { return true }
     if let event, shouldAbsorbSearchEditingKeyDown(event) {
         switch TilesView.handleSearchEditingKeyDown(event) {
         case .handled: return true
@@ -20,6 +25,7 @@ func handleKeyboardEvent(_ globalId: Int?, _ shortcutState: ShortcutState?, _ ke
         case .passToShortcuts: break
         }
     }
+    if DesktopNavigation.handleUndoKey(event) || ProjectContextHeader.handleNumberKey(event) { return true }
     logKeyboardEvent(globalId, shortcutState, keyCode, modifiers, isARepeat)
     let someShortcutTriggered = triggerMatchingShortcuts(globalId, shortcutState, keyCode, modifiers, isARepeat)
     return someShortcutTriggered

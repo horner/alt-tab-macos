@@ -4,8 +4,8 @@ import XCTest
 
 /// Pins the `UserDefaults` transforms in `PreferencesMigrations`. These run on every app upgrade,
 /// so a regression here silently corrupts real users' settings — the highest-value safety net in
-/// the suite. Each test seeds the "old" keys in an isolated `UserDefaults` suite (injected via
-/// `PreferencesMigrations.defaults`), runs ONE migration, and asserts the resulting keys + removals.
+/// the suite. Tests use an isolated `UserDefaults` suite (injected via `PreferencesMigrations.defaults`)
+/// for individual transforms and complete startup/relaunch migration paths.
 ///
 /// `migrateShortcutPreferencesToSecureCoding` and `migrateLoginItem` are intentionally NOT covered:
 /// the former needs the real NSKeyedArchiver/ShortcutRecorder codec (stubbed compile-only here), the
@@ -47,6 +47,87 @@ final class PreferencesMigrationsTests: XCTestCase {
     func testVersionGatingUsesNumericCompareNotLexical() {
         // Lexical would say "9" > "10"; numeric must say 9 < 10 so the migration still runs.
         XCTAssertTrue(PreferencesMigrations.shouldRun("9.0.0", "10.0.0"))
+    }
+
+    func testProjectsReleaseVersionsPreserveCurrentSettingsAcrossLaunches() {
+        for version in ["0.1.0", "0.1.4"] {
+            defaults.set(version, forKey: "preferencesVersion")
+            setCurrentSettings()
+            for _ in 0..<2 {
+                PreferencesMigrations.migratePreferences(bundleIdentifier: "com.horner.alt-tab-projects")
+                assertCurrentSettings()
+                XCTAssertEqual(defaults.string(forKey: "preferencesVersion"), PreferencesMigrations.currentSchemaVersion)
+            }
+        }
+    }
+
+    func testFreshInstallPreservesSettingsChosenBeforeRelaunch() {
+        PreferencesMigrations.migratePreferences(bundleIdentifier: "com.horner.alt-tab-projects")
+        XCTAssertEqual(defaults.string(forKey: "preferencesVersion"), PreferencesMigrations.currentSchemaVersion)
+        setCurrentSettings()
+        for _ in 0..<2 {
+            PreferencesMigrations.migratePreferences(bundleIdentifier: "com.horner.alt-tab-projects")
+            assertCurrentSettings()
+        }
+    }
+
+    func testCurrentUpstreamSchemaPreservesSettingsInProjectsBuild() {
+        defaults.set("11.6.1", forKey: "preferencesVersion")
+        setCurrentSettings()
+        PreferencesMigrations.migratePreferences(bundleIdentifier: "com.horner.alt-tab-projects")
+        PreferencesMigrations.migratePreferences(bundleIdentifier: "com.horner.alt-tab-projects")
+        assertCurrentSettings()
+        XCTAssertEqual(defaults.string(forKey: "preferencesVersion"), "11.6.1")
+    }
+
+    func testLegacyUpstreamMigrationsRunOnlyOnce() {
+        for version in ["6.43.1", "7.26.0", "10.12.0"] {
+            defaults.set(version, forKey: "preferencesVersion")
+            defaults.set("5", forKey: "language")
+            defaults.set("0", forKey: "showWindowlessApps")
+            PreferencesMigrations.migratePreferences()
+            let windowless = version == "10.12.0" ? "0" : "2"
+            XCTAssertEqual(defaults.string(forKey: "language"), "2")
+            XCTAssertEqual(defaults.string(forKey: "showWindowlessApps"), windowless)
+            XCTAssertEqual(defaults.string(forKey: "preferencesVersion"), PreferencesMigrations.currentSchemaVersion)
+            PreferencesMigrations.migratePreferences()
+            XCTAssertEqual(defaults.string(forKey: "language"), "2")
+            XCTAssertEqual(defaults.string(forKey: "showWindowlessApps"), windowless)
+        }
+    }
+
+    func testNewerSchemaMarkerSurvivesOlderBuildLaunches() {
+        defaults.set("99.0.0", forKey: "preferencesVersion")
+        setCurrentSettings()
+        PreferencesMigrations.migratePreferences(bundleIdentifier: "com.horner.alt-tab-projects")
+        PreferencesMigrations.migratePreferences(bundleIdentifier: "com.horner.alt-tab-projects")
+        assertCurrentSettings()
+        XCTAssertEqual(defaults.string(forKey: "preferencesVersion"), "99.0.0")
+    }
+
+    func testPlaceholderVersionStartsAtCurrentSchema() {
+        defaults.set("#VERSION#", forKey: "preferencesVersion")
+        setCurrentSettings()
+        PreferencesMigrations.migratePreferences()
+        assertCurrentSettings()
+        XCTAssertEqual(defaults.string(forKey: "preferencesVersion"), PreferencesMigrations.currentSchemaVersion)
+    }
+
+    private var currentSettings: [String: String] {
+        ["language": "1", "showWindowlessApps": "0", "nextWindowGesture": "2",
+         "showAppsOrWindows": "1", "showAppsOrWindows2": "2", "spacesToShow": "2"]
+    }
+
+    private func setCurrentSettings() {
+        for (key, value) in currentSettings {
+            defaults.set(value, forKey: key)
+        }
+    }
+
+    private func assertCurrentSettings(file: StaticString = #filePath, line: UInt = #line) {
+        for (key, value) in currentSettings {
+            XCTAssertEqual(defaults.string(forKey: key), value, key, file: file, line: line)
+        }
     }
 
     // MARK: - B. Grouping moved global -> per-shortcut
@@ -347,7 +428,7 @@ enum ShowHowPreference {
     }
 }
 
-// App-only singletons referenced by `migratePreferences()` (not exercised by the per-migration tests)
+// App-only singletons referenced by the migration startup path.
 
 extension App {
     static let version = "99.99.99"

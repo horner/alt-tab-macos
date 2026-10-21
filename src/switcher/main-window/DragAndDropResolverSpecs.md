@@ -34,6 +34,10 @@ the global mouse tap must yield the drop's mouse-up (`passesThroughMouseUp`), an
 - **A drop opens files with the tile's app**, so it needs a target tile, that tile's window, the app's
   bundle URL, and at least one URL; a non-URL drag (text/image) or any missing piece is rejected (the drag
   snaps back).
+- A valid drop is accepted immediately and dismisses the switcher before an asynchronous application
+  open runs off-main. Launch completion never dismisses a later switcher session. If the application
+  cannot open the items, a main-thread error alert reports the failure; the asynchronous result cannot
+  change AppKit's already-completed drag acceptance.
 
 ## Test scenarios
 

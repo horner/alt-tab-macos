@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "dependencies": [
+    {
+      "name": "Yams",
+      "repository": "jpsim/Yams",
+      "ecosystem": "SwiftURL",
+      "source_path": "Sources/Yams",
+      "source_sha256": "3f7a199a7daf8926ec7c40fa0323cc40d8860739fca7ed69f74e27c28ae42fe4",
+      "package": "yams"
+    },
+    {
+      "name": "libyaml",
+      "repository": "yaml/libyaml",
+      "commit": "acd6f6f014c25e46363e718381e0b35205df2d83",
+      "source_path": "Sources/CYaml",
+      "provenance": "https://github.com/jpsim/Yams/commit/409e565756cfdf50642a59c8f4290a6961fe7f1d",
+      "source_sha256": "bc6affbdfd97addb1b455ed390c7d9a0fde1059967edca5b527af523c016b8be",
+      "package": "yams",
+      "package_revision": "a27b21e0c81c5bf42049b897a62aaf387e80f279",
+      "upstream_changes": [
+        "https://github.com/jpsim/Yams/commit/c7a3398466895c46c875966fc9da6ad11619bce6",
+        "https://github.com/jpsim/Yams/commit/ac4f4d41e74f06990798c7c6115fc767ab425bfc"
+      ]
+    }
+  ],
+  "reviewed_repository_advisories": [],
+  "swift_packages": [
+    {
+      "identity": "yams",
+      "repository": "jpsim/Yams",
+      "resolved_file": "alt-tab-macos.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+      "project_file": "alt-tab-macos.xcodeproj/project.pbxproj"
+    }
+  ]
+}

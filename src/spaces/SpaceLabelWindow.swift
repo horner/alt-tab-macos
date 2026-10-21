@@ -1,0 +1,430 @@
+import Cocoa
+
+final class SpaceLabelWindow: NSWindow, NSWindowDelegate {
+    private final class Label: NSTextField {
+        override var mouseDownCanMoveWindow: Bool { true }
+    }
+
+    private final class FolderPath: NSTextField {
+        override var mouseDownCanMoveWindow: Bool { false }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseDown(with event: NSEvent) {
+            (window as? SpaceLabelWindow)?.onInteraction?()
+            super.mouseDown(with: event)
+        }
+
+        override func rightMouseDown(with event: NSEvent) {
+            (window as? SpaceLabelWindow)?.onInteraction?()
+            super.rightMouseDown(with: event)
+        }
+
+        @objc func copyFolderPath(_ sender: Any?) {
+            guard !stringValue.isEmpty else { return }
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(stringValue, forType: .string)
+        }
+    }
+
+    private final class CopyPathButton: NSButton {
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseDown(with event: NSEvent) {
+            (window as? SpaceLabelWindow)?.onInteraction?()
+            super.mouseDown(with: event)
+        }
+    }
+
+    private final class Button: NSButton {
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseDown(with event: NSEvent) {
+            let label = window as? SpaceLabelWindow
+            // Native button tracking can process deferred UI work before delivering the action.
+            label?.currentWindow = ProjectsMenu.captureCurrentWindow()
+            label?.visibleWindows = ProjectsMenu.captureVisibleWindows(on: label?.renderedLabel?.space.uuid)
+            defer { label?.currentWindow = nil; label?.visibleWindows = nil }
+            super.mouseDown(with: event)
+        }
+    }
+
+    var onClose: (() -> Void)?
+    var onInteraction: (() -> Void)?
+    private let textLabel = Label(labelWithString: "")
+    private let folderPathLabel = FolderPath(labelWithString: "")
+    private let copyPathButton = CopyPathButton(title: NSLocalizedString("Copy Path", comment: "Copy a Project's primary folder path"), target: nil, action: nil)
+    private var buttons = [NSButton]()
+    private var projectButtons = [NSButton]()
+    private var folderButton: NSButton?
+    private var renderedLabel: SpaceLabelResolver.Label?
+    private var renderedFolderPath: String?
+    private var renderedSize = NSSize.zero
+    private var position: SpaceLabelResolver.Position?
+    private let positionKey: String
+    private var positioning = false
+    private var positionSave: DispatchWorkItem?
+    private var controlsHeight = CGFloat.zero
+    private var currentWindow: ProjectsMenu.CurrentWindow?
+    private var visibleWindows: [Window]?
+    var savedDisplayIdentifier: String? { position?.displayIdentifier }
+    override var canBecomeMain: Bool { false }
+
+    var displayedText: String { textLabel.stringValue }
+
+    init(uuid: String, legacyUuid: String? = nil) {
+        positionKey = "spaceLabelPosition.\(uuid)"
+        let savedPosition = UserDefaults.standard.data(forKey: positionKey)
+            ?? legacyUuid.flatMap { UserDefaults.standard.data(forKey: "spaceLabelPosition.\($0)") }
+        if let data = savedPosition {
+            position = try? JSONDecoder().decode(SpaceLabelResolver.Position.self, from: data)
+        }
+        super.init(contentRect: .zero, styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView], backing: .buffered, defer: false)
+        level = .normal
+        // Managed windows participate in Exposé; stationary windows are desktop overlays.
+        collectionBehavior = [.managed, .ignoresCycle, .fullScreenAuxiliary]
+        delegate = self
+        titleVisibility = .hidden
+        titlebarAppearsTransparent = true
+        standardWindowButton(.zoomButton)?.isHidden = true
+        appearance = NSAppearance(named: .darkAqua)
+        synchronizeSwitcherVisibility()
+        hidesOnDeactivate = false
+        isReleasedWhenClosed = false
+        isExcludedFromWindowsMenu = true
+        isMovable = true
+        isMovableByWindowBackground = true
+        hasShadow = false
+        isOpaque = true
+        backgroundColor = .black
+        let view = NSView(frame: .zero)
+        view.wantsLayer = true
+        view.layer?.backgroundColor = NSColor.black.cgColor
+        contentView = view
+        textLabel.alignment = .center
+        textLabel.textColor = .white
+        textLabel.lineBreakMode = .byTruncatingTail
+        textLabel.maximumNumberOfLines = 1
+        view.addSubview(textLabel)
+        configureFolderPath(in: view)
+        projectButtons = [
+            addButton(NSLocalizedString("Project Windows", comment: "Project windows menu"),
+                help: NSLocalizedString("Open this project's window list", comment: "Project label button help"), action: #selector(openWindows(_:))),
+            addButton(NSLocalizedString("History", comment: "Project window history"),
+                help: NSLocalizedString("Open this project's window history", comment: "Project label button help"), action: #selector(openHistory(_:))),
+        ]
+        addProjectFolderButtons()
+        addButton(NSLocalizedString("Take Snapshot", comment: "Save a visual desktop snapshot"),
+            help: NSLocalizedString("Save screenshots and reopening details for this Desktop without closing windows", comment: "Project label snapshot button help"), action: #selector(takeSnapshot(_:)))
+        addButton(NSLocalizedString("Rename…", comment: "Project label rename button"),
+            help: NSLocalizedString("Rename this Project or Desktop", comment: "Project label button help"), action: #selector(rename(_:)))
+        addButton(NSLocalizedString("Restore from Attic…", comment: "Restore a Project from its Desktop label"),
+            help: NSLocalizedString("Restore a saved Project on this Desktop", comment: "Project Attic label button help"), action: #selector(restoreFromAttic(_:)))
+        projectButtons.append(addButton(NSLocalizedString("Add All Visible Windows", comment: "Project assignment action"),
+            help: NSLocalizedString("Add all visible windows on this Desktop to this Project", comment: "Project label button help"), action: #selector(addVisibleWindows(_:))))
+        addButton(NSLocalizedString("Menu", comment: "AltTab menu button"),
+            help: NSLocalizedString("Open the AltTab menu", comment: "AltTab menu button help"), action: #selector(openMenu(_:)))
+    }
+
+    func synchronizeSwitcherVisibility() {
+        setAccessibilitySubrole(Preferences.projectWindowsInSwitcher ? .standardWindow : .floatingWindow)
+    }
+
+    func update(_ label: SpaceLabelResolver.Label, on screen: NSScreen) {
+        MainThreadStall.step()
+        let folder = ProjectsMenu.context(for: label).projectId.flatMap { Projects.byId[$0]?.folderPath }.flatMap { $0.isEmpty ? nil : $0 }
+        folderButton?.toolTip = folder ?? NSLocalizedString("Choose this Project’s primary folder", comment: "Project folder button help")
+        let visibleFrame = screen.visibleFrame
+        if renderedLabel != label || renderedFolderPath != folder || renderedSize != visibleFrame.size || title != label.title || displayedText != label.text {
+            updateText(label, folder: folder, visibleSize: visibleFrame.size)
+        }
+        let height = textLabel.frame.maxY + 30
+        let target = SpaceLabelResolver.frame(visibleFrame: visibleFrame, height: height, position: position, stackIndex: label.stackIndex)
+        positioning = true
+        defer { positioning = false }
+        if frame != target { setFrame(target, display: true) }
+    }
+
+    private func configureFolderPath(in view: NSView) {
+        folderPathLabel.isEditable = false
+        folderPathLabel.isSelectable = true
+        folderPathLabel.isHidden = true
+        folderPathLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        folderPathLabel.textColor = .secondaryLabelColor
+        folderPathLabel.lineBreakMode = .byTruncatingMiddle
+        folderPathLabel.maximumNumberOfLines = 1
+        folderPathLabel.setAccessibilityLabel(NSLocalizedString("Primary folder", comment: "Project primary folder path"))
+        let menu = NSMenu()
+        let item = NSMenuItem(title: NSLocalizedString("Copy Folder Path", comment: "Copy a Project's primary folder path"), action: #selector(FolderPath.copyFolderPath(_:)), keyEquivalent: "")
+        item.target = folderPathLabel
+        menu.addItem(item)
+        folderPathLabel.menu = menu
+        view.addSubview(folderPathLabel)
+        copyPathButton.target = folderPathLabel
+        copyPathButton.action = #selector(FolderPath.copyFolderPath(_:))
+        copyPathButton.controlSize = .small
+        copyPathButton.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        copyPathButton.bezelStyle = .rounded
+        copyPathButton.toolTip = NSLocalizedString("Copy the full folder path", comment: "Project folder path copy button help")
+        copyPathButton.setAccessibilityLabel(NSLocalizedString("Copy Folder Path", comment: "Copy a Project's primary folder path"))
+        copyPathButton.isHidden = true
+        copyPathButton.sizeToFit()
+        view.addSubview(copyPathButton)
+    }
+
+    private func updateText(_ label: SpaceLabelResolver.Label, folder: String?, visibleSize: NSSize) {
+        renderedLabel = label
+        renderedFolderPath = folder
+        renderedSize = visibleSize
+        title = label.title
+        setAccessibilityLabel(title)
+        textLabel.toolTip = title
+        textLabel.setAccessibilityLabel(title)
+        textLabel.stringValue = label.text
+        let hasProject = ProjectsMenu.context(for: label).projectId != nil
+        projectButtons.forEach { $0.isHidden = !hasProject }
+        let width = (visibleSize.width / 2).rounded() - 32
+        controlsHeight = layoutButtons(width: width)
+        updateFolderPath(folder, width: width)
+        textLabel.font = fittingFont(width: width, maxHeight: visibleSize.height / 3)
+        let height = ceil(textLabel.cell!.cellSize.height)
+        let textBottom = folderPathLabel.isHidden ? controlsHeight + 20 : max(folderPathLabel.frame.maxY, copyPathButton.frame.maxY) + 8
+        textLabel.frame = NSRect(x: 16, y: textBottom, width: width, height: height)
+        contentView?.layer?.cornerRadius = 10
+    }
+
+    private func updateFolderPath(_ folder: String?, width: CGFloat) {
+        folderPathLabel.isHidden = folder == nil
+        copyPathButton.isHidden = folder == nil
+        guard let folder else { return }
+        if folderPathLabel.stringValue != folder { folderPathLabel.stringValue = folder }
+        folderPathLabel.toolTip = folder
+        let height = ceil(folderPathLabel.cell!.cellSize.height)
+        let copyWidth = min(width, copyPathButton.intrinsicContentSize.width)
+        let rowHeight = max(height, copyPathButton.frame.height)
+        let bottom = controlsHeight + 20
+        folderPathLabel.frame = NSRect(x: 16, y: bottom + (rowHeight - height) / 2, width: max(0, width - copyWidth - 8), height: height)
+        copyPathButton.frame = NSRect(x: 16 + width - copyWidth, y: bottom, width: copyWidth, height: rowHeight)
+    }
+
+    func avoidOverlap(_ occupied: [CGRect], on screen: NSScreen, migrated: Bool) {
+        guard position == nil || migrated, let identifier = screen.cachedUuid() else { return }
+        let target = SpaceLabelResolver.avoidingOverlap(frame, in: screen.visibleFrame, occupied: occupied)
+        guard target != frame else { return }
+        positioning = true
+        setFrame(target, display: true)
+        positioning = false
+        position = SpaceLabelResolver.Position(displayIdentifier: identifier as String,
+            x: target.minX - screen.visibleFrame.minX, y: target.minY - screen.visibleFrame.minY)
+        savePosition()
+    }
+
+    @discardableResult
+    private func addButton(_ title: String, help: String, action: Selector) -> NSButton {
+        let button = Button(title: title, target: self, action: action)
+        button.controlSize = .small
+        button.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        button.bezelStyle = .rounded
+        button.toolTip = help
+        button.setAccessibilityLabel(help)
+        button.sizeToFit()
+        buttons.append(button)
+        contentView?.addSubview(button)
+        return button
+    }
+
+    private func layoutButtons(width: CGFloat) -> CGFloat {
+        var x = CGFloat.zero
+        var y = CGFloat.zero
+        let height = buttons.map { $0.frame.height }.max() ?? 24
+        for button in buttons where !button.isHidden {
+            let buttonWidth = min(width, button.intrinsicContentSize.width)
+            if x > 0 && x + buttonWidth > width { x = 0; y += height + 6 }
+            button.frame = NSRect(x: 16 + x, y: 12 + y, width: buttonWidth, height: height)
+            x += buttonWidth + 8
+        }
+        return y + height
+    }
+
+    func windowWillMove(_ notification: Notification) {
+        guard !positioning else { return }
+        onInteraction?()
+    }
+
+    func windowDidBecomeKey(_ notification: Notification) {
+        onInteraction?()
+    }
+
+    func windowDidMove(_ notification: Notification) {
+        guard !positioning, renderedLabel != nil, let screen,
+              let identifier = screen.cachedUuid() else { return }
+        let visibleFrame = screen.visibleFrame
+        position = SpaceLabelResolver.Position(displayIdentifier: identifier as String,
+            x: frame.minX - visibleFrame.minX, y: frame.minY - visibleFrame.minY)
+        positionSave?.cancel()
+        let save = DispatchWorkItem { [weak self] in self?.savePosition() }
+        positionSave = save
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(250), execute: save)
+    }
+
+    private func savePosition() {
+        positionSave?.cancel()
+        positionSave = nil
+        guard let position, let data = try? JSONEncoder().encode(position),
+              UserDefaults.standard.data(forKey: positionKey) != data else { return }
+        UserDefaults.standard.set(data, forKey: positionKey)
+    }
+
+    override func close() {
+        savePosition()
+        super.close()
+    }
+
+    private func addProjectFolderButtons() {
+        for tool in ProjectFolderTool.allCases {
+            let button = addButton(tool.title, help: String(format: NSLocalizedString("Open or focus %@ for this Project", comment: "Project tool button help"), tool.title), action: #selector(openProjectTool(_:)))
+            button.tag = tool.rawValue
+            let menu = NSMenu()
+            let item = NSMenuItem(title: String(format: NSLocalizedString("New %@ Window", comment: "Project tool menu action"), tool.title), action: #selector(newProjectTool(_:)), keyEquivalent: "")
+            item.target = self
+            item.tag = tool.rawValue
+            menu.addItem(item)
+            button.menu = menu
+            projectButtons.append(button)
+        }
+        let button = addButton(NSLocalizedString("Folder…", comment: "Project folder button"),
+            help: NSLocalizedString("Choose this Project’s primary folder", comment: "Project folder button help"), action: #selector(chooseProjectFolder(_:)))
+        folderButton = button
+        projectButtons.append(button)
+    }
+
+    @objc private func openProjectTool(_ sender: NSButton) {
+        guard let tool = ProjectFolderTool(rawValue: sender.tag) else { return }
+        performFromLabel(sender) { context, button in
+            guard let id = context.projectId, let project = Projects.byId[id] else { return }
+            ProjectFolderActions.open(tool, for: project, from: button.window)
+        }
+    }
+
+    @objc private func newProjectTool(_ sender: NSMenuItem) {
+        guard let label = renderedLabel, let tool = ProjectFolderTool(rawValue: sender.tag),
+              let id = ProjectsMenu.context(for: label).projectId else { return }
+        onInteraction?()
+        DispatchQueue.main.async { [weak self] in
+            guard let self, let project = Projects.byId[id] else { return }
+            ProjectFolderActions.open(tool, for: project, from: self, newWindow: true)
+        }
+    }
+
+    @objc private func chooseProjectFolder(_ sender: NSButton) {
+        performFromLabel(sender) { context, button in
+            guard let id = context.projectId, let project = Projects.byId[id] else { return }
+            ProjectFolderActions.chooseFolder(for: project, from: button.window) { }
+        }
+    }
+
+    @objc private func openWindows(_ sender: NSButton) {
+        performFromLabel(sender) { context, button in
+            guard let id = context.projectId else { return }
+            ProjectsMenu.showWindows(for: id, from: button)
+        }
+    }
+
+    @objc private func openHistory(_ sender: NSButton) {
+        performFromLabel(sender) { context, button in
+            guard let id = context.projectId else { return }
+            ProjectsMenu.showHistory(for: id, from: button)
+        }
+    }
+
+    @objc private func takeSnapshot(_ sender: NSButton) {
+        performFromLabel(sender) { context, button in
+            guard let uuid = context.desktopUuid else { return }
+            DesktopArchive.takeSnapshot(spaceUuid: uuid, from: button.window)
+        }
+    }
+
+    @objc private func rename(_ sender: NSButton) {
+        performFromLabel(sender) { context, button in
+            guard let window = button.window else { return }
+            ProjectsMenu.rename(context, from: window)
+        }
+    }
+
+    @objc private func restoreFromAttic(_ sender: NSButton) {
+        performFromLabel(sender) { context, button in
+            guard let uuid = context.desktopUuid else { return }
+            ProjectsMenu.showAttic(on: uuid, from: button)
+        }
+    }
+
+    @objc private func openMenu(_ sender: NSButton) {
+        let target = currentWindow ?? ProjectsMenu.captureCurrentWindow()
+        let windows = visibleWindows ?? ProjectsMenu.captureVisibleWindows(on: renderedLabel?.space.uuid)
+        performFromLabel(sender) { context, button in Menubar.popUpMenu(from: button, context: context, currentWindow: target, visibleWindows: windows) }
+    }
+
+    @objc private func addVisibleWindows(_ sender: NSButton) {
+        let windows = visibleWindows ?? ProjectsMenu.captureVisibleWindows(on: renderedLabel?.space.uuid)
+        performFromLabel(sender) { context, button in
+            ProjectsMenu.addAllVisibleWindows(windows, projectId: context.projectId, desktopUuid: context.desktopUuid, from: button.window)
+        }
+    }
+
+    private func performFromLabel(_ sender: NSButton, action: @escaping (ProjectMenuResolver.Context, NSButton) -> Void) {
+        guard let label = renderedLabel else { return }
+        let context = ProjectsMenu.context(for: label)
+        onInteraction?()
+        // Button actions retain the clicked label's target across menu tracking and focus changes.
+        DispatchQueue.main.async { [weak self, weak sender] in
+            guard let self, self.renderedLabel?.id == label.id, let sender, sender.window?.isVisible == true else { return }
+            action(context, sender)
+        }
+    }
+
+    private func fittingFont(width: CGFloat, maxHeight: CGFloat) -> NSFont {
+        var lower = max(24, width * 0.06)
+        var upper = max(lower, min(width, maxHeight))
+        for _ in 0..<12 {
+            let size = (lower + upper) / 2
+            textLabel.font = NSFont.systemFont(ofSize: size, weight: .bold)
+            // NSString sizing omits the native text cell's padding and can cause premature truncation.
+            let bounds = textLabel.cell!.cellSize
+            if bounds.width <= width - 1 && bounds.height <= maxHeight {
+                lower = size
+            } else {
+                upper = size
+            }
+        }
+        return NSFont.systemFont(ofSize: lower, weight: .bold)
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        guard let onClose else { return true }
+        onClose()
+        return false
+    }
+
+    /// Only our own windows are assigned; no compatibility IDs or other apps' windows are mutated.
+    static func assign(_ windowId: CGWindowID, to spaceId: CGSSpaceID, thenMain: @escaping (Bool) -> Void) {
+        CGSCallScheduler.run {
+            guard let previous = CGSCallScheduler.windowSpaces(windowId) else {
+                DispatchQueue.main.async { thenMain(false) }
+                return
+            }
+            let windows = [windowId] as CFArray
+            spaceLabelAddWindows(CGS_CONNECTION, windows, [spaceId] as CFArray)
+            let others = previous.filter { $0 != spaceId }
+            if !others.isEmpty { spaceLabelRemoveWindows(CGS_CONNECTION, windows, others as CFArray) }
+            let assigned = CGSCallScheduler.windowSpaces(windowId) == [spaceId]
+            DispatchQueue.main.async { thenMain(assigned) }
+        }
+    }
+}
+
+// CGSSpace.h: https://github.com/NUIKit/CGSInternal/blob/master/CGSSpace.h
+// Both return void; membership readback is the success signal.
+@_silgen_name("CGSAddWindowsToSpaces")
+private func spaceLabelAddWindows(_ connection: CGSConnectionID, _ windows: CFArray, _ spaces: CFArray)
+
+@_silgen_name("CGSRemoveWindowsFromSpaces")
+private func spaceLabelRemoveWindows(_ connection: CGSConnectionID, _ windows: CFArray, _ spaces: CFArray)

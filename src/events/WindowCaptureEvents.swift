@@ -194,7 +194,7 @@ class WindowCaptureScreenshotsPrivateApi {
         }
     }
 
-    private static func oneTimeCapture(_ wid: CGWindowID) -> CGImage? {
+    static func oneTimeCapture(_ wid: CGWindowID) -> CGImage? {
         guard !App.isTerminating, !ScreenLockEvents.isScreenLocked else { return nil }
         // we use CGSHWCaptureWindowList because it can screenshot minimized windows, which CGWindowListCreateImage can't
         var windowId_ = wid
