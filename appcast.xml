@@ -6,6 +6,25 @@
     <description>Signed AltTabProjects friends beta releases</description>
     <language>en</language>
     <item>
+      <title>AltTabProjects 1.0.7 — Friends beta</title>
+      <link>https://github.com/horner/alt-tab-macos/releases/tag/projects-v1.0.7</link>
+      <sparkle:version>1.0.7</sparkle:version>
+      <sparkle:shortVersionString>1.0.7</sparkle:shortVersionString>
+      <sparkle:channel>beta</sparkle:channel>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <pubDate>Wed, 21 Oct 2026 11:20:37 +0000</pubDate>
+      <description sparkle:format="plain-text"># AltTabProjects 1.0.7 — Quieter window notifications
+
+Opening or restoring a window on its Project's current Desktop no longer shows an assignment toast.
+
+When a restored window belongs to a Project on another Desktop, the notification offers “Move to Project’s Desktop”. Moving is optional and keeps you on your current Desktop. The action rechecks the window and its destination before moving it; resolved or changed conflicts are discarded. Windows matching several Projects still offer a membership choice.
+
+Update through Settings → General → Check for updates now…, or run `brew update` followed by `brew upgrade --cask --greedy horner/projects/alttab-projects`. Version 1.0.5 and earlier require a manual download or Homebrew upgrade before built-in updates become available.
+
+Existing Projects, preferences, permissions and the app's signing identity are retained. Intel and older-macOS runtime testing remain outstanding.</description>
+      <enclosure url="https://github.com/horner/alt-tab-macos/releases/download/projects-v1.0.7/AltTabProjects.zip" length="7543065" type="application/octet-stream" sparkle:edSignature="0DY3i1OzxtIC4TNZH8guICztrVFxlk+AMg6l9dPPWqyp6DnBhE3HxubhaX5sj+jyD5OXC3MiuEoRNJ6GWtsiBw==" />
+    </item>
+    <item>
       <title>AltTabProjects 1.0.6 — Friends beta</title>
       <link>https://github.com/horner/alt-tab-macos/releases/tag/projects-v1.0.6</link>
       <sparkle:version>1.0.6</sparkle:version>
