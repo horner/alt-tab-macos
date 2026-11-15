@@ -24,6 +24,7 @@
 "All apps" = "All apps";
 "All screens" = "All screens";
 "All Spaces" = "All Spaces";
+"All windows" = "All windows";
 "Allowed" = "Allowed";
 "Alphabetical Order" = "Alphabetical Order";
 "AltTab crashed last time you used it. Sending a crash report will help get the issue fixed" = "AltTab crashed last time you used it. Sending a crash report will help get the issue fixed";
@@ -202,6 +203,7 @@
 "Screen Recording" = "Screen Recording";
 "Screen showing AltTab" = "Screen showing AltTab";
 "Search" = "Search";
+"Search across all apps, desktops, and projects, including minimized and hidden windows." = "Search across all apps, desktops, and projects, including minimized and hidden windows.";
 "Search is a Pro feature." = "Search is a Pro feature.";
 "Search windows by typing" = "Search windows by typing";
 "Search — find a window by typing" = "Search — find a window by typing";

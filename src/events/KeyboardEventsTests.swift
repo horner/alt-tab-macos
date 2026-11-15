@@ -178,7 +178,22 @@ final class KeyboardEventsUtilsTests: XCTestCase {
         XCTAssertEqual(ControlsTab.shortcutsActionsTriggered, ["nextWindowShortcut", "nextWindowShortcut2", "holdShortcut2"])
     }
 
+    func testAppPickerSuppressesShortcutsWhileUpdatingTheirReleaseState() {
+        resetState()
+        AppPicker.isActive = true
+        defer { AppPicker.isActive = false }
+        ModifierFlags.current = [.option]
+        handleKeyboardEvent(KeyboardEventsTestable.globalShortcutsIds["nextWindowShortcut"], .down, nil, nil, false)
+        handleKeyboardEvent(KeyboardEventsTestable.globalShortcutsIds["nextWindowShortcut"], .up, nil, nil, false)
+        XCTAssertEqual(ControlsTab.shortcutsActionsTriggered, [])
+        XCTAssertEqual(ControlsTab.shortcuts["nextWindowShortcut"]?.state, .up)
+        AppPicker.isActive = false
+        handleKeyboardEvent(KeyboardEventsTestable.globalShortcutsIds["nextWindowShortcut"], .down, nil, nil, false)
+        XCTAssertEqual(ControlsTab.shortcutsActionsTriggered, ["nextWindowShortcut"])
+    }
+
     private func resetState() {
+        AppPicker.isActive = false
         SwitcherSession.current = nil
         Preferences.shortcutStyle = .focusOnRelease
         ControlsTab.shortcuts.values.forEach { $0.state = .up }

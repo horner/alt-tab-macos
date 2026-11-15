@@ -2,11 +2,6 @@ import XCTest
 
 /// Documents the per-shortcut "which windows show in the switcher" matrix by pinning
 /// `WindowFilterResolver.shouldShow` against canonical `WindowState` / `ApplicationState` snapshots.
-/// Each test starts from a plain visible real window + an all-permissive config and flips exactly one
-/// knob, so every filter dimension is isolated.
-///
-/// Groups: A always-excluded · B app scope · C hidden apps · D windowless · E fullscreen ·
-/// F minimized · G spaces · H screens · I tabs · J combinations.
 final class WindowFilterResolverTests: XCTestCase {
 
     private func ws(isPhantom: Bool = false, isWindowlessApp: Bool = false, isFullscreen: Bool = false,
@@ -200,5 +195,69 @@ final class WindowFilterResolverTests: XCTestCase {
     func testPhantomBeatsWindowlessShow() {
         XCTAssertFalse(WindowFilterResolver.shouldShow(ws(isPhantom: true, isWindowlessApp: true), appState(),
                                                        hideWindowless: false, isOnPreferredScreen: true))
+    }
+
+    // MARK: - K. All windows search
+
+    func testAllWindowsSearchBypassesShortcutAndProjectFilters() {
+        for allWindows in [false, true, false] {
+            XCTAssertEqual(WindowFilterResolver.shouldShow(
+                ws(isFullscreen: true, isMinimized: true, spaceIds: [99]), appState(pid: 100, appIsHidden: true),
+                searchAllWindows: allWindows, onlyFrontmostApp: true, hideHidden: true, hideFullscreen: true,
+                hideMinimized: true, onlyVisibleSpaces: true, onlyPreferredScreen: true,
+                frontmostPid: 200, visibleSpaceIds: [1], activeProjectMembers: [], isOnPreferredScreen: false), allWindows)
+        }
+    }
+
+    func testAllWindowsSearchIncludesFrontmostAppAndVisibleSpaces() {
+        XCTAssertTrue(WindowFilterResolver.shouldShow(ws(spaceIds: [1]), appState(pid: 100),
+            searchAllWindows: true, excludeFrontmostApp: true, onlyNonVisibleSpaces: true,
+            frontmostPid: 100, visibleSpaceIds: [1], isOnPreferredScreen: true))
+    }
+
+    func testAllWindowsSearchStillExcludesPhantoms() {
+        XCTAssertFalse(WindowFilterResolver.shouldShow(ws(isPhantom: true), appState(),
+            searchAllWindows: true, isOnPreferredScreen: true))
+    }
+
+    func testAllWindowsSearchHonorsExceptionsEvenFromActiveAppShortcut() {
+        let exception = ExceptionEntry(bundleIdentifier: "com.example", hide: .always, ignore: .none)
+        XCTAssertFalse(WindowFilterResolver.shouldShow(ws(), appState(pid: 100, bundleIdentifier: "com.example.app"),
+            searchAllWindows: true, onlyFrontmostApp: true, frontmostPid: 100,
+            exceptions: [exception], isOnPreferredScreen: true))
+    }
+
+    func testAllWindowsSearchHonorsWindowTitleExceptions() {
+        let exception = ExceptionEntry(bundleIdentifier: "com.example", hide: .windowTitleContains, ignore: .none,
+            windowTitleContains: ["Private"])
+        XCTAssertFalse(WindowFilterResolver.shouldShow(ws(title: "Private notes"), appState(bundleIdentifier: "com.example.app"),
+            searchAllWindows: true, exceptions: [exception], isOnPreferredScreen: true))
+        XCTAssertTrue(WindowFilterResolver.shouldShow(ws(title: "Notes"), appState(bundleIdentifier: "com.example.app"),
+            searchAllWindows: true, exceptions: [exception], isOnPreferredScreen: true))
+    }
+
+    func testAllWindowsSearchPreservesTabGroupingPreference() {
+        for separateTabs in [false, true] {
+            XCTAssertEqual(WindowFilterResolver.shouldShow(ws(isTabbed: true), appState(),
+                searchAllWindows: true, separateTabs: separateTabs, isOnPreferredScreen: true), separateTabs)
+        }
+    }
+
+    func testAllWindowsSearchPreservesWindowlessPreference() {
+        for hideWindowless in [false, true] {
+            XCTAssertEqual(WindowFilterResolver.shouldShow(ws(isWindowlessApp: true), appState(),
+                searchAllWindows: true, hideWindowless: hideWindowless, isOnPreferredScreen: true), !hideWindowless)
+        }
+    }
+
+    func testAllWindowsSearchDoesNotQueryPreferredScreen() {
+        var screenQueries = 0
+        func isOnScreen() -> Bool {
+            screenQueries += 1
+            return false
+        }
+        XCTAssertTrue(WindowFilterResolver.shouldShow(ws(), appState(), searchAllWindows: true,
+            onlyPreferredScreen: true, isOnPreferredScreen: isOnScreen()))
+        XCTAssertEqual(screenQueries, 0)
     }
 }

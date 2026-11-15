@@ -36,6 +36,7 @@ final class SwitcherSession {
     var selectedIndex: Int = 0
     var hoveredIndex: Int?
     var selectedTarget: String?
+    var desktopReturnTarget: DesktopNavigationResolver.Destination?
     /// The window `hoveredIndex` MEANS, so the highlight can be re-anchored when the list changes under it.
     /// An index alone survives a structural change as a valid number pointing at a different window: insert
     /// or remove a tile before the hovered one and the hover silently moves to its neighbour, which the
@@ -67,6 +68,7 @@ final class SwitcherSession {
     /// Keeps one-per-app tiles from changing identity while discovery, grouping and search settle.
     var representativeByPid = [pid_t: String]()
     var searchQuery: String = ""
+    var searchAllWindows = false
 
     /// Full-resolution frames for the Preview panel, fetched just-in-time for the selected window and
     /// its cycling neighbors (`WindowThumbnails.fetchPreviewFrames`, #5861). Living on the session, they

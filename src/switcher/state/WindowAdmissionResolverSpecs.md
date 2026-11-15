@@ -10,7 +10,11 @@ giving either source universal authority.
 
 1. WID zero is invalid.
 2. A WindowServer parent is an exact relationship: represent the parent, regardless of level, size or attention.
-3. **Placement gates every surface, on every channel.** A destination sits at the ordinary window level or
+   AltTab's live Space-label registry may then identify one of its own control windows: it is a destination
+   when “Project windows in switcher” is Show, including during a temporary floating-level reveal, and
+   excluded when Hide (the default) is selected. Both PID and window ID must match the registry. This explicit ownership decision does
+   not apply to inferred third-party surfaces; the following placement/semantic rules govern those.
+3. **Placement gates inferred surfaces on every channel.** A destination sits at the ordinary window level or
    covers the screen, unless AX positively marks it `kAXMain`. Above that level an app puts its HUDs, panels
    and overlays, and no subrole distinguishes them: Chromium describes ChatGPT's dictation strip as a titled
    `AXDialog` and its sidebar as `AXStandardWindow`, the same subroles every ordinary AppKit window carries.
@@ -34,6 +38,10 @@ giving either source universal authority.
 parentage intentionally says nothing about them because both active and background native tabs report parent zero.
 
 ## Application boundary
+
+Owned-control coverage: `testOwnedControlRemainsADestinationDuringFloatingReveal`,
+`testHiddenOwnedControlCannotBeAdmittedByAttention`, and
+`testOwnedControlDoesNotOverrideInvalidIdOrParentage` pin visibility, attention, and identity boundaries.
 
 Window admission and application admission use the same evidence without conflating their permissions. Ordinary
 discovery still excludes XPC processes unless they are an established user-facing exception. Exact attention may

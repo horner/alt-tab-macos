@@ -1,3 +1,5 @@
 # Diff PDFs as decompressed text instead of "Binary files differ".
 # Needs a one-time, per-clone: git config diff.pdf.textconv scripts/assets/pdf_textconv.sh
 *.pdf diff=pdf
+
+# Preserve the upstream YAML parser sources, including their original whitespace.

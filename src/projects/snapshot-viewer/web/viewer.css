@@ -1,0 +1,102 @@
+:root {
+    color-scheme: light dark;
+    --page: #f5f5f7;
+    --paper: #ffffff;
+    --text: #22252b;
+    --muted: #636973;
+    --line: #e2e5ea;
+    --code: #f1f3f6;
+    --accent: #1763b9;
+}
+:root[data-theme="dark"] {
+    --page: #1a1b1f;
+    --paper: #24262b;
+    --text: #eceef2;
+    --muted: #adb3bd;
+    --line: #3c4049;
+    --code: #30333b;
+    --accent: #87baff;
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --page: #1a1b1f;
+        --paper: #24262b;
+        --text: #eceef2;
+        --muted: #adb3bd;
+        --line: #3c4049;
+        --code: #30333b;
+        --accent: #87baff;
+    }
+}
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    padding: 28px;
+    background: var(--page);
+    color: var(--text);
+    font: 15px/1.65 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-wrap: break-word;
+}
+article {
+    max-width: 1000px;
+    min-height: calc(100vh - 56px);
+    margin: 0 auto;
+    padding: 34px 42px 52px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
+h1, h2, h3, h4, h5, h6 { line-height: 1.3; font-weight: 650; }
+h1 { margin: 0 0 24px; font-size: 30px; letter-spacing: -0.6px; }
+h2 { margin: 36px 0 18px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 22px; }
+h3 { margin: 28px 0 12px; font-size: 18px; }
+h4, h5, h6 { margin: 22px 0 10px; font-size: 16px; }
+p { margin: 0 0 16px; }
+ul, ol { margin: 12px 0 22px; padding-left: 26px; }
+li { margin: 5px 0; }
+li > p { margin-bottom: 8px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+a:focus, button:focus { outline: 3px solid var(--accent); outline-offset: 4px; }
+strong { font-weight: 650; }
+code, pre { font-family: Menlo, Monaco, monospace; font-size: 12px; }
+code { padding: 3px 5px; border-radius: 4px; background: var(--code); }
+pre { overflow-x: auto; padding: 16px; border-radius: 8px; background: var(--code); }
+pre code { padding: 0; background: transparent; }
+blockquote { margin: 20px 0; padding: 4px 18px; border-left: 3px solid var(--line); color: var(--muted); }
+blockquote p:last-child { margin-bottom: 0; }
+hr { height: 1px; margin: 28px 0; border: 0; background: var(--line); }
+table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin-bottom: 24px; font-size: 13px; }
+th, td { padding: 9px 12px; border: 1px solid var(--line); text-align: left; }
+th { background: var(--code); }
+.unavailable-link { color: var(--muted); }
+.screenshot {
+    position: relative;
+    display: block;
+    width: 100%;
+    margin: 22px 0 28px;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--code);
+    color: var(--muted);
+    cursor: zoom-in;
+    text-align: center;
+}
+.screenshot img { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.screenshot-hint { display: block; padding: 7px 10px; border-top: 1px solid var(--line); font: 11px/1.4 -apple-system, sans-serif; }
+.missing-image { display: block; padding: 18px; margin: 20px 0; border: 1px dashed var(--line); border-radius: 8px; color: var(--muted); font-size: 13px; }
+.render-error { color: var(--muted); }
+[hidden] { display: none !important; }
+.zoom-open { overflow: hidden; }
+#image-zoom { position: fixed; inset: 0; top: 0; right: 0; bottom: 0; left: 0; z-index: 10; overflow: auto; padding: 72px 24px 28px; background: rgba(12, 14, 19, .96); text-align: center; }
+#zoom-close { position: fixed; top: 18px; right: 22px; padding: 8px 14px; color: white; border: 1px solid #727987; border-radius: 7px; background: #323641; font: 13px -apple-system, sans-serif; cursor: pointer; }
+#zoom-image { display: block; max-width: none; height: auto; margin: 0 auto; }
+#zoom-caption { position: fixed; top: 25px; left: 24px; right: 130px; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e4e8f0; text-align: left; font-size: 13px; }
+@media (max-width: 640px) {
+    body { padding: 12px; }
+    article { padding: 24px 20px 34px; min-height: calc(100vh - 24px); }
+    h1 { font-size: 25px; }
+}

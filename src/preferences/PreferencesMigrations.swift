@@ -1,6 +1,8 @@
 import Cocoa
 
 class PreferencesMigrations {
+    // Migration thresholds use upstream schema versions, independently of product release numbering.
+    static let currentSchemaVersion = "11.6.1"
     /// Injectable so tests can run migrations against an isolated `UserDefaults` suite.
     /// Production keeps `.standard`; behavior is unchanged.
     static var defaults = UserDefaults.standard
@@ -14,16 +16,24 @@ class PreferencesMigrations {
         }
     }
 
-    static func migratePreferences() {
+    static func migratePreferences(bundleIdentifier: String = App.bundleIdentifier) {
         let preferencesKey = "preferencesVersion"
         let existingVersion = Self.defaults.string(forKey: preferencesKey)
         ProTransitionState.markFreshInstallIfUnknown(existingVersion == nil)
-        if let versionInPlist = existingVersion {
-            if versionInPlist != "#VERSION#" && versionInPlist.compare(App.version, options: .numeric) != .orderedDescending {
-                updateToNewPreferences(versionInPlist)
-            }
+        if let existingVersion, existingVersion != "#VERSION#" {
+            let versionInPlist = schemaVersion(existingVersion, bundleIdentifier: bundleIdentifier)
+            guard versionInPlist.compare(currentSchemaVersion, options: .numeric) != .orderedDescending else { return }
+            updateToNewPreferences(versionInPlist)
         }
-        Self.defaults.set(App.version, forKey: preferencesKey)
+        Self.defaults.set(currentSchemaVersion, forKey: preferencesKey)
+    }
+
+    private static func schemaVersion(_ version: String, bundleIdentifier: String) -> String {
+        let components = version.split(separator: ".", omittingEmptySubsequences: false)
+        guard bundleIdentifier == "com.horner.alt-tab-projects", components.count == 3,
+              components[0] == "0", components[1] == "1", let patch = Int(components[2]), patch >= 0 else { return version }
+        // AltTabProjects 0.1.x preferences use upstream schema 11.6.1.
+        return "11.6.1"
     }
 
     static func updateToNewPreferences(_ versionInPlist: String) {

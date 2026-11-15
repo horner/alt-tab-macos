@@ -1,6 +1,11 @@
 import Cocoa
 import ShortcutRecorder
 
+// The unit-test host has no application endpoint configuration in its Info.plist.
+enum Endpoints {
+    static let licenseApiBaseUrl = "https://license.invalid/v1/license"
+}
+
 // Stubs so ProBadgeView.swift compiles in the test target. The real Symbols
 // enum and NSImage.fromSymbol live in TileFontIconView.swift and
 // HelperExtensions.swift respectively, neither of which is in the test
@@ -96,11 +101,9 @@ func noAnimation<T: CALayer>(_ make: () -> T) -> T {
     return make()
 }
 
-// 10.13-safe stand-ins (the test target's deployment floor matches the app's 10.13). The real
-// extensions in HelperExtensions.swift `#available`-gate the 10.14+ system colors; the tests
-// never inspect these values, so plain 10.13-era colors suffice.
+// Test-only stand-ins; tests do not inspect the resolved colors.
 extension NSColor {
-    class var systemAccentColor: NSColor { .alternateSelectedControlColor }
+    class var systemAccentColor: NSColor { .selectedContentBackgroundColor }
     class var tableBorderColor: NSColor { .gridColor }
     class var tableBackgroundColor: NSColor { .windowBackgroundColor }
     class var tableSeparatorColor: NSColor { .gridColor }
@@ -128,6 +131,11 @@ class TilesViewMock {
     func handleSearchEditingKeyDown(_ event: NSEvent) -> SearchKeyResult { return .passToField }
 }
 
+enum AppPicker {
+    static var isActive = false
+    static func handleKeyDown(_ event: NSEvent?) -> Bool { false }
+}
+
 class TilesPanelMock {
     var tilesView = TilesViewMock()
     var isKeyWindow = false
@@ -147,6 +155,26 @@ class TilesPanel {
         get { App.app.tilesPanel.isKeyWindow }
         set { App.app.tilesPanel.isKeyWindow = newValue }
     }
+}
+
+// Stub so `ATShortcut.swift` and `KeyboardEventsTestable.swift` compile in the test target. The real
+// coordinator lives in `src/spaces/` and drags in the panel, `Windows`, `Spaces` and `Preferences`.
+// Only the ids and the two gates are referenced from those two files, and no test drives a Spaces
+// summon, so `isActive` stays false and `shouldTrigger` is never reached.
+enum SpacesSwitcher {
+    static let holdShortcutId = "holdSpacesShortcut"
+    static let nextShortcutId = "nextSpaceShortcut"
+    static let previousShortcutId = "previousSpaceShortcut"
+    static let isActive = false
+
+    static func owns(_ id: String) -> Bool { id == holdShortcutId || id == nextShortcutId || id == previousShortcutId }
+
+    static func shouldTrigger(_ id: String, _ triggerPhase: ShortcutTriggerPhase) -> Bool { false }
+}
+
+enum AuxiliarySwitchers {
+    static let all = [SpacesSwitcher.self]
+    static func owner(of id: String) -> SpacesSwitcher.Type? { all.first { $0.owns(id) } }
 }
 
 class TilesView {
@@ -262,4 +290,12 @@ enum ShortcutStylePreference: CaseIterable {
 
 class ModifierFlags {
     static var current: NSEvent.ModifierFlags = []
+}
+
+enum DesktopNavigation {
+    static func handleUndoKey(_ event: NSEvent?) -> Bool { false }
+}
+
+enum ProjectContextHeader {
+    static func handleNumberKey(_ event: NSEvent?) -> Bool { false }
 }

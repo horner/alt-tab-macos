@@ -62,6 +62,7 @@ enum WindowAdmissionReason: String, Equatable {
     case exactAttention
     case awaitingAccessibility
     case conventionalWindow
+    case ownedControlWindow
     case mainWindow
     case customWindowRoot
     case auxiliarySurface
@@ -109,9 +110,13 @@ enum WindowAdmissionResolver {
     }
 
     static func resolve(_ physical: PhysicalSurface, _ semantic: SemanticSurface?,
-                        evidence: WindowAdmissionEvidence = .discovery) -> SwitchDestinationDecision {
+                        evidence: WindowAdmissionEvidence = .discovery, ownedControlVisibility: Bool? = nil) -> SwitchDestinationDecision {
         guard physical.wid != 0 else { return .reject(.invalidWindowId) }
         guard physical.parentWid == 0 else { return .represent(parentWid: physical.parentWid, .attachedSurface) }
+        // Only the owning process's live window registry may vouch for a control window at a temporary floating level.
+        if let ownedControlVisibility {
+            return ownedControlVisibility ? .destination(.ownedControlWindow) : .reject(.auxiliarySurface)
+        }
         if let semantic, isAuxiliary(semantic.subrole) { return .reject(.auxiliarySurface) }
         if evidence == .attention { return attentionDecision(physical, semantic) }
         guard let semantic else { return .latent(.awaitingAccessibility) }

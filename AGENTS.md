@@ -27,6 +27,7 @@ A wrong comment costs several times more than a missing one, for humans and agen
 # Workflow
 - Copy commands from ai/build.sh and run them, to confirm compilation works after you're done with implementing a change
 - Git commit messages must respect our pre-hook conventions, and must be clear and high-level, written for end-users (changelog)
+- Before publishing AltTabProjects, replace the local installed app with the exact signed release candidate, relaunch it and test the runtime behavior. Preserve a rollback copy and existing preferences. Follow the release worktree's `AGENTS.md` and `scripts/projects/README.md`; automated build and download checks alone do not satisfy this step.
 
 # License / Keychain invariant
 - The app's Developer ID, TeamID, and bundle ID must remain stable across builds. Keychain items are tied to the code signature; changing any of these orphans every user's stored license key and forces mass re-activation. If a rotation is unavoidable, plan a migration first (e.g., a backup-restore handler, or `kSecAttrAccessGroup` with a stable group identifier).
