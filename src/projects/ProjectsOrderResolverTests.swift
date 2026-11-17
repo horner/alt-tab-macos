@@ -1,6 +1,25 @@
 import XCTest
 
 final class ProjectsOrderResolverTests: XCTestCase {
+    func testOwnerPickerSortsProjectNamesAlphabeticallyIgnoringCase() {
+        let names = ["Chevron eCase", "LakeHouse", "artipod", "agent-skills", "cloud", "chimeraSQL", "AltTabProjects", "alt-tab-projects", "TIMS", "agent-identity"]
+        XCTAssertEqual(ProjectsOrderResolver.alphabetical(names, name: { $0 }),
+            ["agent-identity", "agent-skills", "alt-tab-projects", "AltTabProjects", "artipod", "Chevron eCase", "chimeraSQL", "cloud", "LakeHouse", "TIMS"])
+    }
+
+    func testOwnerPickerSortUsesNamesBeforeDesktopAnnotations() {
+        let projects = [(name: "Project 10", desktop: 1), (name: "Project 2", desktop: 7), (name: "Project 1", desktop: 9)]
+        let sorted = ProjectsOrderResolver.alphabetical(projects, name: { $0.name })
+        XCTAssertEqual(sorted.map { $0.name }, ["Project 1", "Project 2", "Project 10"])
+        XCTAssertEqual(sorted.map { $0.desktop }, [9, 7, 1])
+    }
+
+    func testOwnerPickerSortPreservesEqualNamesAndEmptyLists() {
+        let projects = [(name: "Work", id: "first"), (name: "Work", id: "second")]
+        XCTAssertEqual(ProjectsOrderResolver.alphabetical(projects, name: { $0.name }).map { $0.id }, ["first", "second"])
+        XCTAssertEqual(ProjectsOrderResolver.alphabetical([String](), name: { $0 }), [])
+    }
+
     func testCurrentDesktopAlwaysComesFirst() {
         XCTAssertEqual(ProjectsOrderResolver.sorted(currentDesktopId: "desktop", customProjectIds: ["a", "b"], mru: ["b", "desktop", "a"]), ["desktop", "b", "a"])
     }

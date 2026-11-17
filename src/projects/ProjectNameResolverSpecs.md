@@ -6,8 +6,8 @@ Desktop name to the resolver. Project names resolve to a nonblank user name, a s
 name, then `Project N` for legacy records.
 Claiming a name only fills an unnamed record once. Forgetting operates only on the automatic name,
 so a user's name is preserved when all windows close. New custom projects receive a
-permanent unique name. Their name prompts reject blank or duplicate names and keep the
-entered text for correction. Archived and deleted project names remain reserved.
+permanent unique name. Rename prompts reject blank or duplicate names and keep the entered
+text for correction. Archived and deleted project names remain reserved.
 
 Project for This Desktop uses a single owner picker and one Project-name field. Save can create
 an owner, choose an existing Project, rename the owner, or leave the Desktop without a Project.
@@ -16,6 +16,11 @@ assignment. Selecting a Project assigned elsewhere transfers that assignment. Ca
 ownership and names unchanged. A changed or removed Desktop invalidates the pending save.
 New Project naming creates an unassigned draft until accepted, so cancellation cannot displace
 the Desktop's existing owner. Rename Project accepts only a Project, never a desktop adapter.
+In Project for This Desktop, creating with an existing open Project's name or folder key reuses
+that Project, including when it owns another Desktop. Reuse preserves its name, ID, folder,
+windows and history, and transfers its Desktop assignment through the existing-owner path.
+The lookup uses the current open Projects at Save, including Projects added after the picker
+opened. Archived or deleted names still require the existing Attic or recovery workflow.
 
 Names share the same filesystem key after case, accent and width folding, whitespace
 and punctuation become hyphens, and keys are limited to 60 characters. Such collisions
@@ -41,3 +46,6 @@ and moves its folder, including all user files.
 
 - **testProjectNamesReserveTheSameCaseInsensitiveFolder** — names cannot collide after filesystem normalization.
 - **testAutomaticProjectNamesAreDistinctWithoutRandomSuffixes** — generated suggestions have distinct names, even after truncation.
+- **testMatchingFindsExistingProjectByNameOrFolderKey** — reuse accepts the same case, accent, width and punctuation variants as folder validation, keeping distinct folder keys separate.
+- **testMatchingDoesNotReuseProjectForBlankOrDifferentName** — empty and unmatched input cannot select an existing Project.
+- **testMatchingUsesTheSameTruncatedFolderKeyAsValidation** — matching and collision validation agree at the folder length limit.

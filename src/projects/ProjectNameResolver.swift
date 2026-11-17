@@ -33,10 +33,16 @@ enum ProjectNameResolver {
 
     static func validationError(_ name: String?, existing: [String]) -> String? {
         guard let name = normalized(name) else { return NSLocalizedString("Enter a project name.", comment: "Project name validation") }
-        guard !existing.contains(where: { folderName($0) == folderName(name) }) else {
+        guard matching(name, existing: existing) == nil else {
             return NSLocalizedString("Another project already uses this name or folder name. Choose a different name.", comment: "Duplicate project name validation")
         }
         return nil
+    }
+
+    static func matching(_ name: String?, existing: [String]) -> Int? {
+        guard let name = normalized(name) else { return nil }
+        let key = folderName(name)
+        return existing.firstIndex { folderName($0) == key }
     }
 
     static func available(_ proposed: String, existing: [String]) -> String {

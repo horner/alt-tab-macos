@@ -72,4 +72,25 @@ final class ProjectNameResolverTests: XCTestCase {
         let available = ProjectNameResolver.available(long, existing: [long])
         XCTAssertNotEqual(ProjectNameResolver.folderName(available), ProjectNameResolver.folderName(long))
     }
+
+    func testMatchingFindsExistingProjectByNameOrFolderKey() {
+        let names = ["AltTabProjects", "alt-tab-projects", "Work"]
+        for proposed in ["alt-tab-projects", " Alt Tab Projects ", "ALT_TAB_PROJECTS", "ált-tab-projects", "ａｌｔ-ｔａｂ-ｐｒｏｊｅｃｔｓ"] {
+            XCTAssertEqual(ProjectNameResolver.matching(proposed, existing: names), 1, proposed)
+        }
+        XCTAssertEqual(ProjectNameResolver.matching("alttabprojects", existing: names), 0)
+    }
+
+    func testMatchingDoesNotReuseProjectForBlankOrDifferentName() {
+        for proposed in [nil, "", " \n\t ", "Personal"] {
+            XCTAssertNil(ProjectNameResolver.matching(proposed, existing: ["Work", "Project"]))
+        }
+        XCTAssertNil(ProjectNameResolver.matching("Work", existing: []))
+    }
+
+    func testMatchingUsesTheSameTruncatedFolderKeyAsValidation() {
+        let name = String(repeating: "a", count: 60)
+        XCTAssertEqual(ProjectNameResolver.matching(name + " extra", existing: [name]), 0)
+        XCTAssertNotNil(ProjectNameResolver.validationError(name + " extra", existing: [name]))
+    }
 }

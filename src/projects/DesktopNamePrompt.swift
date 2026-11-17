@@ -26,7 +26,7 @@ enum DesktopNamePrompt {
 
         init(_ desktop: Project) {
             self.desktop = desktop
-            projects = Projects.list.filter { $0.isCustom }
+            projects = ProjectsOrderResolver.alphabetical(Projects.list.filter { $0.isCustom }, name: { $0.resolvedName })
             originalOwnerId = Projects.owner(for: desktop.homeSpaceUuid)?.id
             // Taking key focus without activating AltTab avoids raising its windows on another Desktop.
             super.init(contentRect: .zero, styleMask: [.titled, .closable, .nonactivatingPanel], backing: .buffered, defer: false)
@@ -99,10 +99,17 @@ enum DesktopNamePrompt {
 
         override func cancelOperation(_ sender: Any?) { close() }
 
+        private func matchingProject(_ name: String) -> Project? {
+            let projects = Projects.list.filter { $0.isCustom }
+            guard let index = ProjectNameResolver.matching(name, existing: projects.map { $0.resolvedName }) else { return nil }
+            return projects[index]
+        }
+
         @objc private func save() {
-            let selected = selectedProject
-            let creating = choices.indexOfSelectedItem == 1
             let proposed = field.stringValue
+            let reused = choices.indexOfSelectedItem == 1 ? matchingProject(proposed) : nil
+            let selected = selectedProject ?? reused
+            let creating = choices.indexOfSelectedItem == 1 && reused == nil
             if choices.indexOfSelectedItem != 0, let error = ProjectNameResolver.validationError(proposed, existing: Projects.projectNames(excluding: selected?.id)) {
                 let alert = NSAlert()
                 alert.messageText = NSLocalizedString("Choose a different project name", comment: "Duplicate project name")
@@ -117,6 +124,8 @@ enum DesktopNamePrompt {
                       Projects.spaces.contains(where: { $0.uuid == desktop.homeSpaceUuid && $0.desktopNumber > 0 }),
                       Projects.owner(for: desktop.homeSpaceUuid)?.id == expectedOwner,
                       selected.map({ Projects.byId[$0.id] === $0 }) ?? true else { return }
+                guard selected == nil && !creating || ProjectNameResolver.validationError(proposed, existing: Projects.projectNames(excluding: selected?.id)) == nil,
+                      reused.map({ ProjectNameResolver.matching(proposed, existing: [$0.resolvedName]) != nil }) ?? true else { return }
                 if selected != nil || creating { Preferences.set("projectsEnabled", "true") }
                 let created = creating ? Projects.createCustom(homeSpaceUuid: "") : nil
                 guard !creating || created != nil else { return }
@@ -125,7 +134,7 @@ enum DesktopNamePrompt {
                     if let created { Projects.delete(id: created.id) }
                     return
                 }
-                owner?.name = ProjectNameResolver.normalized(proposed)
+                if reused == nil { owner?.name = ProjectNameResolver.normalized(proposed) }
                 SpaceLabelWindows.show(on: desktop.homeSpaceUuid)
             }
         }

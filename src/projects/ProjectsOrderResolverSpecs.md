@@ -13,8 +13,17 @@ All Projects uses the strip's same entries. Selection, cycling and grid
 sizing reuse `SpacesOrderResolver`. Normal Desktop filtering remains available through the menu's
 Use Desktop (No Project) action; choosing it does not highlight a custom Project.
 
+The Project for This Desktop owner picker sorts all open custom Projects alphabetically by
+resolved name with localized, case-insensitive natural ordering. Desktop annotations are added
+after sorting, and Projects on other or unavailable Desktops remain selectable. No Project and
+Create a New Project stay above the sorted Projects. This picker order does not change the
+switcher or strip order. Equal names retain their input order.
+
 ## Test scenarios
 
+- **testOwnerPickerSortsProjectNamesAlphabeticallyIgnoringCase** — mixed-case Project names use alphabetical order.
+- **testOwnerPickerSortUsesNamesBeforeDesktopAnnotations** — numeric names sort naturally, independent of Desktop numbers.
+- **testOwnerPickerSortPreservesEqualNamesAndEmptyLists** — equivalent names remain stable and an empty picker is valid.
 - **testCurrentDesktopAlwaysComesFirst** — an unlinked current Desktop precedes even the most recent custom Project.
 - **testActivatedProjectsFollowRecency** — visited custom Projects follow activation history.
 - **testNeverActivatedProjectsKeepCreationOrder** — unvisited Projects retain their creation order.
