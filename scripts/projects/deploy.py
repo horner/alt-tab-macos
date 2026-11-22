@@ -29,6 +29,11 @@ IDENTITY = "Developer ID Application: Medical Informatics Engineering, Inc. (X58
 TEAM = "X5873NL7XM"
 BUNDLE = "com.horner.alt-tab-projects"
 ASSETS = ("AltTabProjects.zip", "SHA256SUMS.txt", "build-info.json")
+OBSERVER_TESTS = (
+    "unit-tests/ProjectFileStoreTests/testFilesystemObserverSeesAtomicDesktopFileSave",
+    "unit-tests/ProjectFileStoreTests/testFilesystemObserverSeesAtomicEditorSave",
+    "unit-tests/ProjectSnapshotHistoryTests/testFilesystemObserverRefreshesAtomicSnapshotMetadataChanges",
+)
 SMOKE_CHECKS = {
     "startup_permissions": "Launch the installed app; verify its UI and required permissions without a permission loop.",
     "switcher_focus": "Summon, cycle, search, dismiss, and focus a selected window.",
@@ -208,8 +213,10 @@ class Deploy:
     def prepare_package(self):
         self.run(sys.executable, "-m", "unittest", "discover", "-s", "scripts/projects", "-p", "test_*.py",
                  log=self.logs / "tooling-tests.log")
-        self.run("xcodebuild", "test", "-project", "alt-tab-macos.xcodeproj", "-scheme", "Test", "-configuration", "Release",
-                 "-derivedDataPath", self.root / "build/projects-tests", log=self.logs / "tests.log")
+        test_command = ("xcodebuild", "test", "-project", "alt-tab-macos.xcodeproj", "-scheme", "Test", "-configuration", "Release",
+                        "-derivedDataPath", self.root / "build/projects-tests")
+        self.run(*test_command, *(f"-only-testing:{test}" for test in OBSERVER_TESTS), log=self.logs / "observer-tests.log")
+        self.run(*test_command, *(f"-skip-testing:{test}" for test in OBSERVER_TESTS), log=self.logs / "tests.log")
         if not (self.output / "build-info.json").exists():
             if self.output.exists():
                 raise RuntimeError(f"Incomplete package at {self.output}; preserve it under a different name, then retry with --resume.")

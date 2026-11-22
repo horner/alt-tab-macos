@@ -221,10 +221,55 @@ class DeployTests(unittest.TestCase):
         self.d.validate_package = Mock()
         self.d.prepare_package()
         calls = self.d.run.call_args_list
-        self.assertEqual(len(calls), 2)
+        self.assertEqual(len(calls), 3)
         self.assertEqual(calls[0].args[1:3], ("-m", "unittest"))
         self.assertEqual(calls[1].args[:2], ("xcodebuild", "test"))
+        self.assertEqual(calls[2].args[:2], ("xcodebuild", "test"))
         self.d.validate_package.assert_called_once()
+
+    def test_observer_cases_run_before_the_remaining_app_tests_without_omissions_or_repetition(self):
+        self.package_fixture()
+        self.d.validate_package = Mock()
+        self.d.prepare_package()
+        calls = [call for call in self.d.run.call_args_list if call.args[0] == "xcodebuild"]
+        self.assertEqual(len(calls), 2)
+        expected = (
+            "unit-tests/ProjectFileStoreTests/testFilesystemObserverSeesAtomicDesktopFileSave",
+            "unit-tests/ProjectFileStoreTests/testFilesystemObserverSeesAtomicEditorSave",
+            "unit-tests/ProjectSnapshotHistoryTests/testFilesystemObserverRefreshesAtomicSnapshotMetadataChanges",
+        )
+        self.assertEqual(tuple(arg.removeprefix("-only-testing:") for arg in calls[0].args
+                               if isinstance(arg, str) and arg.startswith("-only-testing:")), expected)
+        self.assertEqual(tuple(arg.removeprefix("-skip-testing:") for arg in calls[1].args
+                               if isinstance(arg, str) and arg.startswith("-skip-testing:")), expected)
+        self.assertFalse(any(isinstance(arg, str) and arg.startswith("-skip-testing:") for arg in calls[0].args))
+        self.assertFalse(any(isinstance(arg, str) and arg.startswith("-only-testing:") for arg in calls[1].args))
+        self.assertEqual(calls[0].args[:-len(expected)], calls[1].args[:-len(expected)])
+        self.assertEqual(calls[0].kwargs["log"], self.d.logs / "observer-tests.log")
+        self.assertEqual(calls[1].kwargs["log"], self.d.logs / "tests.log")
+
+    def test_failure_in_either_app_test_process_stops_before_packaging_or_publication(self):
+        for failed_log in ("observer-tests.log", "tests.log"):
+            with self.subTest(failed_log=failed_log):
+                def run(*args, **kwargs):
+                    if kwargs["log"].name == failed_log:
+                        raise RuntimeError(f"Command failed; inspect {failed_log}")
+                    return ""
+                self.d.run = Mock(side_effect=run)
+                self.d.preflight = Mock()
+                self.d.validate_package = Mock()
+                for name in ("publish_release", "publish_feed", "update_cask", "verify_homebrew"):
+                    setattr(self.d, name, Mock(__name__=name))
+                with self.assertRaisesRegex(RuntimeError, failed_log):
+                    self.d.execute()
+                expected_logs = ["tooling-tests.log", "observer-tests.log"]
+                if failed_log == "tests.log":
+                    expected_logs.append("tests.log")
+                self.assertEqual([call.kwargs["log"].name for call in self.d.run.call_args_list], expected_logs)
+                self.d.validate_package.assert_not_called()
+                for name in ("publish_release", "publish_feed", "update_cask", "verify_homebrew"):
+                    getattr(self.d, name).assert_not_called()
+                self.assertFalse(self.d.smoke_report.exists())
 
     def test_prepare_only_never_publishes_and_leaves_pending_report(self):
         self.package_fixture()

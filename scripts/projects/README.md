@@ -109,8 +109,14 @@ change preferences; installing and testing the candidate is a required separate 
 1. Checks the source branch, clean commit, stable app identity, fork remotes, GitHub access,
    existing tags/releases, default-branch CI guard, signing identity and notarization profile.
    It rejects a tag on different source and a cask downgrade.
-2. Runs the deployment tooling tests and Release app test suite, then builds the universal app using
-   `scripts/projects/build.sh`.
+2. Runs the deployment tooling tests, then the three existing FSEvents integration cases in their
+   own Release test process before running the remaining Release app test suite in a second process.
+   The same case IDs select the isolated cases and exclude them from the remaining suite, so every
+   case is still required once with its original assertions and timeout. Any failed process stops
+   deployment before packaging or publication. Full-suite runs on the release test host have received
+   unrelated filesystem callbacks without receiving fresh fixture events after other filesystem tests;
+   the cause remains unresolved. Process isolation changes the test execution context, not the app's
+   observer behavior. The command then builds the universal app using `scripts/projects/build.sh`.
 3. Runs `scripts/projects/package.py` to sign embedded code and the app, submit it to Apple, staple
    the accepted ticket, and check Gatekeeper. The package contains a ZIP, SHA-256 manifest, cask and
    build metadata identifying the exact source commit. The final ZIP is extracted and verified again,
@@ -196,7 +202,7 @@ does not establish Intel or older-macOS compatibility beyond the machine actuall
 ## Output and recovery
 
 - `build/release-<version>/` holds the original signed package. Retain this directory for retries.
-- `build/deploy-<version>/` holds `tooling-tests.log`, `tests.log`, `build.log`, `package.log`, the runtime
+- `build/deploy-<version>/` holds `tooling-tests.log`, `observer-tests.log`, `tests.log`, `build.log`, `package.log`, the runtime
   smoke report and verified evidence, `cask-style.log`, `brew-fetch.log`, and, after success, `deployment.json`.
   It also holds `appcast-preview.xml` before publication and `appcast.xml`/`public-appcast.xml` after
   feed publication. The result records the persistent feed URL and verified feed commit.
