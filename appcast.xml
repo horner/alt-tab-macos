@@ -6,6 +6,26 @@
     <description>Signed AltTabProjects friends beta releases</description>
     <language>en</language>
     <item>
+      <title>AltTabProjects 1.0.8 — Friends beta</title>
+      <link>https://github.com/horner/alt-tab-macos/releases/tag/projects-v1.0.8</link>
+      <sparkle:version>1.0.8</sparkle:version>
+      <sparkle:shortVersionString>1.0.8</sparkle:shortVersionString>
+      <sparkle:channel>beta</sparkle:channel>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 23 Nov 2026 00:14:43 +0000</pubDate>
+      <description sparkle:format="plain-text">## Fixes
+
+- In **Project for This Desktop**, entering an existing open Project’s name under **Create a New Project** now reuses that Project instead of showing “Choose a different project name.” Its name, identity, windows, folder, and history are preserved. If it belongs to another Desktop, its assignment transfers just as it does when selected from the dropdown.
+- The Project dropdown now sorts alphabetically by Project name, with natural number ordering and Desktop numbers shown beside the appropriate Projects.
+
+Names are matched using the same case, accent, width, and punctuation normalization as Project folders. Archived and deleted Project names remain reserved; reopen archived Projects through the Project Attic.
+
+## Upgrade
+
+Update from AltTabProjects Settings, download and replace the existing app, or run `brew update` followed by `brew upgrade --cask --greedy horner/projects/alttab-projects`. Existing Projects and preferences are retained.</description>
+      <enclosure url="https://github.com/horner/alt-tab-macos/releases/download/projects-v1.0.8/AltTabProjects.zip" length="7548263" type="application/octet-stream" sparkle:edSignature="sPRHqbKXDCa2dYPaZ0Ke1zMj7RS/abI8PlZaCXy7J3h7EgY0g51EiGxDtja57FlwQ4/Qn+USx9oGLe1m3W+qAA==" />
+    </item>
+    <item>
       <title>AltTabProjects 1.0.7 — Friends beta</title>
       <link>https://github.com/horner/alt-tab-macos/releases/tag/projects-v1.0.7</link>
       <sparkle:version>1.0.7</sparkle:version>
