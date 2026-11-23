@@ -54,6 +54,13 @@ class App: AppCenterApplication {
         fatalError("Class only supports programmatic initialization")
     }
 
+    override func accessibilityWindows() -> [Any]? {
+        let published = super.accessibilityWindows() ?? []
+        let existing = Set(published.compactMap { $0 as? NSWindow }.map { ObjectIdentifier($0) })
+        // AppKit's default AXWindows omits other-Space windows; Desktop labels remain switch destinations.
+        return published + SpaceLabelWindows.accessibilityWindows().filter { !existing.contains(ObjectIdentifier($0)) }
+    }
+
     /// The switcher UI only exists once permissions are granted. Activating a license through a
     /// custom URL launches the app and can land its callback before that, so we bail
     /// instead of resetting a UI that isn't built yet (`TilesView.reset` traps on `TilesPanel.shared`).

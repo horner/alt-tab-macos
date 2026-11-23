@@ -6,7 +6,9 @@ the selected Project owns a different Desktop. The union is defined by ProjectMe
 Ordinary Space and screen filters cannot narrow this union, and no Project location preference is read.
 Projects disabled or normal Desktop scope keep the ordinary shortcut filters. Exceptions, hidden and
 minimized windows, tab grouping and all other window filters remain enforced. Project label controls
-retain their independent Show/Hide preference and ordinary location filters.
+retain their independent Show/Hide preference. Shown Desktop labels remain available across Desktops
+on the shortcut's allowed screens, bypassing visible/non-visible Space filtering so they can navigate
+to another Desktop. Other shortcut filters still apply to labels.
 
 ## Test scenarios
 
@@ -15,4 +17,8 @@ retain their independent Show/Hide preference and ordinary location filters.
 - **testRemoteNonmemberAndOtherDisplaysDesktopStayExcluded** — only the single current Desktop contributes nonmembers; a window on all Desktops includes it.
 - **testProjectUnionHonorsOrdinaryWindowExclusions** — membership and local fallback both preserve hidden, minimized, phantom, tab and exception exclusion.
 - **testNoActiveProjectPreservesNormalLocationFilters** — ordinary visible-Space/screen settings remain effective outside custom Projects.
+- **testDesktopOneLabelRemainsAvailableAfterCreatingAndEnteringDesktopTwo** — a label remains selectable across a new Desktop transition while ordinary off-Space windows stay filtered.
+- **testDesktopLabelsStillRespectThePreferredMonitor** — labels on the other monitor remain excluded by the shortcut's screen setting.
+- **testDesktopLabelsRemainAvailableWithNonVisibleSpaceFilter** — both current and other Desktop destinations remain available under non-visible Space filtering.
+- **testDesktopLabelsHonorOrdinaryWindowExclusions** — hidden, minimized and excluded labels still obey the shortcut's ordinary window filters.
 - **testProjectOverridesNonVisibleSpaceSettingWithoutQueryingScreen** — Project scope also overrides non-visible-Spaces filtering without a screen-geometry query.

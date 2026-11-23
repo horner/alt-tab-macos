@@ -155,6 +155,7 @@ class Windows {
         guard labelVisibility != false else { return false }
         let members = labelVisibility == true ? nil : projectMembers
         let scope = ProjectScopeResolver.resolve(hasActiveProject: members != nil,
+            isDesktopLabel: labelVisibility == true,
             visibleOnly: f.spacesToShow == .visible, nonVisibleOnly: f.spacesToShow == .nonVisible,
             screenOnly: f.screensToShow == .showingAltTab, visibleSpaceIds: Spaces.visibleSpaces)
         // `isOnPreferredScreen` is the one irreducibly OS-coupled fact (touches `Spaces.screenSpacesMap` +

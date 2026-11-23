@@ -48,8 +48,9 @@ the existing menu delegate's refreshes.
 icon. Show makes live label windows switch destinations. The explicit ownership check uses this process's
 registered window IDs; it does not loosen admission for other floating windows. Changing the preference
 updates existing windows without reopening them. Shown labels remain selectable during their
-temporary reveal and bypass custom-Project membership filtering, while ordinary shortcut filters still
-apply. They do not claim automatic Project names or membership.
+temporary reveal and bypass custom-Project membership and visible/non-visible Space filtering, so
+other Desktops remain navigation destinations. The shortcut's screen setting and ordinary window
+exclusions still apply. They do not claim automatic Project names or membership.
 
 “Show label after switching Spaces” accepts 0–3000 ms in 100 ms increments and defaults to 1500 ms.
 Zero disables the reveal; an explicitly saved duration is preserved when defaults change.
@@ -177,6 +178,15 @@ small action buttons wrap into additional rows when needed.
 
 ## Default launch and navigation checks
 
+- The application's accessibility window list includes every registered, live label while
+  “Project windows in switcher” is Show, including labels on other Desktops and displays. The ordinary
+  AppKit list keeps its order and existing windows are not duplicated. Hide adds no labels; transparent
+  navigation anchors are never added. Successful assignment explicitly requests discovery, so a label
+  moved off the current Desktop before its create event is processed still becomes a switch destination.
+- Runtime regression: launch with several Desktops on the first display and another on the second,
+  create a new Desktop, switch to it, and verify all live labels appear in `--detailed-list` without
+  visiting each Desktop first. Toggle Show/Hide and verify anchors stay excluded and label windows are
+  reused.
 - `testLaunchOpensExistingAndNewLabelsBehindApplicationWindows` pins the launch default and back ordering.
 - `testRelaunchReopensPreviouslyHiddenLabels` pins resetting per-session hide decisions.
 - macOS 26.5.1 probe: a clear, ordered 2×2 window with `ignoresMouseEvents` switches Desktops when

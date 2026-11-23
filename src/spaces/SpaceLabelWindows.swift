@@ -52,6 +52,11 @@ enum SpaceLabelWindows {
 
     static var hasLabels: Bool { visibility.isRequested }
 
+    static func accessibilityWindows() -> [NSWindow] {
+        guard Preferences.projectWindowsInSwitcher else { return [] }
+        return windows.values.filter { !$0.retired && $0.windowId != nil }.map { $0.window }
+    }
+
     static func switcherVisibility(windowId: CGWindowID?, pid: pid_t) -> Bool? {
         if pid == AXUIElement.currentProcessPid, DesktopWindows.contains(windowId) { return false }
         return SpaceLabelResolver.switcherVisibility(windowId: windowId, pid: pid, ownerPid: AXUIElement.currentProcessPid,
@@ -359,6 +364,7 @@ enum SpaceLabelWindows {
             entry.window.alphaValue = 1
             present(entry)
             revealIfRequested(entry, uuid: entry.uuid)
+            if Preferences.projectWindowsInSwitcher { Applications.discoverWindow(windowId) }
             Logger.debug { "Project label assigned window=\(windowId) space=\(space.id) uuid=\(space.uuid)" }
         }
     }

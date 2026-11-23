@@ -40,7 +40,7 @@ enum WindowElementAcquisition {
             // First wins, like the brute-force merge below. `published` is ordered `kAXWindows` first, so an
             // app that names one wid twice with two different elements keeps its canonical window-list one
             // over the `kAXFocusedWindow` / `kAXMainWindow` ivar read.
-            guard let wid = try? element.cgWindowId(), wids.contains(wid), found[wid] == nil else { continue }
+            guard let wid = try? element.cgWindowId(pid: pid), wids.contains(wid), found[wid] == nil else { continue }
             found[wid] = element
         }
         guard route == .otherSpaceViaBruteForce, pid != AXUIElement.currentProcessPid else { return found }
@@ -70,12 +70,12 @@ enum WindowElementAcquisition {
         let published = AXUIElement.onCorrectThread(pid: pid) { () -> [AXUIElement]? in
             do { return try app.windowsIncludingKeyAndMain() } catch { appAnswered = false; return nil }
         }
-        if let found = published?.first(where: { (try? $0.cgWindowId()) == wid }) {
+        if let found = published?.first(where: { (try? $0.cgWindowId(pid: pid)) == wid }) {
             return .found(found)
         }
         // Other Space, and not the app's key/main window: the only path left is the targeted remote-token
-        // brute-force. Skipped for the current-Space-only route and for our own process (always current-Space,
-        // and off-main AX on self would crash).
+        // brute-force. Skipped for the current-Space-only route and for our own process, whose Desktop
+        // labels are published across Spaces by App.accessibilityWindows; off-main AX on self would crash.
         guard route == .otherSpaceViaBruteForce, pid != AXUIElement.currentProcessPid else {
             return appAnswered ? .absent : .noAnswer
         }
