@@ -6,6 +6,25 @@
     <description>Signed AltTabProjects friends beta releases</description>
     <language>en</language>
     <item>
+      <title>AltTabProjects 1.0.9 — Friends beta</title>
+      <link>https://github.com/horner/alt-tab-macos/releases/tag/projects-v1.0.9</link>
+      <sparkle:version>1.0.9</sparkle:version>
+      <sparkle:shortVersionString>1.0.9</sparkle:shortVersionString>
+      <sparkle:channel>beta</sparkle:channel>
+      <sparkle:minimumSystemVersion>12.0</sparkle:minimumSystemVersion>
+      <pubDate>Mon, 23 Nov 2026 06:25:19 +0000</pubDate>
+      <description sparkle:format="plain-text"># AltTabProjects 1.0.9 — Desktop destinations stay available
+
+Desktop labels remain available in Command-Tab after switching to another Desktop, including when the shortcut shows windows from visible Desktops only. Your monitor filter and ordinary window exclusions still apply.
+
+Labels on other Desktops are discovered without visiting each Desktop first. Creating a Desktop no longer leaves existing Desktop destinations missing from the switcher.
+
+Update through Settings → General → Check for updates now…, or run `brew update` followed by `brew upgrade --cask --greedy horner/projects/alttab-projects`. Version 1.0.5 and earlier require a manual download or Homebrew upgrade before built-in updates become available.
+
+Existing Projects, preferences, permissions and the app's signing identity are retained. Intel and older-macOS runtime testing remain outstanding.</description>
+      <enclosure url="https://github.com/horner/alt-tab-macos/releases/download/projects-v1.0.9/AltTabProjects.zip" length="7550887" type="application/octet-stream" sparkle:edSignature="7NoSJwaxmH25m2swZ0B003rEZMJP6ZL3aaz5k16sWa9waeVYoBqGqEKoynoXxhyP8HC6WwcCsiHJElg4/DYtBg==" />
+    </item>
+    <item>
       <title>AltTabProjects 1.0.8 — Friends beta</title>
       <link>https://github.com/horner/alt-tab-macos/releases/tag/projects-v1.0.8</link>
       <sparkle:version>1.0.8</sparkle:version>
